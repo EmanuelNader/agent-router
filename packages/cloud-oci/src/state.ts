@@ -6,18 +6,31 @@ import { z } from 'zod';
 import { DeployError } from './errors.js';
 
 const token = z.string().regex(/^ar[a-f0-9]{32}$/);
+const resourceId = z.string().min(1);
+const resourcesSchema = z.object({
+  vcnId: resourceId.optional(),
+  internetGatewayId: resourceId.optional(),
+  securityListId: resourceId.optional(),
+  subnetId: resourceId.optional(),
+  routeTableId: resourceId.optional(),
+  instanceId: resourceId.optional(),
+  bootVolumeId: resourceId.optional(),
+});
 const stateSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(2),
+  deploymentId: z.string().regex(/^dep[a-f0-9]{16}$/),
   password: z.string().regex(/^[a-f0-9]{64}$/),
+  region: z.string().regex(/^[a-z]{2,3}-[a-z0-9-]+-\d+$/).optional(),
+  compartmentId: z.string().regex(/^ocid1\.compartment\.oc1\.\.[a-z0-9]+$/).optional(),
   tokens: z.object({
     vcn: token, internetGateway: token, securityList: token, subnet: token, instance: token,
   }),
-  instanceId: z.string().min(1).optional(),
-  bootVolumeId: z.string().min(1).optional(),
+  resources: resourcesSchema,
 });
 export type DeployRecord = z.infer<typeof stateSchema>;
+export type ResourceIds = z.infer<typeof resourcesSchema>;
 
-/** Local retry tokens and the agent password. The file is owner-only and is not a receipt. */
+/** Local retry tokens, deployment id, and the saved resource IDs. The file is owner-only. */
 export class OciDeployState {
   static newToken(): string {
     return `ar${randomBytes(16).toString('hex')}`;
@@ -25,30 +38,39 @@ export class OciDeployState {
 
   static create(): DeployRecord {
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
+      deploymentId: `dep${randomBytes(8).toString('hex')}`,
       password: randomBytes(32).toString('hex'),
       tokens: {
         vcn: this.newToken(), internetGateway: this.newToken(), securityList: this.newToken(),
         subnet: this.newToken(), instance: this.newToken(),
       },
+      resources: {},
     };
+  }
+
+  static locate(record: DeployRecord, region: string, compartmentId: string): DeployRecord {
+    return { ...record, region, compartmentId };
+  }
+
+  static remember(record: DeployRecord, patch: ResourceIds): DeployRecord {
+    return { ...record, resources: { ...record.resources, ...patch } };
   }
 
   /** Drop the recorded instance so the next launch does not replay a terminated create. */
   static withoutInstance(record: DeployRecord): DeployRecord {
+    const resources = { ...record.resources };
+    delete resources.instanceId;
+    delete resources.bootVolumeId;
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
+      deploymentId: record.deploymentId,
       password: record.password,
+      ...(record.region ? { region: record.region } : {}),
+      ...(record.compartmentId ? { compartmentId: record.compartmentId } : {}),
       tokens: { ...record.tokens, instance: this.newToken() },
+      resources,
     };
-  }
-
-  static passwordFromUserData(userData: string | undefined): string | null {
-    if (!userData) return null;
-    let script: string;
-    try { script = Buffer.from(userData, 'base64').toString('utf8'); }
-    catch { return null; }
-    return script.match(/^OPENCODE_PASSWORD=([a-f0-9]{64})$/m)?.[1] ?? null;
   }
 
   static async load(path: string): Promise<DeployRecord | null> {

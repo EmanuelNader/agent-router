@@ -9,17 +9,21 @@ const cleanup: (() => Promise<void>)[] = [];
 afterEach(async () => { for (const close of cleanup.splice(0)) await close(); });
 const password = 'ab'.repeat(32);
 
-test('cloud-init installs the pinned release once and binds it to loopback', () => {
-  const script = OpenCodeBootstrap.cloudInit(password);
-  expect(script).toContain(`@opencode/cli@${OPENCODE_VERSION}`);
-  expect(script).toContain('opencode serve --hostname 127.0.0.1 --port 4096');
+test('cloud-init installs the pinned release and does not contain the agent password', () => {
+  const script = OpenCodeBootstrap.cloudInit();
+  expect(script.startsWith('#!/bin/bash\n')).toBe(true);
+  expect(script).not.toMatch(/OPENCODE_PASSWORD/);
+  const unit = script.split("cat > /etc/systemd/system/agent-router-opencode.service <<'EOF'\n")[1]?.split('\nEOF')[0];
+  expect(unit).toContain('ConditionPathExists=/etc/agent-router/opencode.env');
+  expect(unit).toContain('ExecStart=/usr/local/bin/opencode serve --hostname 127.0.0.1 --port 4096');
+  expect(unit).toContain('User=opencode');
+  expect(unit).not.toContain('systemctl enable --now');
   expect(script).toContain('systemctl is-active --quiet agent-router-opencode');
-  expect(script).toContain('6e51a2ada00f0011cc266f65d98922b403d7ad88f809ca2aa615a5fe1ce6e86c');
-  expect(script).toContain('OPENCODE_DISABLE_PROJECT_CONFIG=1');
+  expect(script).toContain(`npm install -g @opencode/cli@${OPENCODE_VERSION}`);
+  expect(script).toContain('echo "6e51a2ada00f0011cc266f65d98922b403d7ad88f809ca2aa615a5fe1ce6e86c  /tmp/${TARBALL}" | sha256sum -c -');
   expect(script).not.toContain('BEGIN OPENSSH PRIVATE KEY');
   expect(script).not.toContain('oci_api_key');
   expect(Buffer.byteLength(script)).toBeLessThan(16_000);
-  expect(() => OpenCodeBootstrap.cloudInit('short')).toThrow(/password/);
 });
 
 test('health uses the existing client and an injected loopback tunnel', async () => {

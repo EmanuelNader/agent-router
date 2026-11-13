@@ -1,8 +1,8 @@
-import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { liveHooks } from '../../../scripts/deploy-oci.js';
+import { OciLiveHooks } from '../../../scripts/deploy-oci.js';
 import type { OciInspection } from '../../cloud-readiness/src/oci-report.js';
 import { OciHostCommand } from '../src/command.js';
 import { OciResourcePlan } from '../src/plan.js';
@@ -16,19 +16,25 @@ const clock = { now: () => now.getTime(), wait: async () => {} };
 test('demo dry run prints the free host and destroy names the discord-bot exclusion', async () => {
   const deploy = await OciHostCommand.deploy(['--dry-run', '--demo'], { now, agentVersion: '2.2.7' });
   expect(deploy.code).toBe(0);
-  const body = JSON.stringify(deploy.body);
-  expect(body).toContain('VM.Standard.A1.Flex');
-  expect(body).toContain('nat-gateway');
-  expect(body).toContain('127.0.0.1:4096');
-  expect(body).toContain('"executed":false');
-  expect(body).not.toContain('OPENCODE_PASSWORD');
+  const body = deploy.body as {
+    executed: boolean; wouldCreate: { type: string; shape?: string; bootVolumeSizeInGBs?: number; agent?: { version: string; bind: string } }[];
+    wouldNotCreate: string[];
+  };
+  expect(body.executed).toBe(false);
+  expect(body.wouldCreate.map(item => item.type)).toEqual(['vcn', 'internet-gateway', 'route-rule', 'security-list', 'subnet', 'instance']);
+  expect(body.wouldCreate.find(item => item.type === 'instance')).toMatchObject({
+    shape: 'VM.Standard.A1.Flex', bootVolumeSizeInGBs: 50, agent: { version: '2.2.7', bind: '127.0.0.1:4096' },
+  });
+  expect(body.wouldNotCreate).toContain('nat-gateway');
+  expect(JSON.stringify(body)).not.toContain('OPENCODE_PASSWORD');
   const refused = await OciHostCommand.deploy(['--demo'], { now });
   expect(refused.code).toBe(2);
-  expect(JSON.stringify(refused.body)).toContain('DEMO_CANNOT_AUTHORIZE');
+  expect(refused.body).toMatchObject({ blockers: ['DEMO_CANNOT_AUTHORIZE'] });
   const destroy = await OciHostCommand.destroy(['--dry-run']);
   expect(destroy.code).toBe(0);
-  expect(JSON.stringify(destroy.body)).toContain('discord-bot');
-  expect(liveHooks().cloudInit('ab'.repeat(32))).toContain('2.2.7');
+  expect(destroy.body).toMatchObject({ executed: false, queriedOracle: false, deletionRequires: '--yes', untouchedExamples: ['discord-bot'] });
+  expect(OciLiveHooks.create().cloudInit()).toContain('npm install -g @opencode/cli@2.2.7');
+  expect(OciLiveHooks.create().cloudInit()).not.toContain('OPENCODE_PASSWORD');
 });
 
 test('a live command uses the injected gateway and refuses uncertain eligibility before any call', async () => {
@@ -59,7 +65,7 @@ test('a live command uses the injected gateway and refuses uncertain eligibility
   const cloud = new MemoryCloud();
   let opened = false;
   const args = [
-    '--config', configPath, '--report', reportPath, '--eligibility', eligibilityPath,
+    '--config', configPath, '--eligibility', eligibilityPath,
     '--compartment', cloud.compartment.id, '--ssh-public-key', publicKey, '--ssh-private-key', privateKey,
     '--ssh-cidr', '203.0.113.10/32', '--state', join(root, 'state.json'),
   ];
@@ -67,11 +73,20 @@ test('a live command uses the injected gateway and refuses uncertain eligibility
     schemaVersion: 1, evidence: 'RECORDED', accountClass: 'ALWAYS_FREE', monthlyUsage: 'WITHIN_ALLOTMENT',
     imageCharge: 'NONE', networkCharge: 'NONE', storageCharge: 'NONE', capacity: 'UNKNOWN', compartmentQuota: 'FITS',
   }));
+  let inspected = false;
   const blocked = await OciHostCommand.deploy(args, {
-    now, clock, hooks: { ...liveHooks(), openGateway: () => { opened = true; return cloud; } },
+    now, clock, hooks: {
+      cloudInit: () => OciLiveHooks.create().cloudInit(),
+      inspect: async () => { inspected = true; return report; },
+      openGateway: () => { opened = true; return cloud; },
+      installAgent: async () => {},
+      verify: async () => {},
+    },
   });
   expect(blocked.code).toBe(2);
+  expect(inspected).toBe(true);
   expect(opened).toBe(false);
+  expect(await readFile(reportPath, 'utf8')).toContain('OCI_API');
   await writeFile(eligibilityPath, JSON.stringify({
     schemaVersion: 1, evidence: 'RECORDED', accountClass: 'ALWAYS_FREE', monthlyUsage: 'WITHIN_ALLOTMENT',
     imageCharge: 'NONE', networkCharge: 'NONE', storageCharge: 'NONE', capacity: 'AVAILABLE', compartmentQuota: 'FITS',
@@ -80,8 +95,10 @@ test('a live command uses the injected gateway and refuses uncertain eligibility
   const launched = await OciHostCommand.deploy(args, {
     now, clock, agentVersion: '2.2.7',
     hooks: {
-      cloudInit: password => liveHooks().cloudInit(password),
+      cloudInit: () => OciLiveHooks.create().cloudInit(),
+      inspect: async () => report,
       openGateway: () => cloud,
+      installAgent: async () => {},
       verify: async input => { verified.push(input.publicIp); },
     },
   });

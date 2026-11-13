@@ -36,7 +36,7 @@ export class OciFreeTierGate {
   } as const;
 
   static evaluate(input: {
-    report: OciInspection; eligibility: unknown; mode: 'DRY_RUN' | 'LIVE'; now?: Date;
+    report: OciInspection; eligibility: unknown; mode: 'DRY_RUN' | 'LIVE'; now?: Date; allowPayg?: boolean;
   }): DeploymentAuthorization {
     const eligibility = eligibilitySchema.parse(input.eligibility);
     const now = input.now ?? new Date();
@@ -46,6 +46,7 @@ export class OciFreeTierGate {
     if (eligibility.evidence === 'FIXTURE' && preview.source !== 'DEMO') blockers.push('FIXTURE_CANNOT_AUTHORIZE');
     if (input.mode === 'LIVE' && eligibility.evidence !== 'RECORDED') blockers.push('FIXTURE_CANNOT_AUTHORIZE');
     if (eligibility.accountClass === 'TRIAL') blockers.push('TRIAL_NOT_FREE_ONLY');
+    if (eligibility.accountClass === 'PAYG' && input.allowPayg !== true) blockers.push('PAYG_REQUIRES_OPT_IN');
     if (eligibility.accountClass === 'UNKNOWN') blockers.push('UNCERTAIN_ACCOUNT');
     if (eligibility.monthlyUsage === 'EXCEEDS') blockers.push('USAGE_EXCEEDS_FREE_ALLOTMENT');
     if (eligibility.monthlyUsage === 'UNKNOWN') blockers.push('UNCERTAIN_USAGE');

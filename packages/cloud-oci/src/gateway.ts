@@ -83,11 +83,13 @@ export interface LaunchTarget {
   imageId: string;
   sshPublicKey: string;
   userData: string;
+  deploymentId: string;
 }
 
 /** Mutation surface used by the provisioner. Live calls go through OciSdkGateway. */
 export interface OciGateway {
   useRegion(region: string): void;
+  useDeployment(deploymentId: string): void;
   close(): void;
   listAvailabilityDomains(compartmentId: string): Promise<string[]>;
   getCompartment(compartmentId: string): Promise<{ id: string; lifecycleState: string }>;

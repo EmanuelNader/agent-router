@@ -3,3 +3,5 @@ Allow group 'Default'/'AgentRouterProvisioners' to manage volume-family in compa
 Allow group 'Default'/'AgentRouterProvisioners' to manage virtual-network-family in compartment AgentRouter
 Allow group 'Default'/'AgentRouterProvisioners' to read instance-images in compartment AgentRouter
 Allow group 'Default'/'AgentRouterProvisioners' to inspect compartments in tenancy
+Allow group 'Default'/'AgentRouterProvisioners' to inspect tenancies in tenancy
+Allow group 'Default'/'AgentRouterProvisioners' to read resource-availability in tenancy

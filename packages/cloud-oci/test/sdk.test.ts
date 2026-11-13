@@ -3,6 +3,7 @@ import { core, OciError } from 'oci-sdk';
 import { OciSdkGateway } from '../src/sdk.js';
 import { OciResourcePlan } from '../src/plan.js';
 
+const deploymentId = `dep${'a'.repeat(16)}`;
 const target = {
   compartmentId: 'ocid1.compartment.oc1..examplecompartment',
   availabilityDomain: 'kIdk:PHX-AD-1',
@@ -10,7 +11,8 @@ const target = {
   imageId: 'ocid1.image.oc1..ubuntu',
   sshPublicKey: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFakeKeyForTestsOnly router',
   userData: Buffer.from('#!/bin/bash\necho ok\n').toString('base64'),
-  retryToken: `ar${'a'.repeat(32)}`,
+  deploymentId,
+  retryToken: `ar${'b'.repeat(32)}`,
 };
 
 test('the launch request is the free A1 profile and nothing billable', () => {
@@ -26,7 +28,7 @@ test('the launch request is the free A1 profile and nothing billable', () => {
   expect(request.launchInstanceDetails).not.toHaveProperty('launchVolumeAttachments');
   expect(request.launchInstanceDetails.sourceDetails).not.toHaveProperty('bootVolumeVpusPerGB');
   expect(request.launchInstanceDetails.sourceDetails).not.toHaveProperty('kmsKeyId');
-  expect(request.launchInstanceDetails.freeformTags).toEqual(OciResourcePlan.tags());
+  expect(request.launchInstanceDetails.freeformTags).toEqual(OciResourcePlan.tags(deploymentId));
 });
 
 test('SDK failures become fixed codes and a missing delete is success', async () => {
@@ -62,15 +64,15 @@ test('SDK failures become fixed codes and a missing delete is success', async ()
   await expect(gateway.launchInstance(target, target.retryToken)).rejects.toMatchObject({ code: 'OUT_OF_HOST_CAPACITY' });
   expect(JSON.stringify(seen)).toContain('VM.Standard.A1.Flex');
   expect(JSON.stringify(seen)).not.toContain('Out of host capacity');
-  await expect(gateway.deleteVcn('ocid1.vcn.oc1..missing')).resolves.toBeUndefined();
-  await expect(gateway.getVcn('ocid1.vcn.oc1..missing')).resolves.toBeNull();
+  await expect(gateway.deleteVcn('ocid1.vcn.oc1..missing')).rejects.toMatchObject({ code: 'NOT_AUTHORIZED' });
+  await expect(gateway.getVcn('ocid1.vcn.oc1..missing')).rejects.toMatchObject({ code: 'NOT_AUTHORIZED' });
   const instances = await gateway.listInstances(target.compartmentId);
   expect(instances.map(item => item.id)).toEqual(['ocid1.instance.oc1..one', 'ocid1.instance.oc1..two']);
 });
 
 function instance(name: string) {
   return {
-    id: `ocid1.instance.oc1..${name}`, displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(),
+    id: `ocid1.instance.oc1..${name}`, displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(deploymentId),
     lifecycleState: 'RUNNING', shape: 'VM.Standard.A1.Flex', availabilityDomain: 'kIdk:PHX-AD-1',
     shapeConfig: { ocpus: 1, memoryInGBs: 4 }, metadata: {},
   };

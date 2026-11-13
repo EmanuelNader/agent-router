@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import { OPENCODE_VERSION } from './server.js';
 import { OpenCodeClient } from './client.js';
 
@@ -12,12 +11,7 @@ export interface AgentEndpoint {
 
 /** Idempotent cloud-init for one loopback OpenCode server. No cloud credentials are embedded. */
 export class OpenCodeBootstrap {
-  static password(): string {
-    return randomBytes(32).toString('hex');
-  }
-
-  static cloudInit(password: string): string {
-    if (!/^[a-f0-9]{64}$/.test(password)) throw new Error('Invalid OpenCode password');
+  static cloudInit(): string {
     return `#!/bin/bash
 set -euo pipefail
 export PATH="/usr/local/bin:\${PATH}"
@@ -50,14 +44,11 @@ fi
 install -d -m 0700 -o opencode -g opencode \\
   /var/lib/agent-router/home /var/lib/agent-router/config /var/lib/agent-router/data \\
   /var/lib/agent-router/state /var/lib/agent-router/cache /var/lib/agent-router/workspace
-cat > /etc/agent-router/opencode.env <<'EOF'
-OPENCODE_PASSWORD=${password}
-EOF
-chmod 0600 /etc/agent-router/opencode.env
 cat > /etc/systemd/system/agent-router-opencode.service <<'EOF'
 [Unit]
 Description=Agent Router OpenCode
 After=network-online.target
+ConditionPathExists=/etc/agent-router/opencode.env
 [Service]
 Type=simple
 EnvironmentFile=/etc/agent-router/opencode.env
@@ -79,7 +70,7 @@ NoNewPrivileges=true
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable --now agent-router-opencode
+systemctl enable agent-router-opencode
 `;
   }
 

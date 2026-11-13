@@ -27,12 +27,15 @@ test('a fresh Always Free report can authorize one A1 host', () => {
   expect(result.profile).toMatchObject({ shape: 'VM.Standard.A1.Flex', ocpus: 1, memoryGb: 4, bootGb: 50 });
 });
 
-test('Pay As You Go is allowed only when monthly usage is inside the allotment', () => {
+test('Pay As You Go is refused unless the caller opts in and usage is inside the allotment', () => {
   expect(OciFreeTierGate.evaluate({
     report: report(), eligibility: { ...free, accountClass: 'PAYG' }, mode: 'LIVE', now,
+  }).blockers).toContain('PAYG_REQUIRES_OPT_IN');
+  expect(OciFreeTierGate.evaluate({
+    report: report(), eligibility: { ...free, accountClass: 'PAYG' }, mode: 'LIVE', now, allowPayg: true,
   }).provisioningAllowed).toBe(true);
   expect(OciFreeTierGate.evaluate({
-    report: report(), eligibility: { ...free, accountClass: 'PAYG', monthlyUsage: 'UNKNOWN' }, mode: 'LIVE', now,
+    report: report(), eligibility: { ...free, accountClass: 'PAYG', monthlyUsage: 'UNKNOWN' }, mode: 'LIVE', now, allowPayg: true,
   }).blockers).toContain('UNCERTAIN_USAGE');
 });
 

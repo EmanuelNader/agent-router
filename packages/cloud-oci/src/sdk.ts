@@ -15,6 +15,8 @@ interface Clients {
 
 /** Official SDK adapter. It can build only the free A1 launch request. */
 export class OciSdkGateway implements OciGateway {
+  private deploymentId = '';
+
   constructor(private readonly clients: Clients) {}
 
   static fromConfig(configPath: string, profile = 'DEFAULT'): OciSdkGateway {
@@ -50,12 +52,21 @@ export class OciSdkGateway implements OciGateway {
           subnetId: input.subnetId,
           assignPublicIp: true,
           displayName: OciResourcePlan.displayName,
-          freeformTags: OciResourcePlan.tags(),
-        },
-        metadata: { ssh_authorized_keys: input.sshPublicKey, user_data: input.userData },
-        freeformTags: OciResourcePlan.tags(),
+        freeformTags: OciResourcePlan.tags(input.deploymentId),
+      },
+      metadata: { ssh_authorized_keys: input.sshPublicKey, user_data: input.userData },
+      freeformTags: OciResourcePlan.tags(input.deploymentId),
       },
     };
+  }
+
+  useDeployment(deploymentId: string) {
+    this.deploymentId = deploymentId;
+    OciResourcePlan.tags(deploymentId);
+  }
+
+  private deploymentTags() {
+    return OciResourcePlan.tags(this.deploymentId);
   }
 
   useRegion(region: string) {
@@ -93,7 +104,7 @@ export class OciSdkGateway implements OciGateway {
       opcRetryToken: retryToken,
       createVcnDetails: {
         compartmentId, cidrBlocks: [OciResourcePlan.vcnCidr], displayName: OciResourcePlan.displayName,
-        dnsLabel: 'agentrt', freeformTags: OciResourcePlan.tags(), isIpv6Enabled: false,
+        dnsLabel: 'agentrt', freeformTags: this.deploymentTags(), isIpv6Enabled: false,
       },
     }));
     return this.vcn(response.vcn);
@@ -113,7 +124,7 @@ export class OciSdkGateway implements OciGateway {
     const response = await this.call(() => this.clients.network.createInternetGateway({
       opcRetryToken: retryToken,
       createInternetGatewayDetails: {
-        compartmentId, vcnId, isEnabled: true, displayName: OciResourcePlan.internetGatewayName, freeformTags: OciResourcePlan.tags(),
+        compartmentId, vcnId, isEnabled: true, displayName: OciResourcePlan.internetGatewayName, freeformTags: this.deploymentTags(),
       },
     }));
     return this.igw(response.internetGateway);
@@ -176,7 +187,7 @@ export class OciSdkGateway implements OciGateway {
       createSubnetDetails: {
         compartmentId: input.compartmentId, vcnId: input.vcnId, cidrBlock: OciResourcePlan.subnetCidr,
         displayName: OciResourcePlan.displayName, dnsLabel: 'agentsub', prohibitPublicIpOnVnic: false,
-        routeTableId: input.routeTableId, securityListIds: [input.securityListId], freeformTags: OciResourcePlan.tags(),
+        routeTableId: input.routeTableId, securityListIds: [input.securityListId], freeformTags: this.deploymentTags(),
       },
     }));
     return this.subnet(response.subnet);
@@ -237,7 +248,7 @@ export class OciSdkGateway implements OciGateway {
       bootVolumeId: id,
       updateBootVolumeDetails: {
         displayName: OciResourcePlan.bootVolumeName,
-        freeformTags: { ...current.freeformTags, ...OciResourcePlan.tags() },
+        freeformTags: { ...current.freeformTags, ...this.deploymentTags() },
       },
     }));
   }
@@ -263,7 +274,7 @@ export class OciSdkGateway implements OciGateway {
   private securityListDetails(compartmentId: string, vcnId: string, sshCidr: string) {
     const rules = OciResourcePlan.securityRules(sshCidr);
     return {
-      compartmentId, vcnId, displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(),
+      compartmentId, vcnId, displayName: OciResourcePlan.displayName, freeformTags: this.deploymentTags(),
       ingressSecurityRules: this.ingress(rules), egressSecurityRules: this.egress(rules),
     };
   }
@@ -423,6 +434,7 @@ export class OciSdkGateway implements OciGateway {
   private static failure(error: unknown): DeployError {
     if (error instanceof DeployError) return error;
     if (error instanceof OciError) {
+      if (error.serviceCode === 'NotAuthorizedOrNotFound') return new DeployError('NOT_AUTHORIZED');
       if (error.statusCode === 404) return new DeployError('NOT_FOUND');
       if (error.statusCode === 401 || error.statusCode === 403) return new DeployError('NOT_AUTHORIZED');
       if (error.serviceCode === 'LimitExceeded' || error.serviceCode === 'QuotaExceeded') return new DeployError('QUOTA_EXCEEDED');

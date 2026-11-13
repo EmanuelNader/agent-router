@@ -8,6 +8,9 @@ import { OciResourcePlan } from '../src/plan.js';
 /** In-memory Oracle account for provisioner tests. It never opens a socket. */
 export class MemoryCloud implements OciGateway {
   readonly calls = { launch: [] as string[], terminate: [] as string[], deleteVolume: [] as string[], createVcn: 0, updateSecurity: 0 };
+  readonly attempts: { imageId: string; shape: string; deploymentId: string }[] = [];
+  deploymentId = '';
+  denyGets = new Set<string>();
   failLaunch: 'none' | 'capacity' | 'after-create' = 'none';
   closed = false;
   domains = ['kIdk:PHX-AD-1'];
@@ -31,6 +34,8 @@ export class MemoryCloud implements OciGateway {
   private tokens = new Map<string, string>();
 
   useRegion() {}
+  useDeployment(deploymentId: string) { this.deploymentId = deploymentId; }
+  private tags() { return OciResourcePlan.tags(this.deploymentId); }
   close() { this.closed = true; }
   async listAvailabilityDomains() { return this.domains; }
   async getCompartment() { return this.compartment; }
@@ -40,7 +45,7 @@ export class MemoryCloud implements OciGateway {
     if (existing) return existing;
     const routeId = this.next('routetable');
     const vcn: VcnRecord = {
-      id: this.next('vcn'), displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(),
+      id: this.next('vcn'), displayName: OciResourcePlan.displayName, freeformTags: this.tags(),
       lifecycleState: 'AVAILABLE', defaultRouteTableId: routeId, cidrBlock: OciResourcePlan.vcnCidr,
     };
     this.vcns.push(vcn);
@@ -56,7 +61,7 @@ export class MemoryCloud implements OciGateway {
     const existing = this.remember(token, this.igws);
     if (existing) return existing;
     const igw: IgwRecord = {
-      id: this.next('igw'), displayName: OciResourcePlan.internetGatewayName, freeformTags: OciResourcePlan.tags(),
+      id: this.next('igw'), displayName: OciResourcePlan.internetGatewayName, freeformTags: this.tags(),
       lifecycleState: 'AVAILABLE', vcnId, isEnabled: true,
     };
     void compartmentId;
@@ -74,7 +79,7 @@ export class MemoryCloud implements OciGateway {
     if (existing) return existing;
     void compartmentId;
     const list: SecurityListRecord = {
-      id: this.next('seclist'), displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(),
+      id: this.next('seclist'), displayName: OciResourcePlan.displayName, freeformTags: this.tags(),
       lifecycleState: 'AVAILABLE', vcnId,
     };
     this.lists.push(list);
@@ -90,7 +95,7 @@ export class MemoryCloud implements OciGateway {
     if (existing) return existing;
     void input.compartmentId; void input.routeTableId; void input.securityListId;
     const subnet: SubnetRecord = {
-      id: this.next('subnet'), displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(),
+      id: this.next('subnet'), displayName: OciResourcePlan.displayName, freeformTags: this.tags(),
       lifecycleState: 'AVAILABLE', vcnId: input.vcnId, cidrBlock: OciResourcePlan.subnetCidr, prohibitPublicIpOnVnic: false,
     };
     this.subnets.push(subnet);
@@ -104,13 +109,14 @@ export class MemoryCloud implements OciGateway {
   async launchInstance(input: LaunchTarget, token: string) {
     const existing = this.instances.find(item => item.id === this.tokens.get(token));
     if (existing) return existing;
+    this.attempts.push({ imageId: input.imageId, shape: OciResourcePlan.shape, deploymentId: input.deploymentId });
     if (this.failLaunch === 'capacity') throw new DeployError('OUT_OF_HOST_CAPACITY');
     const id = this.next('instance');
     const volumeId = this.next('bootvolume');
     const vnicId = this.next('vnic');
     const instance: InstanceRecord = {
-      id, displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(),
-      lifecycleState: this.failLaunch === 'after-create' ? 'RUNNING' : 'RUNNING', shape: OciResourcePlan.shape,
+      id, displayName: OciResourcePlan.displayName, freeformTags: this.tags(),
+      lifecycleState: 'RUNNING', shape: OciResourcePlan.shape,
       availabilityDomain: input.availabilityDomain, ocpus: 1, memoryInGBs: 4, userData: input.userData,
     };
     this.instances.push(instance);
@@ -125,7 +131,10 @@ export class MemoryCloud implements OciGateway {
     if (this.failLaunch === 'after-create') throw new DeployError('REQUEST_FAILED');
     return instance;
   }
-  async getInstance(id: string) { return this.instances.find(item => item.id === id) ?? null; }
+  async getInstance(id: string) {
+    if (this.denyGets.has(id)) throw new DeployError('NOT_AUTHORIZED');
+    return this.instances.find(item => item.id === id) ?? null;
+  }
   async startInstance(id: string) {
     const instance = await this.getInstance(id);
     if (instance) instance.lifecycleState = 'RUNNING';
@@ -150,7 +159,7 @@ export class MemoryCloud implements OciGateway {
     const volume = await this.getBootVolume(id);
     if (!volume) return;
     volume.displayName = OciResourcePlan.bootVolumeName;
-    volume.freeformTags = { ...volume.freeformTags, ...OciResourcePlan.tags() };
+    volume.freeformTags = { ...volume.freeformTags, ...this.tags() };
   }
   async listBootVolumes(_compartmentId: string, availabilityDomain: string) {
     return this.volumes.filter(volume => volume.availabilityDomain === availabilityDomain);

@@ -17,16 +17,15 @@ test('state round-trips the password without making the file group-readable', as
   await OciDeployState.save(path, created);
   expect((await lstat(path)).mode & 0o077).toBe(0);
   expect(await OciDeployState.load(path)).toEqual(created);
-  const script = OpenCodeBootstrap.cloudInit(created.password);
-  expect(OciDeployState.passwordFromUserData(Buffer.from(script).toString('base64'))).toBe(created.password);
+  expect(OpenCodeBootstrap.cloudInit()).not.toContain(created.password);
   await chmod(path, 0o644);
   await expect(OciDeployState.load(path)).rejects.toMatchObject({ code: 'STATE_PERMISSIONS' });
 });
 
 test('a replaced instance token does not keep the old instance id', () => {
   const created = OciDeployState.create();
-  const cleared = OciDeployState.withoutInstance({ ...created, instanceId: 'ocid1.instance.oc1..old' });
-  expect(cleared.instanceId).toBeUndefined();
+  const cleared = OciDeployState.withoutInstance(OciDeployState.remember(created, { instanceId: 'ocid1.instance.oc1..old' }));
+  expect(cleared.resources.instanceId).toBeUndefined();
   expect(cleared.tokens.instance).not.toBe(created.tokens.instance);
   expect(cleared.password).toBe(created.password);
   expect(() => new DeployError('STATE_INVALID').code).not.toThrow();

@@ -1,4 +1,5 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { lstat } from 'node:fs/promises';
 import { createConnection, createServer } from 'node:net';
 
 export interface TunnelTarget {
@@ -7,6 +8,7 @@ export interface TunnelTarget {
   knownHostsPath: string;
   user?: string;
   remotePort?: number;
+  freshHost?: boolean;
 }
 
 /** Presents the instance loopback server as 127.0.0.1 so the existing client can use HTTP. */
@@ -29,12 +31,32 @@ export class SshLoopbackTunnel {
     ];
   }
 
+  static async forgetHost(knownHostsPath: string, host: string): Promise<void> {
+    if (!this.ipv4(host)) throw new Error('SSH_TUNNEL_FAILED');
+    try { await lstat(knownHostsPath); } catch { return; }
+    const child = spawn('ssh-keygen', ['-R', host, '-f', knownHostsPath], { stdio: 'ignore' });
+    await new Promise<void>(resolve => child.once('close', () => resolve()));
+  }
+
+  static async deliverPassword(input: TunnelTarget & { password: string }): Promise<void> {
+    if (!/^[a-f0-9]{64}$/.test(input.password)) throw new Error('SSH_TUNNEL_FAILED');
+    if (input.freshHost) await this.forgetHost(input.knownHostsPath, input.host);
+    const child = spawn('ssh', this.remoteArgs(input).concat(
+      'install -d -m 0755 /etc/agent-router && cat > /etc/agent-router/opencode.env && chmod 0600 /etc/agent-router/opencode.env && systemctl daemon-reload && systemctl enable --now agent-router-opencode',
+    ), { stdio: ['pipe', 'ignore', 'ignore'] });
+    child.stdin?.end(`OPENCODE_PASSWORD=${input.password}\n`);
+    await this.finished(child);
+  }
+
   static async open(input: TunnelTarget): Promise<{ baseUrl: string; close(): Promise<void> }> {
+    if (input.freshHost) await this.forgetHost(input.knownHostsPath, input.host);
     const localPort = await this.port();
     const child = spawn('ssh', this.commandArgs({ ...input, localPort }), { stdio: 'ignore' });
     let exited = false;
-    child.once('error', () => { exited = true; });
-    child.once('close', () => { exited = true; });
+    const closed = new Promise<void>(resolve => {
+      child.once('error', () => { exited = true; resolve(); });
+      child.once('close', () => { exited = true; resolve(); });
+    });
     const deadline = Date.now() + 20_000;
     while (Date.now() < deadline && !exited) {
       if (await this.accepts(localPort)) {
@@ -42,13 +64,32 @@ export class SshLoopbackTunnel {
           baseUrl: `http://127.0.0.1:${localPort}`,
           async close() {
             if (!exited && child.pid) child.kill('SIGTERM');
+            await closed;
           },
         };
       }
       await new Promise(resolve => setTimeout(resolve, 200));
     }
     if (!exited && child.pid) child.kill('SIGTERM');
+    await closed;
     throw new Error('SSH_TUNNEL_FAILED');
+  }
+
+  private static remoteArgs(input: TunnelTarget): string[] {
+    if (!this.ipv4(input.host)) throw new Error('SSH_TUNNEL_FAILED');
+    const user = input.user ?? 'ubuntu';
+    return [
+      '-i', input.privateKeyPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes',
+      '-o', 'StrictHostKeyChecking=accept-new', '-o', `UserKnownHostsFile=${input.knownHostsPath}`,
+      '-o', 'ConnectTimeout=15', `${user}@${input.host}`,
+    ];
+  }
+
+  private static finished(child: ChildProcess): Promise<void> {
+    return new Promise((resolve, reject) => {
+      child.once('error', () => reject(new Error('SSH_TUNNEL_FAILED')));
+      child.once('close', code => code === 0 ? resolve() : reject(new Error('SSH_TUNNEL_FAILED')));
+    });
   }
 
   private static ipv4(host: string): boolean {
