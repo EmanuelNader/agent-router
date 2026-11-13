@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.credentials/
+.work/
+.superpowers/
+dist/
+coverage/
+*.log
+*.pem
+*.key
+.DS_Store

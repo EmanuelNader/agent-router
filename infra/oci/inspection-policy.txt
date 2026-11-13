@@ -1,0 +1,3 @@
+Allow group 'Default'/'AgentRouterInspectors' to inspect tenancies in tenancy
+Allow group 'Default'/'AgentRouterInspectors' to inspect compartments in tenancy
+Allow group 'Default'/'AgentRouterInspectors' to read resource-availability in tenancy

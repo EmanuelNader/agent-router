@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "source": "DEMO",
+  "observedAt": "2026-11-12T00:00:00Z",
+  "homeRegion": "us-example-1",
+  "region": "us-example-1",
+  "availabilityDomain": "AD-1",
+  "metrics": {
+    "a1RegionalOcpus": { "status": "KNOWN", "limit": 2, "used": 0, "available": 2 },
+    "a1RegionalMemoryGb": { "status": "KNOWN", "limit": 12, "used": 0, "available": 12 },
+    "a1AdOcpus": { "status": "KNOWN", "limit": 2, "used": 0, "available": 2 },
+    "a1AdMemoryGb": { "status": "KNOWN", "limit": 12, "used": 0, "available": 12 },
+    "microInstances": { "status": "KNOWN", "limit": 2, "used": 1, "available": 1 },
+    "freeStorageGb": { "status": "KNOWN", "limit": 200, "used": 141, "available": 59 }
+  },
+  "issues": []
+}

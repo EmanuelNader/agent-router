@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+  - apps/*
+allowBuilds:
+  '@opencode/cli': true
+  esbuild: true
