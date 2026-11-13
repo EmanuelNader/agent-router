@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { sessionTransferSchema, type SessionTransfer } from '../../agent-opencode/src/client.js';
 import { SnapshotManifest, WORKSPACE_EXCLUSIONS, type SnapshotHost, type SnapshotManifestData } from '../../domain/src/snapshot.js';
-import { hashWorkspace } from '../../workspace/src/manifest.js';
+import { hashWorkspace, type FileReceipt } from '../../workspace/src/manifest.js';
 import { SnapshotPaths } from './paths.js';
 import type { CheckpointRepository } from './restic.js';
 
@@ -13,6 +13,8 @@ export interface CaptureRequest {
   session: SessionTransfer;
   host: SnapshotHost;
   repository: CheckpointRepository;
+  /** Test hook. Runs after the pre-copy receipt and before the staged copy. */
+  beforeCopy?: () => Promise<void> | void;
 }
 
 /** Quiesced workspace plus exported session, stored only in the encrypted repository. */
@@ -22,18 +24,33 @@ export class WorkspaceCapture {
     const parsed = sessionTransferSchema.safeParse(request.session);
     if (!parsed.success) throw new Error('OpenCode session export is invalid');
     const session = parsed.data;
-    const files = await hashWorkspace(workspace, WORKSPACE_EXCLUSIONS);
+    const observed = await hashWorkspace(workspace, WORKSPACE_EXCLUSIONS);
+    if (request.beforeCopy) await request.beforeCopy();
     const sessionBytes = Buffer.from(JSON.stringify(session));
     const stage = await mkdtemp(path.join(tmpdir(), 'router-checkpoint-'));
     try {
       await SnapshotPaths.assertDisjoint(workspace, stage, 'Checkpoint staging must stay outside the workspace');
       await SnapshotPaths.assertDisjoint(workspace, request.repository.directory(), 'Snapshot repository must be independent of the workspace');
-      await mkdir(request.repository.directory(), { recursive: true, mode: 0o700 });
-      await cp(workspace, path.join(stage, 'workspace'), {
+      const stagedWorkspace = path.join(stage, 'workspace');
+      await cp(workspace, stagedWorkspace, {
         recursive: true,
         filter: (source) => WorkspaceCapture.include(workspace, source),
       });
+      const files = await hashWorkspace(stagedWorkspace, WORKSPACE_EXCLUSIONS);
+      if (!WorkspaceCapture.sameReceipt(observed, files)) throw new Error('Workspace changed while it was being checkpointed');
+      await mkdir(request.repository.directory(), { recursive: true, mode: 0o700 });
+      const sessionRecord = { id: session.info.id, sha256: createHash('sha256').update(sessionBytes).digest('hex') };
+      const sealed = SnapshotManifest.seal({
+        workspaceId: request.host.workspaceId,
+        architecture: request.host.architecture,
+        platform: request.host.platform,
+        agentVersion: request.host.agentVersion,
+        runtimeDigest: request.host.runtimeDigest,
+        files,
+        session: sessionRecord,
+      });
       await writeFile(path.join(stage, 'session.json'), sessionBytes, { mode: 0o600 });
+      await writeFile(path.join(stage, 'manifest.json'), JSON.stringify(sealed), { mode: 0o600 });
       const stored = await request.repository.backup(stage);
       return SnapshotManifest.create({
         workspaceId: request.host.workspaceId,
@@ -44,11 +61,18 @@ export class WorkspaceCapture {
         snapshotId: stored.snapshotId,
         archivePath: stored.archivePath,
         files,
-        session: { id: session.info.id, sha256: createHash('sha256').update(sessionBytes).digest('hex') },
+        session: sessionRecord,
       });
     } finally {
       await rm(stage, { recursive: true, force: true });
     }
+  }
+
+  private static sameReceipt(actual: FileReceipt[], expected: FileReceipt[]): boolean {
+    return actual.length === expected.length && actual.every((file, index) => {
+      const other = expected[index];
+      return !!other && file.path === other.path && file.executable === other.executable && file.sha256 === other.sha256;
+    });
   }
 
   /** Keep the workspace root, and drop excluded directory names at every depth before copy. */

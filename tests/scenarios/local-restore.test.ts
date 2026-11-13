@@ -224,6 +224,36 @@ test('refuses an existing empty restore directory and leaves it in place', async
   })).rejects.toThrow('Restore target parent must exist');
 }, 60_000);
 
+test('fails the checkpoint when the workspace changes before it is copied', async () => {
+  const harness = await CheckpointHarness.open();
+  await expect(WorkspaceCapture.checkpoint({
+    workspaceDirectory: harness.workspace,
+    session: savedSession,
+    host: harness.host,
+    repository: harness.repository,
+    beforeCopy: async () => { await writeFile(path.join(harness.workspace, 'notes.txt'), 'changed during capture\n'); },
+  })).rejects.toThrow('Workspace changed while it was being checkpointed');
+  await expect(lstat(harness.repository.directory())).rejects.toThrow();
+  expect(await readFile(path.join(harness.workspace, 'notes.txt'), 'utf8')).toBe('changed during capture\n');
+});
+
+test('refuses a manifest whose workspace id was relabeled', async () => {
+  const harness = await CheckpointHarness.open();
+  const manifest = await harness.capture();
+  const workspaceId = randomUUID();
+  const target = path.join(harness.root, 'relabeled');
+  await expect(WorkspaceRestore.restore({
+    manifest: { ...manifest, workspaceId },
+    repository: harness.repository,
+    host: { ...harness.host, workspaceId },
+    targetDirectory: target,
+  })).rejects.toMatchObject({
+    code: 'TAMPERED',
+    message: 'Snapshot was tampered: manifest metadata does not match the checkpoint',
+  });
+  await expect(lstat(target)).rejects.toThrow();
+}, 60_000);
+
 test('fresh OpenCode process keeps the checkpointed history and accepts another command', async () => {
   const harness = await CheckpointHarness.open();
   let source: Awaited<ReturnType<typeof startIsolatedServer>> | undefined;

@@ -30,7 +30,9 @@ export const snapshotManifestSchema = z.strictObject({
   exclusions: z.array(z.string()),
 });
 
+export const snapshotBindingSchema = snapshotManifestSchema.omit({ snapshotId: true, archivePath: true });
 export type SnapshotManifestData = z.infer<typeof snapshotManifestSchema>;
+export type SnapshotBinding = z.infer<typeof snapshotBindingSchema>;
 export type SnapshotFailure = 'CORRUPTED' | 'TAMPERED' | 'WRONG_VERSION' | 'INCOMPLETE';
 
 export interface SnapshotHost {
@@ -77,6 +79,23 @@ export class SnapshotManifest {
       resticVersion: RESTIC_VERSION,
       exclusions: [...WORKSPACE_EXCLUSIONS],
     });
+  }
+
+  /** Fields stored inside the encrypted snapshot. snapshotId and archivePath are assigned after backup. */
+  static seal(input: Omit<SnapshotManifestData, 'formatVersion' | 'consistency' | 'resticVersion' | 'exclusions' | 'snapshotId' | 'archivePath'>): SnapshotBinding {
+    return SnapshotManifest.binding(SnapshotManifest.create({ ...input, snapshotId: '0'.repeat(64), archivePath: '/checkpoint' }));
+  }
+
+  static binding(manifest: SnapshotManifestData): SnapshotBinding {
+    const { snapshotId, archivePath, ...bound } = manifest;
+    void snapshotId;
+    void archivePath;
+    return snapshotBindingSchema.parse(bound);
+  }
+
+  static sameBinding(manifest: SnapshotManifestData, stored: unknown): boolean {
+    const parsed = snapshotBindingSchema.safeParse(stored);
+    return parsed.success && JSON.stringify(parsed.data) === JSON.stringify(SnapshotManifest.binding(manifest));
   }
 
   static assertCompatible(manifest: SnapshotManifestData, host: SnapshotHost): void {

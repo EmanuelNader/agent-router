@@ -5,7 +5,7 @@ Recorded 2026-11-13 on Linux x86_64. This file is part of the commit that record
 | Check | Observed result |
 | --- | --- |
 | Runtime | Node v24.22.3, pnpm 11.25.0, restic 0.19.1 compiled with go1.26.4 |
-| `pnpm check` | PASS: typecheck and 42 tests |
+| `pnpm check` | PASS: typecheck and 45 tests |
 | Encrypted checkpoint | PASS: restic 0.19.1 repository, password file outside the Git checkout |
 | Plaintext in repository | PASS: fixture phrases absent from repository bytes |
 | Fresh-directory restore | PASS: file hashes, executable script, hidden and untracked files, rename, Git HEAD/index/status |
@@ -58,7 +58,7 @@ restic 0.19.1 compiled with go1.26.4 on linux/amd64
 | `pnpm agent:roundtrip` | 4.793s | 0 |
 | `pnpm agent:restore` | 11.046s | 0 |
 
-Inside the re-run of `agent:restore`, capture took 3621 ms, restore 2167 ms, and the fresh OpenCode process became ready and imported the session in 234 ms. `pnpm check` passed 12 files and 42 tests. Probe and round trip times are from the earlier run on the same machine; those scripts did not change.
+Inside the re-run of `agent:restore`, capture took 3621 ms, restore 2167 ms, and the fresh OpenCode process became ready and imported the session in 234 ms. After the manifest was sealed into the snapshot, `pnpm check` passed 12 files and 45 tests in 44.84s. Probe and round trip times are from the earlier run on the same machine; those scripts did not change.
 
 ## What is checkpointed
 
@@ -106,6 +106,8 @@ Observed snapshot id from the re-run: `b3cfe51ca906c61d005b3a9dd423f0cfdce0924c1
 | Symlink inside the workspace | Capture throws before backup |
 | Repository directory inside the workspace | Snapshot repository must be independent of the workspace, and `nested-repo` is not created |
 | Existing empty restore directory | Restore target must not already exist, and the caller's directory is left empty |
+| Workspace id relabeled to match the host | `TAMPERED`: Snapshot was tampered: manifest metadata does not match the checkpoint |
+| File changes between the receipt and the copy | Capture throws `Workspace changed while it was being checkpointed` and does not create a repository |
 
 A wrong-version manifest is rejected before restore writes a workspace. Tamper and corruption checks delete the target directory when verification fails.
 
@@ -117,3 +119,4 @@ A wrong-version manifest is rejected before restore writes a workspace. Tamper a
 - No model credential was used. The continued command is a fixed shell `printf`, not model recall.
 - The restic repository is a local directory created for the test, not off-host object storage. Retention, locks across hosts, and pruning were not exercised.
 - `restic check --read-data` covered these small repositories only. The restic wrapper's 60 second limit and 1 MB output cap are sized for this fixture, not for a large workspace.
+- The sealed manifest inside the snapshot binds the workspace id, host fields, exclusions, file receipt, and session digest. Relabeling those fields on the copy held outside the repository is refused. Restoring an older snapshot with the older manifest that belongs to it is not refused. Nothing records that a checkpoint has been superseded.

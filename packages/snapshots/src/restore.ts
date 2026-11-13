@@ -67,6 +67,7 @@ export class WorkspaceRestore {
     if (!WorkspaceRestore.sameFiles(files, manifest.files)) {
       throw new SnapshotError('TAMPERED', 'Snapshot was tampered: restored file hashes do not match the manifest');
     }
+    await WorkspaceRestore.verifyBinding(target, manifest);
     return { workspaceDirectory, session };
   }
 
@@ -75,6 +76,20 @@ export class WorkspaceRestore {
       const other = expected[index];
       return !!other && file.path === other.path && file.executable === other.executable && file.sha256 === other.sha256;
     });
+  }
+
+  /** An older manifest that still matches its own snapshot is not rejected. Nothing here marks a checkpoint as the latest. */
+  private static async verifyBinding(target: string, manifest: SnapshotManifestData): Promise<void> {
+    const bindingPath = path.join(target, 'manifest.json');
+    const bindingStat = await WorkspaceRestore.optionalStat(bindingPath);
+    if (!bindingStat?.isFile()) throw new SnapshotError('INCOMPLETE', 'Snapshot is incomplete: missing manifest binding');
+    let stored: unknown;
+    try { stored = JSON.parse((await readFile(bindingPath)).toString('utf8')); }
+    catch { throw new SnapshotError('INCOMPLETE', 'Snapshot is incomplete: manifest binding is unreadable'); }
+    if (!SnapshotManifest.sameBinding(manifest, stored)) {
+      throw new SnapshotError('TAMPERED', 'Snapshot was tampered: manifest metadata does not match the checkpoint');
+    }
+    await chmod(bindingPath, 0o600);
   }
 
   private static async optionalStat(file: string) {

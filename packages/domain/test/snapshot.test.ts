@@ -18,6 +18,7 @@ const manifest = SnapshotManifest.create({
 test('accepts a versioned manifest for this host', () => {
   expect(SnapshotManifest.parse(manifest)).toEqual(manifest);
   expect(() => SnapshotManifest.assertCompatible(manifest, host)).not.toThrow();
+  expect(SnapshotManifest.sameBinding(manifest, SnapshotManifest.binding(manifest))).toBe(true);
 });
 
 test('refuses a different snapshot format before treating it as restorable', () => {
@@ -46,4 +47,9 @@ test('refuses an incomplete manifest and a mismatched agent version', () => {
     return;
   }
   throw new Error('Mismatched agent version was accepted');
+});
+
+test('does not treat a relabeled workspace id as the same sealed manifest', () => {
+  const relabeled = { ...manifest, workspaceId: '22222222-2222-4222-8222-222222222222' };
+  expect(SnapshotManifest.sameBinding(relabeled, SnapshotManifest.binding(manifest))).toBe(false);
 });
