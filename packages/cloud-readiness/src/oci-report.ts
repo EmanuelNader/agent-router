@@ -13,7 +13,7 @@ export const metricKeys = ['a1RegionalOcpus', 'a1RegionalMemoryGb', 'a1AdOcpus',
 export type MetricKey = typeof metricKeys[number];
 export const regionSchema = z.string().regex(/^[a-z]{2,3}-[a-z0-9-]+-\d+$/);
 export const inspectionSchema = z.object({
-  schemaVersion: z.literal(1), source: z.enum(['OCI_API', 'DEMO']), observedAt: z.iso.datetime(),
+  schemaVersion: z.literal(1), source: z.enum(['OCI_API', 'DEMO']).nullable(), observedAt: z.iso.datetime(),
   homeRegion: regionSchema.nullable(), region: regionSchema.nullable(),
   availabilityDomain: z.string().regex(/^AD-\d+$/).nullable(),
   metrics: z.object({
@@ -35,11 +35,17 @@ export const deploymentRequestSchema = z.object({
 }).refine(value => value.memoryGb >= value.ocpus, 'Request at least 1 GB memory per OCPU');
 export type DeploymentRequest = z.infer<typeof deploymentRequestSchema>;
 
-export function emptyInspection(): OciInspection {
-  return {
-    schemaVersion: 1, source: 'OCI_API', observedAt: new Date().toISOString(),
-    homeRegion: null, region: null, availabilityDomain: null,
-    metrics: Object.fromEntries(metricKeys.map(key => [key, { status: 'UNKNOWN', reason: 'NOT_INSPECTED' }])) as OciInspection['metrics'],
-    issues: [],
-  };
+export class OciReport {
+  static emptyInspection(): OciInspection {
+    return {
+      schemaVersion: 1, source: null, observedAt: new Date().toISOString(),
+      homeRegion: null, region: null, availabilityDomain: null,
+      metrics: Object.fromEntries(metricKeys.map(key => [key, { status: 'UNKNOWN', reason: 'NOT_INSPECTED' }])) as OciInspection['metrics'],
+      issues: [],
+    };
+  }
+
+  static readonly empty = OciReport.emptyInspection;
 }
+
+export const emptyInspection = OciReport.emptyInspection;

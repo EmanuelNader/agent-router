@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
-import { previewOciDeployment } from '../src/oci-plan.js';
-import type { OciInspection } from '../src/oci-report.js';
+import { OciPlanner, previewOciDeployment } from '../src/oci-plan.js';
+import { emptyInspection, type OciInspection } from '../src/oci-report.js';
 
 const now = new Date('2026-11-12T20:00:00Z');
 const request = { ocpus: 1, memoryGb: 4, bootGb: 50, additionalInstances: 1 };
@@ -24,6 +24,10 @@ test('a fitting preview retains demo provenance and cannot authorize provisionin
   expect(result.provisioningAllowed).toBe(false);
   expect(result.candidate).toMatchObject({ shape: 'VM.Standard.A1.Flex', architecture: 'arm64', ocpus: 1 });
   expect(result.unverified).toContain('PHYSICAL_CAPACITY');
+
+  // Verify class with static function matches
+  const classResult = OciPlanner.previewDeployment(report(), request, now);
+  expect(classResult).toEqual(result);
 });
 
 test('retained storage usage blocks another disk even when a micro slot is free', () => {
@@ -44,7 +48,7 @@ test('regional and AD limits are both enforced', () => {
   }
 });
 
-test('unknown, stale, future, or non-home evidence cannot fit', () => {
+test('unknown, stale, future, non-home evidence, or missing source cannot fit', () => {
   const unknown = report(); unknown.metrics.a1AdOcpus = { status: 'UNKNOWN', reason: 'REQUEST_FAILED' };
   expect(previewOciDeployment(unknown, request, now).status).toBe('BLOCKED');
   const stale = report(); stale.observedAt = '2026-11-12T19:44:59Z';
@@ -53,6 +57,11 @@ test('unknown, stale, future, or non-home evidence cannot fit', () => {
   expect(previewOciDeployment(future, request, now).blockers).toContain('FUTURE_EVIDENCE');
   const other = report(); other.region = 'us-other-1';
   expect(previewOciDeployment(other, request, now).blockers).toContain('REGION_NOT_HOME');
+
+  const empty = emptyInspection();
+  const emptyPreview = previewOciDeployment(empty, request, now);
+  expect(emptyPreview.status).toBe('BLOCKED');
+  expect(emptyPreview.blockers).toContain('SOURCE_UNKNOWN');
 });
 
 test('invalid report values and impossible or unsafe requests are rejected', () => {

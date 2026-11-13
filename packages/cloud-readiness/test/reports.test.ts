@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { awsReadiness } from '../src/reports.js';
+import { AwsReports, awsReadiness } from '../src/reports.js';
 
 test('AWS plan discovery alone cannot authorize provisioning', () => {
   const raw = { accountId: 'private-account', accountPlanType: 'FREE' as const, accountPlanStatus: 'ACTIVE' as const };
@@ -8,4 +8,8 @@ test('AWS plan discovery alone cannot authorize provisioning', () => {
   expect(report.provisioningAllowed).toBe(false);
   expect(report.freeComputeEligibility).toBe('UNKNOWN');
   expect(JSON.stringify(report)).not.toContain('private-account');
+
+  // Verify class with static function produces identical results
+  const classReport = AwsReports.readiness(raw);
+  expect(classReport).toEqual(report);
 });

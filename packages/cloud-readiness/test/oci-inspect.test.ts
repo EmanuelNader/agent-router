@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
-import { inspectOci, readMetric, type OciReader, type MetricQuery } from '../src/oci-inspect.js';
+import { OciInspector, inspectOci, readMetric, type OciReader, type MetricQuery } from '../src/oci-inspect.js';
+import { OciReport, emptyInspection } from '../src/oci-report.js';
 
 const query: MetricQuery = { serviceName: 'compute', name: 'standard-a1-core-regional-count', scope: 'REGION' };
 const value = { name: query.name, scopeType: 'REGION', value: 2 };
@@ -51,6 +52,35 @@ test('inspects the home region and exact AD while omitting identities from the r
   expect(queries.filter(input => input.scope === 'REGION').every(input => !input.availabilityDomain)).toBe(true);
   expect(queries.filter(input => input.scope === 'AD').every(input => input.availabilityDomain === 'private-prefix:US-EXAMPLE-1-AD-1')).toBe(true);
   expect(JSON.stringify(result)).not.toContain('private-prefix');
+
+  // Verify OciInspector class static inspect method matches inspectOci
+  const classResult = await OciInspector.inspect(reader());
+  expect(classResult.source).toBe('OCI_API');
+  expect(classResult.homeRegion).toBe('us-example-1');
+});
+
+test('emptyInspection starts with null source and sets OCI_API only when real API data is present', async () => {
+  const empty = emptyInspection();
+  expect(empty.source).toBeNull();
+  expect(OciReport.emptyInspection().source).toBeNull();
+
+  // When auth/region discovery fails, no real API data is present -> source remains null
+  const authFailed = await inspectOci(reader({
+    regions: async () => { throw new Error('API connection failed'); },
+  }));
+  expect(authFailed.source).toBeNull();
+  expect(authFailed.issues).toContain('AUTH_OR_REGION_DISCOVERY_FAILED');
+
+  // When region list is empty, no real API data is present -> source remains null
+  const emptyRegions = await inspectOci(reader({
+    regions: async () => [],
+  }));
+  expect(emptyRegions.source).toBeNull();
+  expect(emptyRegions.issues).toContain('HOME_REGION_UNKNOWN');
+
+  // When real API region data is present -> source is set to OCI_API
+  const success = await inspectOci(reader());
+  expect(success.source).toBe('OCI_API');
 });
 
 test('does not guess a home region or AD and rejects a different region', async () => {

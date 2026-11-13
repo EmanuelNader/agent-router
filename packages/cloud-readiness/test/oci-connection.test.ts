@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { common } from 'oci-sdk';
 import { afterEach, beforeEach, expect, test } from 'vitest';
-import { prepareOciKey, writeOciConfig } from '../src/oci-connection.js';
+import { OciConnection, prepareOciKey, writeOciConfig } from '../src/oci-connection.js';
 
 let root: string;
 let directory: string;
@@ -34,6 +34,13 @@ test('generated RSA credentials are owner-only and load through the pinned OCI S
   expect(auth.getRegion().regionId).toBe(account.region);
   expect(auth.getFingerprint()).toBe(prepared.fingerprint);
   expect(prepared).not.toHaveProperty('privateKey');
+
+  // Verify OciConnection static methods produce equivalent behavior
+  const classDirectory = join(root, 'class-credentials');
+  const classPrepared = await OciConnection.prepareKey(classDirectory);
+  expect(classPrepared.fingerprint).toMatch(/^([0-9a-f]{2}:){15}[0-9a-f]{2}$/);
+  const classConfigured = await OciConnection.writeConfig(classDirectory, account);
+  expect((await lstat(classConfigured.configPath)).mode & 0o777).toBe(0o600);
 });
 
 test('prepare and configure preserve existing files and reject config injection', async () => {
