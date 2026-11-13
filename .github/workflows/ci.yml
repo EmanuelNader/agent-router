@@ -18,5 +18,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm plan:oci --demo
+      - run: pnpm deploy:oci --dry-run --demo
+      - run: pnpm destroy:oci --dry-run
       - run: pnpm agent:probe
       - run: pnpm agent:roundtrip

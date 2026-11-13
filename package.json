@@ -20,7 +20,9 @@
     "inspect:aws": "tsx scripts/inspect-aws.ts",
     "connect:oci": "tsx scripts/connect-oci.ts",
     "inspect:oci": "tsx scripts/inspect-oci.ts",
-    "plan:oci": "tsx scripts/plan-oci.ts"
+    "plan:oci": "tsx scripts/plan-oci.ts",
+    "deploy:oci": "tsx scripts/deploy-oci.ts",
+    "destroy:oci": "tsx scripts/destroy-oci.ts"
   },
   "devDependencies": {
     "@opencode/cli": "2.2.7",

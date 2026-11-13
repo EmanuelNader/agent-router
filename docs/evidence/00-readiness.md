@@ -20,7 +20,7 @@ Recorded 2026-11-12. This is a partial readiness milestone, not a production or 
 | OCI SDK account discovery | UNTESTED LIVE | Read-only collector implemented; standard local config absent; no signing key read or SDK cloud request made |
 | Oracle deployment preview | PASS LOCALLY | Synthetic quota-fit, insufficient-storage, AD/regional-limit, missing-data, and freshness checks; provisioning always disabled |
 | AWS account discovery | UNTESTED | No AWS account connected |
-| Cloud provisioning and free eligibility | NOT IMPLEMENTED | Read-only discovery cannot authorize launch |
+| Cloud provisioning and free eligibility | CODE ONLY | Free-only deploy/destroy path, mocked OCI tests, and dry run; no live tenancy call |
 | Automatic migration/stable ingress | NOT IMPLEMENTED | Later milestone |
 
 ## Reproduce
@@ -63,4 +63,10 @@ Console observations are not substituted for live SDK evidence. The user reporte
 
 Oracle's [current Always Free documentation](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) describes 2 A1 OCPUs/12 GB equivalent, consistent with the console observation. Production eligibility must derive from current account benefits and measured usage. [Limits APIs](https://docs.oracle.com/en-us/iaas/Content/General/service-limits/view-tenancy.htm) may omit availability for some resources; omitted values remain UNKNOWN. [Boot-volume documentation](https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/bootvolumes.htm) confirms that termination can preserve the associated volume. Preview does not reserve capacity or release storage.
 
-Local validation on Ubuntu x64 with Node 24.22.3 and pnpm 11.25.0: TypeScript checks and 26 unit tests pass, along with `pnpm readiness`, the auth/config probe, and the native round trip. CLI smoke checks cover a fitting demo (exit 0), insufficient storage for two additional VMs (exit 2), invalid resource input (exit 1), absent config (exit 1), help (exit 0), and an invalid config path with sanitized error output (exit 1). CI runs install, typecheck, test, the credential-free demo, the probe, and the round trip. Live account calls and actual launch remain untested.
+Local validation on Ubuntu x64 with Node 24.22.3 and pnpm 11.25.0: TypeScript checks and the unit suite pass, including mocked OCI deploy, reuse, capacity failure, and discord-bot exclusion, along with `pnpm readiness`, the auth/config probe, and the native round trip. CLI smoke checks cover a fitting quota demo (exit 0), insufficient storage for two additional VMs (exit 2), invalid resource input (exit 1), absent config (exit 1), help (exit 0), an invalid config path with sanitized error output (exit 1), `deploy:oci --dry-run --demo`, and `destroy:oci --dry-run`. CI runs install, typecheck, test, the credential-free demos, the probe, and the round trip. Live account calls and an actual launch remain untested.
+
+## Oracle deploy slice
+
+`deploy:oci` and `destroy:oci` extend the quota preview with an explicit free-tier gate. The gate still refuses a quota-only preview: demo data, fixture evidence, trial accounts, known image/network/storage charges, and any unknown eligibility field cannot launch. The provisioner creates one `VM.Standard.A1.Flex` instance at 1 OCPU, 4 GB, and 50 GB, reuses a tagged VCN, and starts pinned OpenCode 2.2.7 on `127.0.0.1:4096`. Health uses `OpenCodeClient` through an SSH local forward. Destroy deletes only resources whose display name and `agent-router-managed=opencode` tag both match, so a pre-existing instance such as `discord-bot` is outside the set.
+
+No Oracle API call was made while implementing this slice. The owner runbook is `docs/plans/2026-11-13-oci-opencode-deploy.md`.

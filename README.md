@@ -2,7 +2,7 @@
 
 Run a coding agent on compute in your own cloud accounts, with portable saved work and allowance-aware host selection.
 
-**Status: compatibility harness and Oracle deployment preview.** Automatic VPS provisioning, allowance monitoring, provider switching, and a stable public connection are planned. They are not implemented yet. Oracle Cloud is the first intended provider; OpenCode is the first agent adapter.
+**Status: compatibility harness, Oracle deployment preview, and a free-only deploy command.** The deploy command can create one Always Free A1 host and remove only the resources it tagged. It has not been executed against a live tenancy. Allowance monitoring, provider switching, and a stable public connection are still planned.
 
 ## Run the local proof
 
@@ -71,6 +71,15 @@ pnpm plan:oci --report .work/oci-readiness.json
 Refresh inspection after deleting instances; retained boot/block volumes still consume storage. Preview reports older than 15 minutes, reports from the future, non-home-region requests, and incomplete required metrics are blocked. `--additional-instances` means new VMs beyond the current observed usage, not the desired total instance count. The initial preview supports A1 requests with 1–2 OCPUs, 1–12 GB memory (at least 1 GB per OCPU), and 50–200 GB per boot disk. These conservative preview bounds are not shape maxima.
 
 Exit codes for `plan:oci`: 0 = quota fits, 2 = quota comparison blocked, 1 = invalid inputs. Source reports contain only selected quota metadata, but should still stay under ignored `.work/`. No file import can authorize a launch.
+
+## Dry-run an OpenCode host
+
+```sh
+pnpm deploy:oci --dry-run --demo
+pnpm destroy:oci --dry-run
+```
+
+The demo dry run prints the one A1 VM, reused network, and loopback OpenCode server it would create, and the tagged set `destroy` would delete. It does not read credentials or call Oracle. A real launch also refuses demo data, unknown eligibility, and any known charge. See the [deploy runbook](docs/plans/2026-11-13-oci-opencode-deploy.md).
 
 ## Boundaries and next steps
 

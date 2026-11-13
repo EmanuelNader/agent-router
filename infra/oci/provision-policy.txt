@@ -1,0 +1,5 @@
+Allow group 'Default'/'AgentRouterProvisioners' to manage instance-family in compartment AgentRouter
+Allow group 'Default'/'AgentRouterProvisioners' to manage volume-family in compartment AgentRouter
+Allow group 'Default'/'AgentRouterProvisioners' to manage virtual-network-family in compartment AgentRouter
+Allow group 'Default'/'AgentRouterProvisioners' to read instance-images in compartment AgentRouter
+Allow group 'Default'/'AgentRouterProvisioners' to inspect compartments in tenancy

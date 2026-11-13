@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "evidence": "FIXTURE",
+  "accountClass": "ALWAYS_FREE",
+  "monthlyUsage": "WITHIN_ALLOTMENT",
+  "imageCharge": "NONE",
+  "networkCharge": "NONE",
+  "storageCharge": "NONE",
+  "capacity": "AVAILABLE",
+  "compartmentQuota": "FITS"
+}
