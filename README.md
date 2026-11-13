@@ -2,7 +2,7 @@
 
 Run a coding agent on compute in your own cloud accounts, with portable saved work and allowance-aware host selection.
 
-**Status: initial compatibility harness.** Automatic VPS provisioning, allowance monitoring, provider switching, and a stable public connection are planned. They are not implemented yet. Oracle Cloud is the first intended provider; OpenCode is the first agent adapter.
+**Status: compatibility harness and Oracle deployment preview.** Automatic VPS provisioning, allowance monitoring, provider switching, and a stable public connection are planned. They are not implemented yet. Oracle Cloud is the first intended provider; OpenCode is the first agent adapter.
 
 ## Run the local proof
 
@@ -29,13 +29,38 @@ pnpm inspect:oci --config /absolute/path/to/oci-config --profile DEFAULT
 pnpm inspect:aws --region us-east-1
 ```
 
-OCI requires an existing API-signing configuration and permission to list the tenancy's region subscriptions. AWS uses the SDK credential chain and reads STS identity plus the Free Tier account plan. The scripts print selected metadata, omit account identifiers, and always return `provisioningAllowed: false`. Live account calls have not been verified for this project. Connection discovery does not establish free allowance, available capacity, or zero cost.
+OCI requires an existing API-signing configuration and permission to list region subscriptions/availability domains and read tenancy-level limits and resource availability. It discovers the home region, reads regional and AD-level A1 quotas, micro quota, and remaining regional free storage. Multiple ADs require an explicit `--availability-domain` selection using the exact OCI name. Missing/denied/ambiguous data remains UNKNOWN; incomplete inspection exits 1. Requests have a shared 30-second deadline and do not retry automatically.
+
+AWS uses the SDK credential chain and reads STS identity plus the Free Tier account plan. Both scripts omit account identifiers and always return `provisioningAllowed: false`. Live SDK account calls have not been verified for this project. Quota availability does not establish free allowance, physical capacity, or zero cost.
+
+## Preview an Oracle deployment
+
+Try without credentials or cloud calls:
+
+```sh
+pnpm plan:oci --demo
+pnpm plan:oci --demo --additional-instances 2
+```
+
+The synthetic demo shows one A1 VM with 1 OCPU, 4 GB memory, and a 50 GB boot disk fitting quota. Two additional VMs fail its storage check. Demo results are labelled `DEMO` and do not reflect your account. `QUOTA_FITS` means only that the requested resources fit the recorded quotas. Every preview keeps provisioning disabled and lists the remaining entitlement, capacity, image, compartment, and cost checks.
+
+For a real report after configuring API access:
+
+```sh
+mkdir -p .work
+pnpm inspect:oci --config /absolute/path/to/oci-config > .work/oci-readiness.json
+pnpm plan:oci --report .work/oci-readiness.json
+```
+
+Refresh inspection after deleting instances; retained boot/block volumes still consume storage. Preview reports older than 15 minutes, reports from the future, non-home-region requests, and incomplete required metrics are blocked. `--additional-instances` means new VMs beyond the current observed usage, not the desired total instance count. The initial preview supports A1 requests with 1–2 OCPUs, 1–12 GB memory (at least 1 GB per OCPU), and 50–200 GB per boot disk. These conservative preview bounds are not shape maxima.
+
+Exit codes for `plan:oci`: 0 = quota fits, 2 = quota comparison blocked, 1 = invalid inputs. Source reports contain only selected quota metadata, but should still stay under ignored `.work/`. No file import can authorize a launch.
 
 ## Boundaries and next steps
 
 - Export/import preserves supported settled history. OpenCode's pending prompt inbox is separate and is not included in the transcript export. Migration must drain or explicitly preserve pending work before cutover.
 - A workspace copy requires quiesced writers. The current receipt rejects symlinks and special files, excludes `.git`, and records file bytes and executable flags. Git checks are separate; this is not a production snapshot engine.
 - Real model authentication/resumption, native CLI reconnection, production backups, and cloud migration remain untested.
-- Next: inspect Oracle access and tenancy-wide usage, implement consistent snapshots with restore verification, then add a narrowly scoped OCI provisioner with explicit eligibility/cost checks and cleanup. Add a second eligible provider before testing cross-provider migration.
+- Next: configure and verify live Oracle API access, verify entitlements/monthly usage, image compatibility, capacity and related costs, then implement consistent snapshots and a narrowly scoped OCI provisioner with reconciliation and cleanup. Add a second eligible provider before testing cross-provider migration.
 
 See [observed evidence](docs/evidence/00-readiness.md), the [first milestone brief](docs/plans/agent-router-first-milestone.md), [execution plan](docs/plans/agent-router-execution-plan.md), and [technical research](docs/research/agent-router-technical-build-blueprint.md). The earlier plans are design inputs; the evidence report is the current implementation status.

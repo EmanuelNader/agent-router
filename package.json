@@ -18,7 +18,8 @@
     "agent:probe": "tsx scripts/probe-agent.ts",
     "agent:roundtrip": "tsx scripts/agent-roundtrip.ts",
     "inspect:aws": "tsx scripts/inspect-aws.ts",
-    "inspect:oci": "tsx scripts/inspect-oci.ts"
+    "inspect:oci": "tsx scripts/inspect-oci.ts",
+    "plan:oci": "tsx scripts/plan-oci.ts"
   },
   "devDependencies": {
     "@opencode/cli": "2.2.7",

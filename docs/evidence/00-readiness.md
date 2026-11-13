@@ -16,7 +16,9 @@ Recorded 2026-11-12. This is a partial readiness milestone, not a production or 
 | Model inference and conversational recall | UNTESTED | No model credential supplied or accessed |
 | Native CLI reconnect | UNTESTED | HTTP client exercised; interactive terminal client not exercised |
 | Linux runtime | UNTESTED locally | Ubuntu CI configured; record actual CI result separately |
-| OCI account discovery | UNTESTED | User has an Oracle account; no credentials read or requests made |
+| OCI console discovery | OBSERVED | Free Tier/home-region/quota views inspected read-only; historical observations predate user's reported instance deletion |
+| OCI SDK account discovery | UNTESTED LIVE | Read-only collector implemented; standard local config absent; no signing key read or SDK cloud request made |
+| Oracle deployment preview | PASS LOCALLY | Synthetic quota-fit, insufficient-storage, AD/regional-limit, missing-data, and freshness checks; provisioning always disabled |
 | AWS account discovery | UNTESTED | No AWS account connected |
 | Cloud provisioning and free eligibility | NOT IMPLEMENTED | Read-only discovery cannot authorize launch |
 | Automatic migration/stable ingress | NOT IMPLEMENTED | Later milestone |
@@ -52,3 +54,13 @@ Code review found that isolated HOME/XDG paths alone did not prevent ancestor `o
 5. Connect a second eligible provider and test interrupted migration, rollback, and stable ingress.
 
 The complete first milestone remains open until the missing account and live-model evidence is available. No cloud resources have been created.
+
+## Oracle preview slice
+
+`pnpm plan:oci --demo` runs a synthetic, explicitly labelled quota comparison. `inspect:oci` now uses the official SDK declarations for Identity and Limits operations, including paginated ListLimitValues and GetResourceAvailability. It queries the tenancy root, reads both regional and availability-domain A1 limits, and uses the regional free-storage metric so retained disks are counted independently of instance deletion. Responses are whitelisted and failure details are reduced to fixed reason codes.
+
+Console observations are not substituted for live SDK evidence. The user reported deleting a stopped instance after the inspection; current remaining compute/storage quota has not been re-queried. A file-presence check found no config in the standard local OCI location. API authentication, IAM permission sufficiency, SDK response semantics, and actual current quota remain untested against the account.
+
+Oracle's [current Always Free documentation](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) describes 2 A1 OCPUs/12 GB equivalent, consistent with the console observation. Production eligibility must derive from current account benefits and measured usage. [Limits APIs](https://docs.oracle.com/en-us/iaas/Content/General/service-limits/view-tenancy.htm) may omit availability for some resources; omitted values remain UNKNOWN. [Boot-volume documentation](https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/bootvolumes.htm) confirms that termination can preserve the associated volume. Preview does not reserve capacity or release storage.
+
+Local validation: TypeScript checks and 25 unit tests pass. CLI smoke checks cover a fitting demo (exit 0), insufficient storage for two additional VMs (exit 2), invalid resource input (exit 1), absent config (exit 1), help (exit 0), and an invalid config path with sanitized error output (exit 1). CI includes the credential-free demo. Live account calls and actual launch remain untested.
