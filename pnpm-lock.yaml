@@ -1,0 +1,3918 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@aws-sdk/client-freetier':
+        specifier: 3.1167.0
+        version: 3.1167.0
+      '@aws-sdk/client-sts':
+        specifier: 3.1167.0
+        version: 3.1167.0
+      oci-sdk:
+        specifier: 2.146.0
+        version: 2.146.0
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@opencode/cli':
+        specifier: 2.2.7
+        version: 2.2.7
+      '@types/node':
+        specifier: 24.19.2
+        version: 24.19.2
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: 5.1.0
+        version: 5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))
+
+packages:
+
+  '@aws-sdk/client-freetier@3.1167.0':
+    resolution: {integrity: sha512-fvBbqhI0fgMI0dDDdSU0uQ/uhF5f+QDrpIy5AP17oWdl+OasHElPqN7qU7vnu8Z1ZHaWbjapYKb9TELSbgYauw==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/client-sts@3.1167.0':
+    resolution: {integrity: sha512-0DrmFoeqDiudnFmpcJ4LEqeHnFX5ECQF8cb6ktza8/t8SJx/lCo643u9Wk03VPHsOp0YjidGUZWa3ISVFPhIdw==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/core@3.981.0':
+    resolution: {integrity: sha512-Mnu7gaDrC5UCdyH8uLxLfB2eWbjE/HbjKX1U1J2VQxG3TTATUDObW2wU3I8iH3e9YH5NN2CY6w1mlAIe2XJ3jg==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-env@3.972.84':
+    resolution: {integrity: sha512-akZJetiMVeLRHsKzYh3LamDCo74ZUCeo0XoyRKMEMZT5qP7ReM6LhpioBCyuqKP5Vav5gEOeCmaQV0VVQr1Meg==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-http@3.972.86':
+    resolution: {integrity: sha512-U4mHaDRPWAn63yhl7FXIzbppNmW1F+4dSLeuiUpej2v3Xb6rGwvayEJ8SdlrdMV+/mZtd+GStTEP2HqurEzXtw==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-ini@3.973.30':
+    resolution: {integrity: sha512-r6r6499GWoGN943NA5YEhBEQ6TEOGTf7tTOBhHd/zw0UbNvSzd1/zPCNcDkPmRarA+e24X7KgxutqxjoWcskBg==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-login@3.972.92':
+    resolution: {integrity: sha512-96bcp9Pe/Xd60OEwncZ+kAQTQSu+fJnpUGz1qE6ghF5jnETmrk8XMU86mIP3lolvnCgR61XbZ+Ht6hdBjiQOmQ==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-node@3.972.97':
+    resolution: {integrity: sha512-E4a0IXXJVsIdo/K9roX4JAEfI0JJr7KTPymkbKgETRDqEcLygE4ZlLTe24+7Qkh8Dl5YpnPd+Tt0DOPJDFXIwA==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-process@3.972.84':
+    resolution: {integrity: sha512-199C6OpNejd0nq9GFAkEFIKids1FL0R6LJtL9c1OTiDOXki7S1OduuPxW4+hE0LwndcYJ7YHOuYTlqScfpCocA==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-sso@3.973.28':
+    resolution: {integrity: sha512-bGg7wH8wVDJQIcJggO9lg1ZYbG7l+PbLwHuM3Bi/e1TlCZhU712JS1W3tdRpyptdJD1UGyhBNGO/YrhrQCHKbg==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/credential-provider-web-identity@3.972.90':
+    resolution: {integrity: sha512-duLeE3xlf0viHeH+1RM4z5duR3b32BCZTWVMu+MbxFPjQBxy7hmIGEqt5hekuFPRuXoyhMovjNl+PNNsb5oiGQ==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/nested-clients@3.998.3':
+    resolution: {integrity: sha512-acHTTzMB13CU6dU4sxABYExMI3PQM2zStWH2MiUwJp/7QKTrLg2f7mbzSXoegW2kYOk2tdqQYagsZrWB8Xv7eA==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/signature-v4-multi-region@3.996.52':
+    resolution: {integrity: sha512-6W6SjGc8OXUhMzNxU1X922ghD+PP1XvzmCk5Scui0jaYsLezycMYR1RaLp5xTIOUrhTXyb4DnAbPr3fBgmdnzg==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/token-providers@3.1166.0':
+    resolution: {integrity: sha512-ngJ8mxXqtQ9mnp7QV6TWKJCxkpjVfPWxKQSc2FYhCyCfOVFIGdFv7P+/RqVffFrJAorwBPpktnv32gNlcEgF4g==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/types@3.975.1':
+    resolution: {integrity: sha512-7rGxUkCB2QPoQOeJmonmAICTN2zrH+fpmi1p4Iwu72lnxNaMhOgqcbpyddifnM1DBb19TWQ1u6z/XjkaFNEDWw==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/xml-builder@3.972.43':
+    resolution: {integrity: sha512-rG8QVx4DOrJWptsogu1Aq+CDsnPKaBrAlJpKLxrJrIDXAq1ElnW0yQjjBnlWSXll0cDakCG6UDvaqwz0A9d9Og==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws/lambda-invoke-store@0.3.0':
+    resolution: {integrity: sha512-sl4Bm6yiMNYrZKkqqDFWN0UfnWhlS8ivKxrYl+6t0gCLrqr8y3B2IqZZbFRkfaVVp7C/baApyh71P+LeE1A2sQ==}
+    engines: {node: '>=18.0.0'}
+
+  '@emnapi/core@2.0.0-beta.2':
+    resolution: {integrity: sha512-MzCVoWtcg4Pm2B3je5mMvYMvj3MmBKw+fU7vbsJc9/iT8ip6/eYIHo/Dsm/mr+wsHB6SEyJDuxB09Yy6r/8+4A==}
+
+  '@emnapi/runtime@2.0.0-beta.2':
+    resolution: {integrity: sha512-JcrSPzPvZuNZvJqPTF9Fw25LbOJ8avzFVlaf2grmH4Cku0oGP47tRgqPZadcfj3YoZMHkFVnCYFbQM8I+i5QEw==}
+
+  '@emnapi/wasi-threads@2.2.0':
+    resolution: {integrity: sha512-JP7OYH38Q7+pyTAe14raZHLQIK7BDKbdwji+Xi3pcd/6QkJYQH3SX4wu6EplGrGJWRepoNzedfm0G3B9Z4e9Rw==}
+
+  '@esbuild/aix-ppc64@0.28.2':
+    resolution: {integrity: sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==}
+    engines: {node: '>=18'}
+    cpu: [ppc64]
+    os: [aix]
+
+  '@esbuild/android-arm64@0.28.2':
+    resolution: {integrity: sha512-5YfKeeI8qWfBZIX+u2xZC3Zlb3Os/gLS2sbEKM+I4ZOcsWmHS2WLysCcQZDAFRslDUU5Oiq44gf6PYN1vGwG5A==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [android]
+
+  '@esbuild/android-arm@0.28.2':
+    resolution: {integrity: sha512-kXXoiPVVGQcnIYGOeaovwOURpniDBpSq4A03qkQ+BMQqtGG6HYap3xne9C1O1yo4TR3qxlCX5IqqmX6fFo2Lqg==}
+    engines: {node: '>=18'}
+    cpu: [arm]
+    os: [android]
+
+  '@esbuild/android-x64@0.28.2':
+    resolution: {integrity: sha512-O387ite7SzUyCcy3JQX4P4bLtEA7bLLkx+esve5JHnyYfNTxcVpXZo9jhdB0lTKN44gztELTdU7nS8Nr16Fs1Q==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [android]
+
+  '@esbuild/darwin-arm64@0.28.2':
+    resolution: {integrity: sha512-n4KqkOQrraxHJcgjM1RvwbigfQKIKJVpM7xp+KsxiyUSrRdIXnt73VhrPAx0fV44hgfmIVKjxMN9J1t5jySVkw==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@esbuild/darwin-x64@0.28.2':
+    resolution: {integrity: sha512-uq6suIWYP37qzGddBKPw5QEQPi6HiLGsO7UmkpfyaYNQ3D+rN6w6WfwH+nuqcGXWvawGwxOEroO4YGnFh95azw==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@esbuild/freebsd-arm64@0.28.2':
+    resolution: {integrity: sha512-n+I0BTSRIoy+d6RPKnEVwql5UwBJolytvY4mAOIEJorKlqgPII8ix6slVVrfZ5Tnj7glIZvloylbB/EJPMWEXw==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [freebsd]
+
+  '@esbuild/freebsd-x64@0.28.2':
+    resolution: {integrity: sha512-78XJTJkvPs0kz2w61301PJjXl4g7q3JqiYMZ/M/yVI73EHBrCRTgkhu9oqG7vPqq+a/yadEW8aD+agKlk5xrmg==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@esbuild/linux-arm64@0.28.2':
+    resolution: {integrity: sha512-pW4AC0P3it8c7do9MVM4p51FzHzdM/TZrerurgRcHJ2WTa1VQ1CIq18xncfpBJw4ojkiZZrKW2yIBWBP92j6Ug==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@esbuild/linux-arm@0.28.2':
+    resolution: {integrity: sha512-XlDnu2q5yoqems+xay6wSAcg9DDD7K9RLKZEBOMZm3ckNpJBvOX20tSfby8KfrrhINDyv9V2YVZKY/SpoGJI8w==}
+    engines: {node: '>=18'}
+    cpu: [arm]
+    os: [linux]
+
+  '@esbuild/linux-ia32@0.28.2':
+    resolution: {integrity: sha512-CYbnj78HsIeA+DhgUKgFCfvNsTHFhMMrinUrMZpDXJXKN8T3XViTZ/+wtHeVxEWY8ewSzTFN+nRmSwO2tZaLUQ==}
+    engines: {node: '>=18'}
+    cpu: [ia32]
+    os: [linux]
+
+  '@esbuild/linux-loong64@0.28.2':
+    resolution: {integrity: sha512-buwkd8nsph4R+ajRvw0qM5Hja/TXQow3ptzWO2EbG/cqcIkHloRrdlBtQlshyYGTNFvfkfJ5tpPLVkY4DtsPfQ==}
+    engines: {node: '>=18'}
+    cpu: [loong64]
+    os: [linux]
+
+  '@esbuild/linux-mips64el@0.28.2':
+    resolution: {integrity: sha512-ZVykbDyk7519VwiNb9Lcj9m8XM6v5V9uKPvrEMkkEedVewf+0itkhahp4HDpgERXhwLRpWFypsGbG/J8s0QjJA==}
+    engines: {node: '>=18'}
+    cpu: [mips64el]
+    os: [linux]
+
+  '@esbuild/linux-ppc64@0.28.2':
+    resolution: {integrity: sha512-CAXl+Dtd9UUuJd8pKKdwh6MLm3MUMiqMPmhZ3tTSXPqfyQ3vDl6R5hZdZ/kYojK4ofXtdfSv1tFq8XzWx3heNQ==}
+    engines: {node: '>=18'}
+    cpu: [ppc64]
+    os: [linux]
+
+  '@esbuild/linux-riscv64@0.28.2':
+    resolution: {integrity: sha512-GeXCej4IQtU1B+QlDV8W/RRvbzI3O/Stss+/bCXv4lZls5WGRtu2a+3JkA3i4qIUlMXpcHebWpF8AkJhATowuA==}
+    engines: {node: '>=18'}
+    cpu: [riscv64]
+    os: [linux]
+
+  '@esbuild/linux-s390x@0.28.2':
+    resolution: {integrity: sha512-3H1weTYZPxt/WOhByszQZybS9w5lKzUn1FDMsgEChbHWQwHYQQRfBxgCcZvPhjHfKyJjIievvMmEUawJrdY9Dg==}
+    engines: {node: '>=18'}
+    cpu: [s390x]
+    os: [linux]
+
+  '@esbuild/linux-x64@0.28.2':
+    resolution: {integrity: sha512-4xTZr1FUmSoQW4XIWmit3tzQrUTZM+N3P0XV8xROKYF50XfI7xeO90+1bZvNwxIufQ9hDQVRJH5YhgPVF8A/HQ==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [linux]
+
+  '@esbuild/netbsd-arm64@0.28.2':
+    resolution: {integrity: sha512-sSATRjPeDBg3pdgHoQfoYBob11Kk1FGa9lui5RIHZCoCkJa9QKlvl3/vKz2usCmYYjs7ymJR/2Nnsqe+Hjt5nw==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [netbsd]
+
+  '@esbuild/netbsd-x64@0.28.2':
+    resolution: {integrity: sha512-lqnzCV+mM0gIADaKihiCg6ifgfU2L3h5E33rNQBN1Y4MaVGnzryzmvvf7UHxprpQdE8hpqLolJ9Rl+SkIRDpyw==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [netbsd]
+
+  '@esbuild/openbsd-arm64@0.28.2':
+    resolution: {integrity: sha512-AL2qJILH7lNjrDmCQDvdxMfAUIv8KMNZOvrwAQ8i8//ntL9FflhOyMJ8OZSMBb8/AWXe3/5v5S20y3zCoZWKoQ==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [openbsd]
+
+  '@esbuild/openbsd-x64@0.28.2':
+    resolution: {integrity: sha512-QtiuPytchRyC4rwUKhexJdQKvDuZ6hWloi3igqPQNUJCS1/v9EiO3UTOXR6A3FoMo4fnAKbWJdqaIwhOzh8qEw==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [openbsd]
+
+  '@esbuild/openharmony-arm64@0.28.2':
+    resolution: {integrity: sha512-WkhYDmpTjLvGlScA1rwjRUmhl4k8oXR3cIbtqWmELgU/dFeHHlEllxDvdWcNJV9rbzCexB5vz8gtNewWLgCT7Q==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [openharmony]
+
+  '@esbuild/sunos-x64@0.28.2':
+    resolution: {integrity: sha512-GPMSkTOtMnv2U2F8gxe4Io6qmVs+YKyp832Etqqxr0hFngmXQ3rzwytelm3GIn7T4VviRUlf3sOgBOiTdvaf7g==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [sunos]
+
+  '@esbuild/win32-arm64@0.28.2':
+    resolution: {integrity: sha512-PIhhEkE9uPBleRBrQEJpUn7MBnibZzbGzYWPmY3x+YoVg/95zbjB4CxPPOQ8l5tYYM4mMaCthF8/1DIfBQQyWQ==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@esbuild/win32-ia32@0.28.2':
+    resolution: {integrity: sha512-YmJbfTlvU7Sdn9BB+4PRES4oB6pxgS37MAONj+hBr/cpXS1aBPKXxNnDbu+QCWPj0o9dgyxeq79g6c5P8KeuYA==}
+    engines: {node: '>=18'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@esbuild/win32-x64@0.28.2':
+    resolution: {integrity: sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [win32]
+
+  '@jridgewell/resolve-uri@3.1.2':
+    resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
+    engines: {node: '>=6.0.0'}
+
+  '@jridgewell/sourcemap-codec@1.6.0':
+    resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
+
+  '@jridgewell/trace-mapping@0.3.31':
+    resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@napi-rs/wasm-runtime@1.2.6':
+    resolution: {integrity: sha512-mRyDmEw9/fCDXCGfL1sbgIw/GUK0PVxRW4YwgPN61F3LQ+fSyoBFarJVzgGyhF6kRzEQZ0FejDqm4WLXSeqQmw==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=23.5.0}
+    peerDependencies:
+      '@emnapi/core': ^1.7.1 || 2.0.0-beta.2
+      '@emnapi/runtime': ^1.7.1 || 2.0.0-beta.2
+
+  '@opencode/cli-darwin-arm64@2.2.7':
+    resolution: {integrity: sha512-KH45DjiTcsHcnVLDrAEP3kdG57olO2BndtpYi+iGc7/cBrZfUs6YYrVpsZ40lr4izTupSIxwTbvSwKHutuq5uw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@opencode/cli-darwin-x64-baseline@2.2.7':
+    resolution: {integrity: sha512-2fTG/E3oEy+RM9d148d3XQ6maMOD/hK5p1NXIQKIvXtMRWRMheZ0HSpkInrWFaw73qp6Be0w1X8/BfAz9F0rdQ==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@opencode/cli-darwin-x64@2.2.7':
+    resolution: {integrity: sha512-6+US0PhgH8BaCQzkUGey+tz1gtHlhGxnKJspnETlcWOuZWQmyaZaF3wFf3L8+9+ukQsXV191tMG+jDIZefPjrg==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@opencode/cli-linux-arm64-musl@2.2.7':
+    resolution: {integrity: sha512-bfkdZxcfuueJUy6+mduxoibp5In2stNIVJUDlyxEp6tk3N/6Pr9Lz6bjzeKCwUWsGxEvrF225jyLt4vwL+bYRQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@opencode/cli-linux-arm64@2.2.7':
+    resolution: {integrity: sha512-AgxoB3IxewSilPpWjU6GrdyJ/dSBnjncpHoZRK7Kul96bgVSEUKuPwC8nUYjTTXgLHqM+tqImwMLOlwCulzSxw==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@opencode/cli-linux-x64-baseline-musl@2.2.7':
+    resolution: {integrity: sha512-8/UdXfTW/fLc+02R54/Qgg++cBWN+ZKes0ZNgvHAEybJqc6U0XOVca1DRBtcOjLs4HzX4WIIQdBw9aivM6FQmw==}
+    cpu: [x64]
+    os: [linux]
+
+  '@opencode/cli-linux-x64-baseline@2.2.7':
+    resolution: {integrity: sha512-1X6fFT4VWyzMxIGWK1Lg29NEr6XEOYYUXMXSPbfSmbEHdqTLDcO9DlTTaebq4uBbVw/tQpIGJw4sBBrKb9tKMA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@opencode/cli-linux-x64-musl@2.2.7':
+    resolution: {integrity: sha512-LyE+YntGyYN87ZiILBGS3STQgzovYpOaGXi5N15IQzJymqIhVG70lJznp3tdByo4p+19irNgia94rQR8CjvsFA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@opencode/cli-linux-x64@2.2.7':
+    resolution: {integrity: sha512-wk/DPHxr4maiW+FmQp8ztoXlo/vC5qsmEIHsLNaNLZL2iaIYfhyqFRe6CRsCVxy+ib0sfK07X2IepFw7ZSKqNQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@opencode/cli-windows-arm64@2.2.7':
+    resolution: {integrity: sha512-pU2iskqUVeY7MzP5ztc7yXXwCb8UkVzid3WEFMsrXqym1NmM6EI8meu14FT+wbtXkLEr6gFP3st8HErWzoV1OA==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@opencode/cli-windows-x64-baseline@2.2.7':
+    resolution: {integrity: sha512-l4o0UQT2n8TaxV18Ir846JUW2r2XUN2z+auGUq2fQ1s08/+ycJv7qjqRE8u4nmjm/VC7zOjxhgMU2USg0404Ag==}
+    cpu: [x64]
+    os: [win32]
+
+  '@opencode/cli-windows-x64@2.2.7':
+    resolution: {integrity: sha512-SnbgW2ofeGhFXMZCWZWnSbrpU4czgWr4itUFJfAsz/SonGEQXRxghnTwONk6KmZSkWD50B/X8fAGs2fgknptXg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@opencode/cli@2.2.7':
+    resolution: {integrity: sha512-qsSExDfpUCqhGXBqZ8xhjg2OG9DxnsnfWl1/7vGINRWw7sxZvK9cXeW6MI8j9e+GItaYtg94zH3Eo2ng86VLCg==}
+    cpu: [arm64, x64]
+    os: [darwin, linux, win32]
+    hasBin: true
+
+  '@oxc-project/types@0.156.0':
+    resolution: {integrity: sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw==}
+
+  '@rolldown/binding-android-arm-eabi@1.2.19':
+    resolution: {integrity: sha512-e+Ebe0WT+9tbXmNKPIiC8YrWAHYwug3m6i4p3rZGGulfZri1jtI4HslT+OZnFf/OIHowWF71DTlHwXBP2SiA7A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [android]
+
+  '@rolldown/binding-android-arm64@1.2.19':
+    resolution: {integrity: sha512-hOombrTJ+szt2ciEzS7oCA78lMPBgF5UMQWCJIyNfnrI7GLl8HYoFqCnpL2gcPOaXMqryGCU5ExdQKyDDcC+yA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [android]
+
+  '@rolldown/binding-darwin-arm64@1.2.19':
+    resolution: {integrity: sha512-XoMA2pwCKGTQzUjPgtRwkedH4WmXhdIPKT6l6oOxd1PUbNodGI6DcBekgN7EC//+x3pfBYX/qL1gNmZAqivw5g==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@rolldown/binding-darwin-x64@1.2.19':
+    resolution: {integrity: sha512-zo8EsSSwMZCY/e+fRnGaX02YGgvJD0yvhNi/9hpGPA2MJ9ZF8dPCw75UGfpI6OpQ/myR/dIYmogRvqiZD0TrXg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [darwin]
+
+  '@rolldown/binding-freebsd-x64@1.2.19':
+    resolution: {integrity: sha512-O8ISAOfI1nj7AuBPd30FSF47z7f7lzlk5poQVGgiikvQuGEBFYvW8ki+UEnT+YJPnNGjQzn304klt4O9FUE7mA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@rolldown/binding-linux-arm-gnueabihf@1.2.19':
+    resolution: {integrity: sha512-/lYCba5NO0yq4S0jGMH8QTBtkvQxoXjoQWzF5BcWp9MjB9jxVRD1GQDNofkVjcOj30DWyhLIN/4Oe60JKzaONw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-gnu@1.2.19':
+    resolution: {integrity: sha512-pm/apFMBnSbFb3O6nG5pHO1iqHhZrjGDFEjSm+ot9J17XXPvH9L90y5h+jgfHCE+Qdlsvy8qKEcU4VKxgjD+vA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rolldown/binding-linux-arm64-musl@1.2.19':
+    resolution: {integrity: sha512-K1SmQp3FFichn8oqrNIwvFoZ5wcvjC7goBzpaMNvLf9FZc+QB/QvLmnpJZgAAGHiD980tP8FZZnXk2K94rvlxg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@rolldown/binding-linux-ppc64-gnu@1.2.19':
+    resolution: {integrity: sha512-I0xwD57jP/3A7+5UPZin2w8Y7XHEmEM5zqpYZOcQ45MlNW6tUJUziymV3yRr7rL4vwyfEcRsRksC4a7Kc08p5Q==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [ppc64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rolldown/binding-linux-s390x-gnu@1.2.19':
+    resolution: {integrity: sha512-BrtEHT24SNXj9HiXqy+s/kXiSiQGt6EKCPUlRirAoIioVxKGnbXBUEkbZASAei7iZJB0/Ynm+0JP00Ipx7AnSw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [s390x]
+    os: [linux]
+    libc: [glibc]
+
+  '@rolldown/binding-linux-x64-gnu@1.2.19':
+    resolution: {integrity: sha512-rm75/9DkHKeU2WnA8w4X94WGYgLlDCFCfkQC+4bguVJmC/jvDRv2B+2wLOYhyE0fVuv7//Ckk39OoOufyCu76Q==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rolldown/binding-linux-x64-musl@1.2.19':
+    resolution: {integrity: sha512-irh/4+iYFM4GAzpluDErgjz89bj6NDtqqMAG/6O1LG38Ed3NpyebzCpcVNkFW8uhy+/3/BocUvnXDR33CXWe9A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@rolldown/binding-openharmony-arm64@1.2.19':
+    resolution: {integrity: sha512-+KWTWNoPt+CfSq94CiceWu3yPE+QzkaG+phPyz9G60tmZLwfQkcA4AeksafzvJAw4pvg1mcd5a1TkUqVv0s4JA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [openharmony]
+
+  '@rolldown/binding-wasm32-wasi@1.2.19':
+    resolution: {integrity: sha512-7EH+skOsl5qpWnK0vzamgJFhOv1cwxQpsxm8tI883K9fur5c27p8q87fzEO6BbBPabA2/+s/zR63/pLc137iOg==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=23.5.0}
+    cpu: [wasm32]
+
+  '@rolldown/binding-win32-arm64-msvc@1.2.19':
+    resolution: {integrity: sha512-3Q1Yg1Q7tEvBWoZf5rFvG/GKZQPgwfru+p4wBajDfJFBs0SHCpL++dfTjW9gyAKd1T7ZpIYvdaUax7Pa/IhFVQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [win32]
+
+  '@rolldown/binding-win32-x64-msvc@1.2.19':
+    resolution: {integrity: sha512-y/sqRRc6d7hECzOFc5n3LSeqctmIp9mMjY1Kq4s14uLPd/LZ4z7i1zrW6fMtp2mPeuQIC4e6ULMcwQzMomqQag==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [win32]
+
+  '@rolldown/pluginutils@1.1.0':
+    resolution: {integrity: sha512-K+NU2HDCEem4sClgHH4ZZXwdJeNFkJo+hRk479DIwdIviAPN2hFJH1KHHwg8CxHQXvi0M5XY4deTXINfIiSG6w==}
+
+  '@smithy/core@3.40.0':
+    resolution: {integrity: sha512-DssGno52pzZ5m6RlDtyKuBIpZNPg9pqgs0CnNDKz9IatxCsmvNmJNn5Zn6rf77MthZo9wf89OvZFhTY/RwxhxQ==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/credential-provider-imds@4.5.2':
+    resolution: {integrity: sha512-A9uSdn72ozbRUSit0eib0TW7nXuNPlaeM0zcGkJ+nE6tFcSDbnmtwoxbTCFBukVQcszDAyvsd7+rTduPTXpygg==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/fetch-http-handler@5.8.1':
+    resolution: {integrity: sha512-h8BdMUrUBhMhMaeK7QqAdINRZezCGuYOCpcOZZ1ewxbHST9rdTd09xwNpvLTYfzDRehxQiReK4SKbdYZxBA+ew==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/node-http-handler@4.14.2':
+    resolution: {integrity: sha512-i1uORV1v3qBqP43ayRKzIdm1q5x14tf8N4Dd06/QUX1Szm6VxHMrTsu20X5E63UFsaNZCRjI4SXG0jDmqYa+3w==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/signature-v4@5.7.5':
+    resolution: {integrity: sha512-WPjdr5oWOk1LArpI4pavu+fSo+/evi0Re1olxGvqwuZopd4gYR1UGCi+Soyn/IjmafqbWs+ZC+3AKxJS3ZpwUg==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/types@4.20.0':
+    resolution: {integrity: sha512-lCA6QG22dPk9ecHbv91jDQZsmtPUjdS1aE2Il6NNPqe7DrYc0dZQi6DhcESk2KYXH2sp5xbAcGdYMZDFnuzA2A==}
+    engines: {node: '>=18.0.0'}
+
+  '@tybys/wasm-util@0.10.4':
+    resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
+
+  '@types/chai@5.2.3':
+    resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
+
+  '@types/deep-eql@4.0.2':
+    resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
+
+  '@types/estree@1.0.10':
+    resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
+
+  '@types/isomorphic-fetch@0.0.35':
+    resolution: {integrity: sha512-DaZNUvLDCAnCTjgwxgiL1eQdxIKEpNLOlTNtAgnZc50bG2copGhRrFN9/PxPBuJe+tZVLCbQ7ls0xveXVRPkvw==}
+
+  '@types/jsonwebtoken@9.0.3':
+    resolution: {integrity: sha512-b0jGiOgHtZ2jqdPgPnP6WLCXZk1T8p06A/vPGzUvxpFGgKMbjXJDjC5m52ErqBnIuWZFgGoIJyRdeG5AyreJjA==}
+
+  '@types/node@24.19.2':
+    resolution: {integrity: sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==}
+
+  '@types/node@26.6.6':
+    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
+
+  '@types/opossum@4.1.1':
+    resolution: {integrity: sha512-9TMnd8AWRVtnZMqBbbzceQoJdafErgUViogFaQ3eetsbeLtiFFZ695mepNaLtlfJi4uRP3GmHfe3CJ2DZKaxYA==}
+
+  '@types/sshpk@1.10.3':
+    resolution: {integrity: sha512-cru1waDhHZnZuB18E6Dgf2UXf8U93mdOEDcKYe5jTri+fpucidSs7DLmGICpLxN+95aYkwtgeyny9fBFzQVdmA==}
+
+  '@types/uuid@8.3.4':
+    resolution: {integrity: sha512-c/I8ZRb51j+pYGAu5CrFMRxqZ2ke4y2grEBO5AUjgSkSk+qT2Ea+OdWElz/OiMf5MNpn2b17kuVBwZLQJXzihw==}
+
+  '@typescript/typescript-aix-ppc64@7.0.2':
+    resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [ppc64]
+    os: [aix]
+
+  '@typescript/typescript-darwin-arm64@7.0.2':
+    resolution: {integrity: sha512-gowzar9MwS/aRWp6f3a4KUqzRjAZjOsmGNCM6LcTgXum+dBfgsBVMN+AgvOCCbguXyick6LJhpBszxMebJ8syA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@typescript/typescript-darwin-x64@7.0.2':
+    resolution: {integrity: sha512-SZ9xZInqApNlNGc9s0W1VSsktYSOe9cFqNOIqmN1Gs8SmkjKZYFt017G4VwPxASInODuAdbTW7sXiFUf893RgA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@typescript/typescript-freebsd-arm64@7.0.2':
+    resolution: {integrity: sha512-W5NH4y/J0plIIS5b2xvTEkU7JFxyqdMAOgf+Ilhl0vHQXKO5dZoxd+C/jEtq56c4F3wk71RB4BMRQ2XdI+bwYQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [freebsd]
+
+  '@typescript/typescript-freebsd-x64@7.0.2':
+    resolution: {integrity: sha512-UMGDx5sTpzNw3WiPebH7l90IWfJggEd+egHt/q6p7/Cm3zqoV7VxkGXt+3DxPIw8CcmvAB0j3sVVfbhX+M4Tpw==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@typescript/typescript-linux-arm64@7.0.2':
+    resolution: {integrity: sha512-Qh4eU4/y3yDjnfjjyPYihMj5/ODIlmt+Bzu17OI+fiSRDW57QmU5SiN63exPRNJPKUzcc1INa1NXdrJ+MqHjUQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@typescript/typescript-linux-arm@7.0.2':
+    resolution: {integrity: sha512-gffT3xPz9sR7j/YJExkyPntrI0P2EP9XbOyWzth2/Gs0RstK+90RBcO0ncXoXy/beYll1SXw846Nf2zdnEz0QQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm]
+    os: [linux]
+
+  '@typescript/typescript-linux-loong64@7.0.2':
+    resolution: {integrity: sha512-uEHck9i8hoAzXPiYRib1O7miOnz23SxIeVl6F4LXox+qov1K35jHcEW6VHKvZI+pyvl7fZEP4MCU5LYvIq1GuQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [loong64]
+    os: [linux]
+
+  '@typescript/typescript-linux-mips64el@7.0.2':
+    resolution: {integrity: sha512-R4KvAMnE43W5Qeqb0Ly56O3mWMWIAgsMyz36DCaycd5nbg/9kzm0liw3JocfRqyJY0KPmzFjbswozXyW0DnIYA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [mips64el]
+    os: [linux]
+
+  '@typescript/typescript-linux-ppc64@7.0.2':
+    resolution: {integrity: sha512-DORx5b3sd/4S7eayxm4FQv+A7CrkUIGRaHiwI8oiHTAI1fAPWhF4J0vAlkC8biAlHSVVwxMQ3tjZ2/DVbnQiiA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [ppc64]
+    os: [linux]
+
+  '@typescript/typescript-linux-riscv64@7.0.2':
+    resolution: {integrity: sha512-wf0jqEDOjrPRnKwYRyyJDRo11KMbvMFrU+q4zqKyChODBzvlkbhNQfKvLxQCcwTpdDaXSHZTVuh0JoCrKCUMHQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [riscv64]
+    os: [linux]
+
+  '@typescript/typescript-linux-s390x@7.0.2':
+    resolution: {integrity: sha512-IkwJc3L7yhytWd/ewjyxNDfOmswCm9GWMJT/ue/dU4aZNbwZeYAetq42VyLmsmSjvoX7z74X6ZaYCtzAr0EuGw==}
+    engines: {node: '>=16.20.0'}
+    cpu: [s390x]
+    os: [linux]
+
+  '@typescript/typescript-linux-x64@7.0.2':
+    resolution: {integrity: sha512-EYdf2cNg7rgCWJnxCdJ+F3V39O8ihb37eHAu1LK8oAFizgTQbPOK7zHHXbPt8rX24COqODXeI3sIf0fCXG7H/A==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [linux]
+
+  '@typescript/typescript-netbsd-arm64@7.0.2':
+    resolution: {integrity: sha512-+polYF4MF04aPpO5FTkHran9yUQDSXqy5GiSDKpsll5jy3l3+g9QLhpf39T+ePtefhXLOGrLl0QIjkQP6VnelA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [netbsd]
+
+  '@typescript/typescript-netbsd-x64@7.0.2':
+    resolution: {integrity: sha512-8YIT0EHM/3dq10ZOVF/A7pc/YSMtbcecct4rWtexrnSCHOPcpC2KTLXfTCR6vDpnSiY12heNb1GiN/wu+T/FyA==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [netbsd]
+
+  '@typescript/typescript-openbsd-arm64@7.0.2':
+    resolution: {integrity: sha512-APT8+ClYnuYm1u9+kgGXoMj2VzWzcymwh2gNSQVySHfkRDGOTVkoWLjCmOQSaO+PoqQ57B0flRp9SA+7GnnkzQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [openbsd]
+
+  '@typescript/typescript-openbsd-x64@7.0.2':
+    resolution: {integrity: sha512-yX7s+Q0Dln0Dt9tEzZsAjXXR/+ytBM7AlglaqyeMPxQszJ1JhlJdZ6jLA+IzldHtflX81em7lDao1xXu+aRRkg==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [openbsd]
+
+  '@typescript/typescript-sunos-x64@7.0.2':
+    resolution: {integrity: sha512-dLJDGaLZ1D4HPQn62u1n8mBDkJREwMsAkCdkwd4Ieqw+x3TUyTsqY0YiBCtE6H6OzzgGk3iuZ3vFWRS+E8/d1g==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [sunos]
+
+  '@typescript/typescript-win32-arm64@7.0.2':
+    resolution: {integrity: sha512-Gyl1Vy6OsWesLzmq+EP0Fb7b4Nid5232AvcA2SFcdYreldpNtYFFofPjnt62y9hQy7VTaZp65ICJjuAQRaVcIQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@typescript/typescript-win32-x64@7.0.2':
+    resolution: {integrity: sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [win32]
+
+  '@vitest/mocker@5.1.0':
+    resolution: {integrity: sha512-5umB9/jlWcqVS6fsrFmv5Gdnpu6wAUio/lEOwAmvB7v+lFo/IW2B9FhAD0p19GCULTgMzLCdUmuCDCnAzWgppQ==}
+    peerDependencies:
+      msw: ^2.4.9 || ^3.0.0
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      msw:
+        optional: true
+      vite:
+        optional: true
+
+  '@vitest/spy@5.1.0':
+    resolution: {integrity: sha512-2DPO5OMHWKrBngC+fCmTQqemNF0gidRhp3lxbBmRhW+M1XJrfgPpqNqWVevXtn2f2ufD5ZaR1B6B641aAlcX5A==}
+
+  asn1@0.2.6:
+    resolution: {integrity: sha512-ix/FxPn0MDjeyJ7i/yoHGFt/EX6LyNbxSEhPPXODPL+KB0VPk86UYfL0lMdy+KCnv+fmvIzySwaK5COwqVbWTQ==}
+
+  assert-plus@1.0.0:
+    resolution: {integrity: sha512-NfJ4UzBCcQGLDlQq7nHxH+tv3kyZ0hHQqF5BO6J7tNJeP5do1llPr8dZ8zHonfhAu0PHAdMkSo+8o0wxg9lZWw==}
+    engines: {node: '>=0.8'}
+
+  assertion-error@2.0.1:
+    resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
+    engines: {node: '>=12'}
+
+  await-semaphore@0.1.3:
+    resolution: {integrity: sha512-d1W2aNSYcz/sxYO4pMGX9vq65qOTu0P800epMud+6cYYX0QcT7zyqcxec3VWzpgvdXo57UWmVbZpLMjX2m1I7Q==}
+
+  bcrypt-pbkdf@1.0.2:
+    resolution: {integrity: sha512-qeFIXtP4MSoi6NLqO12WfqARWWuCKi2Rn/9hJLEmtB5yTNr9DqFWkJRCf2qShWzPeAMRnOgCrq0sg/KLv5ES9w==}
+
+  bowser@2.15.0:
+    resolution: {integrity: sha512-xic6KSZglg/I4ymp45fdM4GWfYpBK79Fxd/TOvJktlaPgQqqDxvmGwOPZl2V0dyeS3Lj5c180bLhXF43iyAjZQ==}
+
+  buffer-equal-constant-time@1.0.1:
+    resolution: {integrity: sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==}
+
+  chai@6.3.0:
+    resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
+    engines: {node: '>=18'}
+
+  core-util-is@1.0.2:
+    resolution: {integrity: sha512-3lqz5YjWTYnW6dlDa5TLaTCcShfar1e40rmcJVwCBJC6mWlFuj0eCHIElmG1g5kyuJ/GD+8Wn4FFCcz4gJPfaQ==}
+
+  dashdash@1.14.1:
+    resolution: {integrity: sha512-jRFi8UDGo6j+odZiEpjazZaWqEal3w/basFjQHQEwVtZJGDpxbH1MeYluwCS8Xq5wmLJooDlMgvVarmWfGM44g==}
+    engines: {node: '>=0.10'}
+
+  detect-libc@2.1.2:
+    resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
+    engines: {node: '>=8'}
+
+  ecc-jsbn@0.1.2:
+    resolution: {integrity: sha512-eh9O+hwRHNbG4BLTjEl3nw044CkGm5X6LoaCf7LPp7UU8Qrt47JYNi6nPX8xjW97TKGKm1ouctg0QSpZe9qrnw==}
+
+  ecdsa-sig-formatter@1.0.11:
+    resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
+
+  es-module-lexer@2.3.2:
+    resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
+
+  es6-promise@4.2.6:
+    resolution: {integrity: sha512-aRVgGdnmW2OiySVPUC9e6m+plolMAJKjZnQlCwNSuK5yQ0JN61DZSO1X1Ufd1foqWRAlig0rhduTCHe7sVtK5Q==}
+
+  esbuild@0.28.2:
+    resolution: {integrity: sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  estree-walker@3.0.3:
+    resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
+
+  expect-type@1.4.0:
+    resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
+    engines: {node: '>=12.0.0'}
+
+  extsprintf@1.3.0:
+    resolution: {integrity: sha512-11Ndz7Nv+mvAC1j0ktTa7fAb0vLyGGX+rMHNBYQviQDGU0Hw7lhctJANqbPhu9nV9/izT/IntTgZ7Im/9LJs9g==}
+    engines: {'0': node >=0.6.0}
+
+  fdir@6.5.0:
+    resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
+    engines: {node: '>=12.0.0'}
+    peerDependencies:
+      picomatch: ^3 || ^4
+    peerDependenciesMeta:
+      picomatch:
+        optional: true
+
+  fsevents@2.3.3:
+    resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
+  getpass@0.1.7:
+    resolution: {integrity: sha512-0fzj9JxOLfJ+XGLhR8ze3unN0KZCgZwiSSDz168VERjK8Wl8kVSdcu2kspd4s4wtAa1y/qrVRiAA0WclVsu0ng==}
+
+  http-signature@1.3.1:
+    resolution: {integrity: sha512-Y29YKEc8MQsjch/VzkUVJ+2MXd9WcR42fK5u36CZf4G8bXw2DXMTWuESiB0R6m59JAWxlPPw5/Fri/t/AyyueA==}
+    engines: {node: '>=0.10'}
+
+  isomorphic-fetch@3.0.0:
+    resolution: {integrity: sha512-qvUtwJ3j6qwsF3jLxkZ72qCgjMysPzDfeV240JHiGZsANBYd+EEuu35v7dfrJ9Up0Ak07D7GGSkGhCHTqg/5wA==}
+
+  jsbn@0.1.1:
+    resolution: {integrity: sha512-UVU9dibq2JcFWxQPA6KCqj5O42VOmAY3zQUfEKxU0KpTGXwNoCjkX1e13eHNvw/xPynt6pU0rZ1htjWTNTSXsg==}
+
+  json-schema@0.4.0:
+    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
+
+  jsonwebtoken@9.0.3:
+    resolution: {integrity: sha512-MT/xP0CrubFRNLNKvxJ2BYfy53Zkm++5bX9dtuPbqAeQpTVe0MQTFhao8+Cp//EmJp244xt6Drw/GVEGCUj40g==}
+    engines: {node: '>=12', npm: '>=6'}
+
+  jsprim@1.4.2:
+    resolution: {integrity: sha512-P2bSOMAc/ciLz6DzgjVlGJP9+BrJWu5UDGK70C2iweC5QBIeFf0ZXRvGjEj2uYgrY2MkAAhsSWHDWlFtEroZWw==}
+    engines: {node: '>=0.6.0'}
+
+  jssha@3.3.1:
+    resolution: {integrity: sha512-VCMZj12FCFMQYcFLPRm/0lOBbLi8uM2BhXPTqw3U4YAfs4AZfiApOoBLoN8cQE60Z50m1MYMTQVCfgF/KaCVhQ==}
+
+  jwa@2.0.1:
+    resolution: {integrity: sha512-hRF04fqJIP8Abbkq5NKGN0Bbr3JxlQ+qhZufXVr0DvujKy93ZCbXZMHDL4EOtodSbCWxOqR8MS1tXA5hwqCXDg==}
+
+  jws@4.0.1:
+    resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
+
+  lightningcss-android-arm64@1.33.0:
+    resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [arm64]
+    os: [android]
+
+  lightningcss-darwin-arm64@1.33.0:
+    resolution: {integrity: sha512-Sciaz8eenNTKn9b3t7+xr0ipTp9YxKQY4npwQ3mrRuL0BAVHBLyZxofhaKBAVtzmtRZ/zTyo0/to4B1uWG/Djg==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  lightningcss-darwin-x64@1.33.0:
+    resolution: {integrity: sha512-Z5UPAxzrjlWNNyGy6i65cJzzvgJ5D3T6wMvs+gWpY9d7qRhANrxqAp6LhxIgZhWEw18RfJTGcRxjuLIBr+m8XQ==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  lightningcss-freebsd-x64@1.33.0:
+    resolution: {integrity: sha512-QQM/Ti/hQajJwCY+RiWuCZ9sdtI/XQk7nDK5vC8kkdwixezOlDgvDx7+RT+QjK6FcFT4MpsuoBnHIo/O3StRRg==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [x64]
+    os: [freebsd]
+
+  lightningcss-linux-arm-gnueabihf@1.33.0:
+    resolution: {integrity: sha512-N7FVBe6iS24MlM6R/4RBTxGhQheZGs7tiQ9U32UtF75NzP5Q7xWPRqLBCKxlRQRk3rY1jCIPLzx7WzOhuUIRLQ==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [arm]
+    os: [linux]
+
+  lightningcss-linux-arm64-gnu@1.33.0:
+    resolution: {integrity: sha512-j2v/itmy4HlNxlc6voKXYgBqNi0Ng2LShg4z7GufpEgs05P+2suBVyi9I6YHq5uoVFx9ETin3eCEhLVyXGQnKg==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  lightningcss-linux-arm64-musl@1.33.0:
+    resolution: {integrity: sha512-yiO5ROMuYQgXbC60yjZU5CYSFZGKXL0HFATXt9mHJn1+zW55oCtMI9NfcVhYLMFDL7gV7oBPon/EmMMGg2OvtQ==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  lightningcss-linux-x64-gnu@1.33.0:
+    resolution: {integrity: sha512-ar+Ju7LmcN0Jo4FpL4hpFybwNG9/3A/Br5KW2n2jyODg3MEZXaDYADdemoNS+BDNfMgKvylJLj4S5tyRActuAg==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  lightningcss-linux-x64-musl@1.33.0:
+    resolution: {integrity: sha512-RYiYbkokw0trfKqqzfF55lginwEPrD3OJDfTuJzFs1MK6iFnDenaz1fqLLtX4ITG3OktJQXOeTaw1awrBAlZPw==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  lightningcss-win32-arm64-msvc@1.33.0:
+    resolution: {integrity: sha512-1K+MPfLSFVpphzpdbfkhlWk6wBrTObBzS2T6db10PNOZgR9GoVsAWzwNyuhUYYbTp23j+4RrncfujZ4uAzXvwA==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  lightningcss-win32-x64-msvc@1.33.0:
+    resolution: {integrity: sha512-OlEICDx/Xl0FqSp4bry8zFnCvGpig3Gl4gCquvYwHuqJKEC1+n9NgDniFvqHGmMv1ZkqDJrDqKKSykTDX+ehuA==}
+    engines: {node: '>= 12.0.0'}
+    cpu: [x64]
+    os: [win32]
+
+  lightningcss@1.33.0:
+    resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
+    engines: {node: '>= 12.0.0'}
+
+  lodash.includes@4.3.0:
+    resolution: {integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==}
+
+  lodash.isboolean@3.0.3:
+    resolution: {integrity: sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==}
+
+  lodash.isinteger@4.0.4:
+    resolution: {integrity: sha512-DBwtEWN2caHQ9/imiNeEA5ys1JoRtRfY3d7V9wkqtbycnAmTvRRmbHKDV4a0EYc678/dia0jrte4tjYwVBaZUA==}
+
+  lodash.isnumber@3.0.3:
+    resolution: {integrity: sha512-QYqzpfwO3/CWf3XP+Z+tkQsfaLL/EnUlXWVkIk5FUPc4sBdTehEqZONuyRt2P67PXAk+NXmTBcc97zw9t1FQrw==}
+
+  lodash.isplainobject@4.0.6:
+    resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}
+
+  lodash.isstring@4.0.1:
+    resolution: {integrity: sha512-0wJxfxH1wgO3GrbuP+dTTk7op+6L41QCXbGINEmD+ny/G/eCqGzxyCsh7159S+mgDDcoarnBw6PC1PS5+wUGgw==}
+
+  lodash.once@4.1.1:
+    resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
+
+  magic-string@1.4.5:
+    resolution: {integrity: sha512-oLLC2+YvQUfAa+vxoufE/yc1icb87M9iXIRqAoR/2EhE/8cb3SF/+Gi0c2By1B+5Vz2e2vQtUvHiu1+63Znh+w==}
+
+  ms@2.1.3:
+    resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+
+  nanoid@3.3.20:
+    resolution: {integrity: sha512-uKdg2G3GNCKQn9byYOpxbGqrT2fGO5KRt5J/8b3pok8rT6qxGWF6hxMyJiEYtAf+FVyYuD9hRaDqX5uPFYJ4ZQ==}
+    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
+  node-fetch@2.7.0:
+    resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
+    engines: {node: 4.x || >=6.0.0}
+    peerDependencies:
+      encoding: ^0.1.0
+    peerDependenciesMeta:
+      encoding:
+        optional: true
+
+  obug@3.0.0:
+    resolution: {integrity: sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==}
+    engines: {node: '>=12.20.0'}
+
+  oci-accessgovernancecp@2.146.0:
+    resolution: {integrity: sha512-bnVLN7YSqCoyOiftMBan9GdLGdjXxR2uw4wXsAUvydwzsbwn3gQ4RqUkIc5mMVJP0IXVf0WIMR8Zz5JXMWgOIg==}
+
+  oci-adm@2.146.0:
+    resolution: {integrity: sha512-qd+4+UnIzyAL/ngWI8LjvbxJsNgHVltfdgShpMg5a4ww3RMhqfxgPdlAjmoGpoakpFA4A0UoO3zOvombEpOXIg==}
+
+  oci-aidataplatform@2.146.0:
+    resolution: {integrity: sha512-PObmYdThhhRM/jGB1ZzYBJoj/0RBhoL4yWtlSq4uGv69aLBXm6t0GqT+kNkRXHtRTzG4m1ia23r8eXG1zu29Tg==}
+
+  oci-aidocument@2.146.0:
+    resolution: {integrity: sha512-eOupRTggfsBBifBpSFJjlGYVeDvRbw+mCZqWCqi7kv2tObQ3hKDvnQFQEIDiOWvwavgYoedHjgKVq+spAiijYw==}
+
+  oci-ailanguage@2.146.0:
+    resolution: {integrity: sha512-dwRqhbRZr6GzFgyY/mAzQkQpR9UZBWLP2o68nraf5azV48WNY9Rgk9fBSJPhbrr4QGktox7rETvypOj6okjTuw==}
+
+  oci-aispeech@2.146.0:
+    resolution: {integrity: sha512-UWY4AWZd7OlV4X5j/qwZLe4tTQv3nparlZ7PgujpFgBZfUOfmEnhB/9oVnQjReu+plCReihvrSxy/siwvOA+QQ==}
+
+  oci-aivision@2.146.0:
+    resolution: {integrity: sha512-GVoQZILLGGVfm19EVoergkMbGGxSPyjRP7qRt2x4q6O5JT+Zq0vT7Of+WF5QuTEIaWujgrhLgX0EtRu8KKguiQ==}
+
+  oci-analytics@2.146.0:
+    resolution: {integrity: sha512-+ECLcGa0IP4xNE6xFeY9ALwpidLul0bbdcS/pEDUeVwMUqF7JjT5mBoEKyACfeeS4hxL4xf4qkFhkVVKgdiwRw==}
+
+  oci-announcementsservice@2.146.0:
+    resolution: {integrity: sha512-qKcYhtfZBpz1LMwM8ancA8RdohTL9GHB2vR0oVmPDvQXqgMWYnmb/+y09rOaan24QnpBAheEuz87GKoThBRqdA==}
+
+  oci-apiaccesscontrol@2.146.0:
+    resolution: {integrity: sha512-vEeVhtSmTIP71khV82MykvcCETpy8DT4r+Bd3bMnzDU3IYhW7KKEEeIHU5k7nok1XiAZH4w6n/U91t8snIr0og==}
+
+  oci-apigateway@2.146.0:
+    resolution: {integrity: sha512-3ZHSe9BGnbAxPRBw0b9RDZ8peNdMhVZH3CZHhIJyqO6gRmuCVmUq/9Xx8ujmte4bVtBaC6GUoMuemQEZ94aqcQ==}
+
+  oci-apiplatform@2.146.0:
+    resolution: {integrity: sha512-Mu5GAsN7FexcLoOP8eep/4P1E0818ygKDXv+awOwIMdo0EePAZutKtNCie81choQkMVspqu2hbT9qGUx0qbxlA==}
+
+  oci-apmconfig@2.146.0:
+    resolution: {integrity: sha512-0N9okQo1Ok3QlJQ2NveaLReJp4YGe8ctXhuGLW/t/mYYl3v88yd3xLQ93un/bRGjDC1wTOXImH71iG1MvSuP2Q==}
+
+  oci-apmcontrolplane@2.146.0:
+    resolution: {integrity: sha512-B3SXlJBzaidZ6zBXmK6TuctabOwFDE4VMj1+Jb/BgMgOlwVjXZ+56riH+osPWLABJMmb2dq8NzKSo8xsnavKEw==}
+
+  oci-apmsynthetics@2.146.0:
+    resolution: {integrity: sha512-uSpZrFjapPdD4XHNzt0vWohTtFEs/g9sc7bpPCcCqFnjwru20hkiPQGtRdI0+DO7V+lTApbr+FG/EytYFychOg==}
+
+  oci-apmtraces@2.146.0:
+    resolution: {integrity: sha512-LcltyxrxJtIBoMj1bwKtIB5a2yi02JNumeuLKzl8/8BIvkwxvkiVT+V4ewpthgyZ3sy2i//m8+fcgYiFLjvzHg==}
+
+  oci-appmgmtcontrol@2.146.0:
+    resolution: {integrity: sha512-CL3oNIbh1Tpq2/6JXLxFPyWmlkjefdeF/2un5mo2Hbh6dMscRFX0vIuYw2M0V7ScG4Qvlk3J3xEMkndeT0rpDw==}
+
+  oci-artifacts@2.146.0:
+    resolution: {integrity: sha512-Mu+Mvelw64DOEkPH++UYfJvyBYMqQ6JIOZt32Ds6ar9x81mMGjZo/XhwuigFyhejx39w6etAjEPiw/eAiug9wQ==}
+
+  oci-audit@2.146.0:
+    resolution: {integrity: sha512-l+67WVI/8VhrG8iNjBdtxhg7vJpde9xHMe2q+8Fuvex45pJW921OEQp75gwP1rgiWhEoH1ZUQEKXpiS2Xc1R7A==}
+
+  oci-autoscaling@2.146.0:
+    resolution: {integrity: sha512-XJdAgnL+iALpe+mjuw/COljUeg4KhOhOSxle8WzE9Vqs5n96pceZp+MiTFKYljVRqSmNPOHGDXVpOJ83hemGfw==}
+
+  oci-bastion@2.146.0:
+    resolution: {integrity: sha512-7b5oWAu0ejytVWFcxeh7uqX3+VjEMEGmHPZpWT4LhQsN8b8bDmZfT6ALNvvE3paLB7/KVWHJqbWSfqTfHnvang==}
+
+  oci-batch@2.146.0:
+    resolution: {integrity: sha512-8E+gZxv6jYbODuJTmClip1QF39IUVcDj45vO0/T0NuhRDtblJKTQQi1maet7shryVH+E3CpNdpYBUmhQ6yy2Ig==}
+
+  oci-bds@2.146.0:
+    resolution: {integrity: sha512-95DBN9bkT0dkYS3lvW0DgHF9CMVH2adTM21amwE5OZbpMqeQLnSEvUyFEluGlfEvNtHorFZHBaAkHV+nSIsuIw==}
+
+  oci-blockchain@2.146.0:
+    resolution: {integrity: sha512-D88gTQHcUex+ARYV8gEAEwu6KLy/QLwEeYJQCG0DczYQLwQacHUHHgGLcPLAICdUyTA3ctOzkIvs4fRIcLxFsg==}
+
+  oci-budget@2.146.0:
+    resolution: {integrity: sha512-z6kipAxD9EhZkjFQmicegl7FYY6mSjQipcuGyxoTcztCh7CXmeFZGBmJtHq1e1aBGR3FbqJKvwKl8/r5ILcwEw==}
+
+  oci-capacitymanagement@2.146.0:
+    resolution: {integrity: sha512-JSgMfoKIbz8KfBpq4mBkWS8IAUx31U2WJxYslKppKGdna6Xjyn/S3HBXmYzpiHIi8JRYyytT808U5cRiUoSOIg==}
+
+  oci-ccdoffers@2.146.0:
+    resolution: {integrity: sha512-EjpeMfOBFcKgrie63tJ4tyS8WdiWc7yb08xYXWGlZcIwWvYs0OVwDPeATJpFYca22OaTSad+w5MGz+nJw/lrsg==}
+
+  oci-certificates@2.146.0:
+    resolution: {integrity: sha512-qGZefZO8gynddvYclaApRvHV84Iy+3mDXEPpxAV3ooB09qTeJwcytG20W7c15eH23768HRbl1O+HxviLu7UYgg==}
+
+  oci-certificatesmanagement@2.146.0:
+    resolution: {integrity: sha512-KD9CQQAMUec3DeUodv8/zv2jg3f6D4VK0KbxYcW1UCBmlnngNfjL0OF3RbDyJR3I7kLs9YOdJj598oQXGPHs1g==}
+
+  oci-cims@2.146.0:
+    resolution: {integrity: sha512-g/ABJImTWz5cCdu18oncZBPa+xuOBeo4psyG9mcsMnFS1lfNnANAE2HDcZV+5tQkhHUIkiRd9lI8BUKOUnoXdw==}
+
+  oci-cloudbridge@2.146.0:
+    resolution: {integrity: sha512-GPB1umBn/in319bhhxwHWPJ1b9ON5tdvJAETRtDchYXkVWiQUhT7TBeO6gWevhThVgDvvsxIBFRPy605bUVK4Q==}
+
+  oci-cloudguard@2.146.0:
+    resolution: {integrity: sha512-MCyjte9JmHu7ceydjTcPROgJCSFdak/guz3HQ7/k1DZXtrwZszC2jGZ91+MaOw9PzkDKCRD3yu1uRW3PY94NfA==}
+
+  oci-cloudmigrations@2.146.0:
+    resolution: {integrity: sha512-bLVfuyQkoXzFyighxb0ExzajpiI2/xQYA94Pajr2NH8n/KJrRtNPozpR/2heQ8SINZyzmVI4kL/fvLJ4JsLrNw==}
+
+  oci-clusterhealth@2.146.0:
+    resolution: {integrity: sha512-FcO0RZLRBjls6yN8TfTeSwb0E6ch7HWkhT1Km+65NWB3vuJcfB2QqIuHbWulGBNnv9zHy5g57m4TK9RVLyfiWw==}
+
+  oci-clusterplacementgroups@2.146.0:
+    resolution: {integrity: sha512-cJcoyO8pxlVdqGgJXHu3KDtpyhOJHsw2r55Milh8bayT8hjk2oHIfH54xJfFNiKdNec9zS59dhLj0h/vkHNctQ==}
+
+  oci-common@2.146.0:
+    resolution: {integrity: sha512-aKGR5aq/0I08G6pkKx3dmDPgMhSDLgpw1z0m7TFf9LVyv12PYhmIlgpYfQ4kbqAbgzgEghIx+HiI0GSpSozbXg==}
+
+  oci-computecloudatcustomer@2.146.0:
+    resolution: {integrity: sha512-TXzO2PSGvsBeAamigIbRJezf7CejHhOSOZ+iuXU+8jL3A27OjGKhF8fZLKOwXJ8PcHqeBibJ0YMVO9zYeZpGAg==}
+
+  oci-computeinstanceagent@2.146.0:
+    resolution: {integrity: sha512-4xI/echAkbhryhPXkF4lM8s0pQDMh5uqBgguxooy1lW0MFZJ9gnEyZTJB2MoJ95BTK9KSzBYI2sPHOvDVSjInw==}
+
+  oci-containerengine@2.146.0:
+    resolution: {integrity: sha512-ozjXdde6Mz4hdvjjrABSHusahKxFb1u6lNYWaTcnoHjhsIQ6DSlHriRIpKhpLvIK0OJoZzB7oCaj0yuY0J+HXg==}
+
+  oci-containerinstances@2.146.0:
+    resolution: {integrity: sha512-/ny5HRQDDGRj3r5D8pLtEj7N+TFkOWCQDLmKoldivv2zYzmiLpxEsG1W7g4P8XEccrOd+fyQfZmA/84ld/6OIw==}
+
+  oci-containerregistry@2.146.0:
+    resolution: {integrity: sha512-9ckw/RNBEA28ZnOq7vjuod/9RzIc/qR/hevXZUbK/N0LNjLHV+Dj+H+Neu8IWwCgsQykiVzmpEWnSrAa0QImBQ==}
+
+  oci-core@2.146.0:
+    resolution: {integrity: sha512-6b1o2juuNGO1fguOfD/81NyN4nGCgXPdbuyJl3yO26uQImTpDIZKEugLpjQn5gpxuAAAF99KKGnM7kte8qy4pA==}
+
+  oci-costad@2.146.0:
+    resolution: {integrity: sha512-Ind6Kd8y4Wwkm2MvJRoZHThTZNiJZnorZ+8lyyhqEX9jAKh85Rlngvi8aW1rwAJA/z94hDX/ivLLwRXPgWM8/w==}
+
+  oci-dashboardservice@2.146.0:
+    resolution: {integrity: sha512-t7ci1sfa2UWEKQpwjZReV6HlBn3etPcX/Di1rmiZTlLhHliVvcQFJXdYEiLSU/iUsnwvtj/rssjMyT+WoJ3lEg==}
+
+  oci-database@2.146.0:
+    resolution: {integrity: sha512-gvMPHTBF88dkO33lLqo3wvyPsI6vRtJcRo1rvUNYg3a4ES4pJwK1dMxDvFFtbocW4mgxgl38uRB1K7J8SABXbA==}
+
+  oci-databasemanagement@2.146.0:
+    resolution: {integrity: sha512-g0s2ZiFHK9DWxt3clVOudozaWqOdpNqEqfba+sJVVx21wor8fsJaFAzZUN85ZwabxMd+wAUGPCM6qZ9cxogPEA==}
+
+  oci-databasemigration@2.146.0:
+    resolution: {integrity: sha512-Oh7OLmm2CLo+ARgqm+oZABRJXp8zLseSUUHdjN/y6kBcSXqbDHs31NBRmOLU5LiVigkL3gbVvWdNY22esr8YvQ==}
+
+  oci-databasetools@2.146.0:
+    resolution: {integrity: sha512-7ZFYMV/utI3A7y9a9szHAig+VN6SHAVL4LzOsQU6dThHKuibDbpTd8yXjdh9czZ6C8qjhUlNzebotKtEopDOgA==}
+
+  oci-databasetoolsruntime@2.146.0:
+    resolution: {integrity: sha512-x3eNiMdPDttjMGJJ+gPvns4TxqTYxa7gjuKe1TxdJ25+Jw69IW5EaqXW9WzVc6PCQxscUGrf/egGY1TRrnPWPg==}
+
+  oci-datacatalog@2.146.0:
+    resolution: {integrity: sha512-bTqRLmvQOnqeb3ptU682Cy9wdpirs2iw/INBOkTGF9StakMblEv0fcL5w9PdKUPJa7NvqRSGb3exdj92ybfqOw==}
+
+  oci-datacc@2.146.0:
+    resolution: {integrity: sha512-4M6Ywu/ITkhdJv8L0scPwDBsTJUvvWwbnvTXvr4W3uWoCMByQFcZbLgvAISvq5/4fqExxclFAcft2740B7BDPA==}
+
+  oci-dataflow@2.146.0:
+    resolution: {integrity: sha512-tCC6wCInQRhXyK/u50yZoUBvPU92ZxgRkp4j5LQxJA6Zm9PHUt6eZakda8T1vipOzLF1aok6u31n7xToRhK00g==}
+
+  oci-dataintegration@2.146.0:
+    resolution: {integrity: sha512-tXsjTiRyW23Jv1w6pegZNYI90ITWtTPCtMfTVJZzYMl+o5ydBUI383nOoyD9+C+YLob+StK/pFYx6NEzst/gRg==}
+
+  oci-datalabelingservice@2.146.0:
+    resolution: {integrity: sha512-C4lHoElLHGJTmUrowmfIX3qAY5CSGTsqCMqgRW8O8hDrMfGvjixUXIEKzDDQvGdkUWbyS8X4gHy9MCcFX2UwDA==}
+
+  oci-datalabelingservicedataplane@2.146.0:
+    resolution: {integrity: sha512-mkSdZdXMM6b12jTDPMZwnixuGPyXBkfFpfYgk43uQUF3mcke4GGC7ddTzlN04IT6Elx0/13N+Lz+68PoyKQElA==}
+
+  oci-datasafe@2.146.0:
+    resolution: {integrity: sha512-ut2e6UH11kG4tmifoHtirF8pz5kWVSwWLXlZjjmAaiWz+NslN/8RJlgVrXf00i1kt0bNJxTxkqQX5wLAWH3Wng==}
+
+  oci-datascience@2.146.0:
+    resolution: {integrity: sha512-qyyv4R/cyHpuYAHE3ypnaint2ft5E0bmGbIBcAgNe/lVOoUp9kHYJRi4gNsj48z0jsDJrPg74UcfR/uCJEqm1A==}
+
+  oci-dblm@2.146.0:
+    resolution: {integrity: sha512-68EId3LYT5hbYtVno4BLFYHoGpJy01JpJjvaXLUUYB/j4Unrft3YOK46vDSwWN+xFKwKA/1sV9Ybqkj9oFf5gQ==}
+
+  oci-dbmulticloud@2.146.0:
+    resolution: {integrity: sha512-2kjhIzNT/qZR1Oyi1g1hsw78T9OYmtNfgLcMmEkQ/Afu9cnd/oyRPzmUf7CloNNwI3yNKyQ4Xz7j2ELuxxH7Gg==}
+
+  oci-ddfs@2.146.0:
+    resolution: {integrity: sha512-0ND9YNUSuGUAEiKghutndQW4p22mMjaN0GBXrhPNs3tsNaFT4TOwEgT1aL+3z16qoD+HNqMvUGoqRVDKeEj2sA==}
+
+  oci-delegateaccesscontrol@2.146.0:
+    resolution: {integrity: sha512-ic6MsLmXcR2DpS3zzm1no3ihv8cV8Z8T95FifnGBRnBSiLbOdqiBhJxAZcYBKicspFgJrVWfA+zUttSVUCPtEg==}
+
+  oci-demandsignal@2.146.0:
+    resolution: {integrity: sha512-OTPqrBKvw0D/dxPP/HTkYv1mO6jeV8KYjRu3GBKrBxvUpbQLcFUmv61dlFHmeSSq4yo+j7jN6XRUIJdBE8nK2w==}
+
+  oci-desktops@2.146.0:
+    resolution: {integrity: sha512-78v3HWIrQho+YUoBnhdoGIZ9QKAMOSSG8VcmfUpvADAOxwEk3onRtpAw4k8h3zkIwH6piU5rdU41L8qjtFrA0g==}
+
+  oci-devops@2.146.0:
+    resolution: {integrity: sha512-5Zy6XMl1b5yHYWOQ2duXngElkKvrjAr7R95nGQfIyqauMerJ7TKAbnxuqEO6aiVYsUEwCqKbBV42KIC97h4BFQ==}
+
+  oci-dif@2.146.0:
+    resolution: {integrity: sha512-X2D1Wlvf5M6D2pSSL14ymrtnCGYdctj5JUSSmuCSHfV/YE4rDSJOJbx6EqEcH4OFj9tgpHKln71fu5TBm00Fqg==}
+
+  oci-disasterrecovery@2.146.0:
+    resolution: {integrity: sha512-wgg5USi+FUOUQXMsB6EJkAVZmfQ9Cz5YGTTPOWSoSI4642gCE5vQksLPQ+OBdSYp93RFkh8Sp7GRqlfL7j4xtw==}
+
+  oci-distributeddatabase@2.146.0:
+    resolution: {integrity: sha512-Jy/OlvQoiBxPHEh1oFUgEdNFWjreyFtTdKxvYOrdnuqNMPP2e9xyx2kJvTXAMW4EJd+IYslqCPxaxMH+q2M63Q==}
+
+  oci-dns@2.146.0:
+    resolution: {integrity: sha512-w3A+ja5ug7iwDkBRvYgNEhsCW0838JMHBRvMGxnWBiHgr7kT2jeo+j7Ed8hqrEZbl3EiIwkIs/tTBgTTS+GLTA==}
+
+  oci-email@2.146.0:
+    resolution: {integrity: sha512-Lz9GCoZsD7o0YvAMW8aNtttChAqvmRwqdJhUDjTsvtWQ9Zxn9/WBVin+9QSpScw3PEUskjHSaBsZy2UwER/xrA==}
+
+  oci-emaildataplane@2.146.0:
+    resolution: {integrity: sha512-7hcsNiTF6db1WmwLUivcZAzH1bBHp2qFTdbFLEoZs+Oe/EXno9pxpTaFsW9638LUhd01dTi93Ds9++6CBlkNoQ==}
+
+  oci-emwarehouse@2.146.0:
+    resolution: {integrity: sha512-Yxa2y5WT1VRtqxTU2DLOdqQQepp3h0isYzsftWLuW5m9no3FnNol3HN7Z6bxCK+G8TM0qYTKK87lHmgvHtPJXA==}
+
+  oci-events@2.146.0:
+    resolution: {integrity: sha512-9wAcdRVezAMeKFYfgSsHR9P2YPPqw1LotoS2scNnvzXr3W32N91nNBtoUWnOORy6H9x0Ss01u8bKBCkam2L99g==}
+
+  oci-filestorage@2.146.0:
+    resolution: {integrity: sha512-kVLMSR0D49QWXm78DhSGwgGkww2NpnAM8jKXPxZpyOw4w4Y7Dtw+RZsSOe6IREHVRPLQxxvIH+E62aL8dluukQ==}
+
+  oci-fleetappsmanagement@2.146.0:
+    resolution: {integrity: sha512-umxPHwk3qio6UvbXXPRpBlxu9UxilKl/ScSUH4cef08jrttg0U99MD1G1nawXuoVBkWU3s4Gr8iXxfJIwer0gg==}
+
+  oci-fleetsoftwareupdate@2.146.0:
+    resolution: {integrity: sha512-sD4RnQXQ5CXjvHTES0j6QJIZAgcub2vW3/jNMqKnGa3uN2vSh5Iojp4g7aT/bwd27ghALVeKEveHOYD0l1Bs5g==}
+
+  oci-functions@2.146.0:
+    resolution: {integrity: sha512-wuQXpChEeV3nBe0jHlS3rFX3waQPgwl5to22zk37fOafem7wfx8Kvsqxv0fe0+jbzSWfglKSJ9PYid3CAWF9tQ==}
+
+  oci-fusionapps@2.146.0:
+    resolution: {integrity: sha512-tNuz0ac3DlP33/0VFQ6yuASyH5ioDGesp8bTBQw9ScxG5IGOSx9fe+ToUeffUmJOrU8WczdOceNMEobel6gZCw==}
+
+  oci-gdp@2.146.0:
+    resolution: {integrity: sha512-Flt22c7iD6KA6//iG7tLF0MQR2ppzNCluxC2vtAaDZF+HAAddFY+kArKJw4vi81CwIlbJQGsL7OoczXnGJW9MA==}
+
+  oci-generativeai@2.146.0:
+    resolution: {integrity: sha512-0LTQ80YEG4+QWzGaJfkgAJoG7ZRQghq5pkwBXp6OKW3ioRyEUaP6yDjiJaqM2cwGco1e1FqHwgS3NmqNUHbtaA==}
+
+  oci-generativeaiagent@2.146.0:
+    resolution: {integrity: sha512-hzuT8CcE4UEC70vbe4t/96a1wObzEz5iJE2QfiYSOC5X9h+D+Kx6G2A3831NoqaHRvj70VtoUiTIHnQCHzEdvg==}
+
+  oci-generativeaiagentruntime@2.146.0:
+    resolution: {integrity: sha512-U3bndb41Phky2a3Gl0dpLL/GTQg/VLNPgZoQITYGLrr9CV9Vv478bahV1atN3afsrX6KzLkLLaRefKvDjtKC/Q==}
+
+  oci-generativeaidata@2.146.0:
+    resolution: {integrity: sha512-WurO621fa62lOkyyk2jXH1/UVK8CSX0HbiNPNSSjDeHCFAOSx61pNRA5/rLfglKSSbsLGQQ1h6MvxpZbTvWc/g==}
+
+  oci-generativeaiinference@2.146.0:
+    resolution: {integrity: sha512-uC6xRHL+oqYLifvZysb+cUWJ43FEAliieSvxecoYBrVJ/cZq11VIUS8Hz5wMQ6VdOM1oEUgNh5rUT9vMV4jZjA==}
+
+  oci-generativeaisandbox@2.146.0:
+    resolution: {integrity: sha512-jkF46Lfaj84vpempyog8+eXtgT1IMkJxQJHOGJTGURkQ245+jmTumIVl5VgnKT+zMvjCFPdHOoIFe4eXNhT4KQ==}
+
+  oci-genericartifactscontent@2.146.0:
+    resolution: {integrity: sha512-wyVS4IE8BWgW0gfehOkhbVOuPc0k32Qmann71NIhmSbheTooCqwCiAV05J7m1V9T3QEM3v5pnWMwidRjOvJyvA==}
+
+  oci-goldengate@2.146.0:
+    resolution: {integrity: sha512-A1oXA5fqIBpn+7N4/s7aJoxtRsWTYds8714jpmoq8ZFItUQFaS++dy6Kv1mJQp4WNe4Z7K7prpSCbOpmArMeXg==}
+
+  oci-governancerulescontrolplane@2.146.0:
+    resolution: {integrity: sha512-HrBv8bkY9c3+fAQD0uP2MdX3tLqICkXNFWGUJzQdqTdo4St390ayGn9ihq2O8TXmZdEEoJUgDSKwJd95WAyNGQ==}
+
+  oci-healthchecks@2.146.0:
+    resolution: {integrity: sha512-lsia1WZWikiTGsDoIkyh/07ysijIGZoIFLM3swm5kYtApvH35pOI/bjXa0oRbecwuzZwJoQObvXrVrwE4mV/qg==}
+
+  oci-identity@2.146.0:
+    resolution: {integrity: sha512-LSaIaJn8xxsqqPvppZU62a3xVtqvDSSBzO4+GvLAp/19o0YGnkYDrjccDuBSD95B0jnnG9JQap0P+rQkTgjm3A==}
+
+  oci-identitydataplane@2.146.0:
+    resolution: {integrity: sha512-GgjPJhA68UoT0p2M29ZIosY8kYT1Cjl257e9jjgiQQMAc8nqwq8EzGfi0gMH7UAArXvah3EUMz/lg91igmpzow==}
+
+  oci-identitydomains@2.146.0:
+    resolution: {integrity: sha512-8elMxeHJq4lbxE6v4Yq8TcJwbLEIgulWj7gVhKu905nySKcHksCM86NAJey0CY8KLWt4djsd33x1MLsUFO0mzA==}
+
+  oci-integration@2.146.0:
+    resolution: {integrity: sha512-fz0h6ijfHZ2h6KYo26aIsLoHIKTbL+PIF7QFBKAlS21m6wjIkPXWNpFdRNDxFqp8Gi2IfAPqc+FVlHMNl0/cfQ==}
+
+  oci-iot@2.146.0:
+    resolution: {integrity: sha512-diEob9bHca5U0TkqzTLJmmzkWFm2WbGgPBb9/EAkCjewVGsamYNlRrSLryk3sTfQ1+F5DS90fm5zyOFD9qdp2w==}
+
+  oci-jms@2.146.0:
+    resolution: {integrity: sha512-PzH92keAgxshCyYrr54pWi/MMi0YifdhQbb3OCpd0GM+yMMSTed8+e9wbR81L80kP/Nw3RH+qGo/z2ztG9NdAQ==}
+
+  oci-jmsjavadownloads@2.146.0:
+    resolution: {integrity: sha512-hFrqQ+Ku0QI9bflOY8RZVKsl8xK6YRCqugKesJ7iKID8/UHuYO7yZDJ/+u4KrijpmSGYubTs5NhIaiVqobuP7Q==}
+
+  oci-jmsutils@2.146.0:
+    resolution: {integrity: sha512-D0mBdZ+uj1lTIT4qVroaqsIPMfxHrAcinmjBBDHseDvQzpJeQ44KRWCXpoooy4i2Y9/KAkPSXNKhtJKklOVZdA==}
+
+  oci-keymanagement@2.146.0:
+    resolution: {integrity: sha512-bN62bGhF47uI0HjvhaZW+yDYpLO3gsSz1WogDpEbyxtWK5M1VvnfMVedQu42dsYQb5RtLTbghXuqc/vZ7+UVQA==}
+
+  oci-licensemanager@2.146.0:
+    resolution: {integrity: sha512-lXdj649WBF5srE6re7xDtsOZIlFCAd7XdA2Vh73aZW9ndslCftOaBJ0jrwS9I2UW9sH/P4kJ+KigK7+0pfNfEg==}
+
+  oci-limits@2.146.0:
+    resolution: {integrity: sha512-ntSaoKfDhSCrwEt5ImiYWLYxDLynNQuPhHa9KIN5zugYrSAx+3Ihf8q7FYvR4uZB/yR6HGmcFfu/SOXZH0VrsQ==}
+
+  oci-limitsincrease@2.146.0:
+    resolution: {integrity: sha512-aIjIXHSg5a98gqiKiCfA9hOLY/f0kK2VHGzkkrU8rRnxjL7JjDg+N6v2cbhKvVMdYTi010VvLE8t7Kn4H8R8JA==}
+
+  oci-loadbalancer@2.146.0:
+    resolution: {integrity: sha512-Wek2K7kE18NKnGig4CX671nlHqwoUGC1+ivPjMt+Z1Mm0mAP5EkQI6xrDW9YtvVAjF+lBvgSgwDsUKoLGWIdfQ==}
+
+  oci-lockbox@2.146.0:
+    resolution: {integrity: sha512-Hh9AMTI8AGQFkxhOjFE9oMiC1ohPG+oq8HbAkhiFQDFWk5U2mR4elqKaqy0aFNbzgtz5D5hXjcCoAKwyXHGrag==}
+
+  oci-loganalytics@2.146.0:
+    resolution: {integrity: sha512-H4K+TrWbDzi8Bq7tCSC0l3mzUBLhMKRYDetvP60ndqnQYCgCfL7R1CF6ReIGMMxmVFVak8dzPeYj9LFz6uwoRw==}
+
+  oci-logging@2.146.0:
+    resolution: {integrity: sha512-C9TGzGjyEucAdfvfxP6QRczLEIt71ah2hiBxp7FhovxX8zVjsylN38sIDAQRK7FXxRBToKCD/QHOx2RhwQQZcA==}
+
+  oci-loggingingestion@2.146.0:
+    resolution: {integrity: sha512-krNg4KyZnL1mtK61NXXlvRkRD5/zt2gPJgTtNeEtjaAP6jsb2QMcY+Up3YzOiw3A/U0Wn0Emy7uEvxXcIsAa8Q==}
+
+  oci-loggingsearch@2.146.0:
+    resolution: {integrity: sha512-V6QoBukt21rKC0u3XonmuIcqmc7zcLMw1Mbm+sz8OAadjK5DHNYf4k6KqPWB2xDiuqto9QltbuKj6EjjXUeHRQ==}
+
+  oci-lustrefilestorage@2.146.0:
+    resolution: {integrity: sha512-6KSvGMRyqv0Jok0vO/OCMAxj3UppPAsuyBsZoeVtGNmiIRMM1HBL3gmk7V6SREuRx18/i5wwXYROG7dIma7dUA==}
+
+  oci-managedkafka@2.146.0:
+    resolution: {integrity: sha512-Xs/tKzvxJGSZkihyfeYalh8aMaxwea2J3nTRQKzcn3bxJbJ+gcELmnv+mAMMC+y3fisYeTseG0VxSULeS4nrEw==}
+
+  oci-managementagent@2.146.0:
+    resolution: {integrity: sha512-gfZGweOuUfMUAw43buJ4Vk2dh6g46GovpA+cv3NVlUksZr6jvZwCLzYZ9i8SNET9ObsZiSYYG+oUhJjpaiKCyA==}
+
+  oci-managementdashboard@2.146.0:
+    resolution: {integrity: sha512-KsdSh3zBPHpFqZQ2jY/ICbefVUX38ZA1ZmnR8s5Z6UviL8xUNXcoKk0vkglPKo8I/AzKS8CmF93GwGw7gXfQiw==}
+
+  oci-marketplace@2.146.0:
+    resolution: {integrity: sha512-88MT60EqQUv9919ZnShxNWc+oSiYVPbuJtf5S2SKjVUBBLGmdsTwc5ZmP1eWeTG3EnUZ9xH3OuLaXNJPjw3tDQ==}
+
+  oci-marketplaceprivateoffer@2.146.0:
+    resolution: {integrity: sha512-ZAJr3pkGJxBDLzUpc5j0xBq6c6ZKQ5KkxZZAMGoEd/6AcorhZbUlivqjHGcXrT4FS8Xto0LvV0WKfoyhvHcVFQ==}
+
+  oci-marketplacepublisher@2.146.0:
+    resolution: {integrity: sha512-/x7da6yGrPrS3bSWPKg4MbTABt8QVh+PuRn+d1LeUVPU0Y/aH8BcTdXhFU3dUgtq6oYZLpMAyXzWwsCXZN0w8g==}
+
+  oci-mediaservices@2.146.0:
+    resolution: {integrity: sha512-vPcnicdFazPd4EvTzv4Mt99AXf4an+SNB0tYs0cC/v899l9jYhP+4wQtoCApOdwq4Z8d27xoZL5Rc4KkUvIeHA==}
+
+  oci-mngdmac@2.146.0:
+    resolution: {integrity: sha512-XXsBJT2sh4gXABLYmNPjZczEGITPgCtAi1uqRw49tGqXU8nznurac07mbCk61pFRfykYDV1CK3pFyMV7VOXcFA==}
+
+  oci-modeldeployment@2.146.0:
+    resolution: {integrity: sha512-motBvv9SHfbkwzXh/giXrtqoDe9gpkr88B6T5HgrddMd2bzVXNTXeGwNIJFp8/akp4vvLABzOymx6TmTsBqUwg==}
+
+  oci-monitoring@2.146.0:
+    resolution: {integrity: sha512-mb7uGfy1WjpjuMltTtULvB3m1pPhQw07kZznUsEycqYlgmGXbxMwBX/NOIJFOAnoLrcYy8+4gtQhg9MRE05YjA==}
+
+  oci-multicloud@2.146.0:
+    resolution: {integrity: sha512-aHr9GHq4SXNE08ZL0Hw3MiayVCNTOt0LSkneOa2JesBfJLCwX4Kl1p+3NWjukLzX4kXTfdbuC1lKWY1UPNcTew==}
+
+  oci-mysql@2.146.0:
+    resolution: {integrity: sha512-scU56ol3lvSvxrQYcBVStF65z19slT1alQUPCmto8WLUtubqdzWJwv2ZwDBe4QhB1wf85sRfU2a87f63XeX4CA==}
+
+  oci-networkfirewall@2.146.0:
+    resolution: {integrity: sha512-vE7HoUDQK2Bl+5WifmCF8NGlMybzjE+8Avh6YACqgal9e+1GBOTVhuEfwxY6TCCMe57ubjIo3xh+8tV0HQHgnA==}
+
+  oci-networkloadbalancer@2.146.0:
+    resolution: {integrity: sha512-QPLijQHoNVQNfwPGncYfWbcJfdcJ8M1nCSSgsZOOXnkmsBoj3lx/FZhnu8SU6XU+l53AeEiNFwkrUjkKvkVGPw==}
+
+  oci-nosql@2.146.0:
+    resolution: {integrity: sha512-EQxHHll6GdCQ28CNOnmIRrZf7jgoGc4QM2gPSztiurU9/cLRzpykHHDuteJsMzkuOMswdS+EZsnN7dnVoIfHLQ==}
+
+  oci-objectstorage@2.146.0:
+    resolution: {integrity: sha512-9zqxqFZZdTiP0qjbEjyrYb9X0sRDC8uXTAVf+WOi3p8/kTzsOnFPGB2ZJmc3JLJ8zso2sCxBeob/XyK0k/iRzw==}
+
+  oci-oce@2.146.0:
+    resolution: {integrity: sha512-6xaguXlc5XXdBUYBXJecN5N7zB03+APic0pz5V0sXzAYEKjCRfpdTAWRWZGfAmtMOUo9dBIvQ3hIyqI8UOFXQg==}
+
+  oci-ocicontrolcenter@2.146.0:
+    resolution: {integrity: sha512-ceQeActxepnNi/wYHaPs/XymjcDDXF0mdVDGeEKvd0y4DnKqyqi4b9IsR5/mBOCDX8xaxT5IIvUirFmJkdQdWw==}
+
+  oci-ociproductcatalog@2.146.0:
+    resolution: {integrity: sha512-K5hvvRdIrVWrIIY6x2aJjPiCKlYHbDKp9N0kEnyAoHVrl16/7V5cgCcyRLXOoXFcADzQb7RmYwpVZuSKG3qryw==}
+
+  oci-ocvp@2.146.0:
+    resolution: {integrity: sha512-9UG9MfWigMsGjgat3O9xQjD0TAiAbPV1XPWZEQc0Z2czXjb+lKqSrJJK4HH1xk2pfQGDO61WeThMN+xkEdKgQA==}
+
+  oci-oda@2.146.0:
+    resolution: {integrity: sha512-4OOG+s0a9cfF8SK14GqaPUQJgorBCxx2DIpUL4cQI8dSNFbJ9kg2TKVZK27VwjYiclC3fmrTHPaGNVV36lDxeg==}
+
+  oci-onesubscription@2.146.0:
+    resolution: {integrity: sha512-xh0HFrIjsXuFpAryU05zHVdX6Kr9Nrr6spw8C9yAL3VbnF6tIVhI08bTwgv5JGKsLfIQsvyg/ySke3UH5ygTVg==}
+
+  oci-ons@2.146.0:
+    resolution: {integrity: sha512-FMq72Rzb4Y4AREpzVGNOipYuxDYix/W8PwnFp2sHMqhumeeYrtEn/N35+e0GFKP3byjusxJnVIOuisf2taA7PA==}
+
+  oci-opa@2.146.0:
+    resolution: {integrity: sha512-5VhM3yqyrQzcwF4yG7DL8fiwa3m0ugSq20pem2mOHOhYWP3aKTl1M2oK1uN0H8B+kwmCK9nP4iPIvc2wru4azw==}
+
+  oci-opensearch@2.146.0:
+    resolution: {integrity: sha512-jXHru+lTvJBKvGj9IsDrMPRJ0KuwO4UtAlopWncAxA2pEJ6afYx9HVtD+KaPnd/11tW/TYFmxlbvEPSL+JEKZg==}
+
+  oci-operatoraccesscontrol@2.146.0:
+    resolution: {integrity: sha512-4a/D/IQvc+W92U+LiIONnb4ztMAGpeyTZ22yP5IRpqMD8cIdJed3cBpP+1vfexHqA2m/svhcI0Z6MvODQFQl8A==}
+
+  oci-opsi@2.146.0:
+    resolution: {integrity: sha512-PUbrVsjtA4QyZ1K8L+42iuJOGGmAD0AF66O6Axe0J3/aDFQsKKCu6F942n6Jfdea4qPpAIrpT+51+ctI/qe7Zw==}
+
+  oci-optimizer@2.146.0:
+    resolution: {integrity: sha512-pEFxrjMKXZPg2pX+Smn63lSrt/uioNASkVyQPBKCFsgBSVmtfHsC1JLsEIDL3pgtg2p6Fu1R6jPOx83covGVfg==}
+
+  oci-osmanagementhub@2.146.0:
+    resolution: {integrity: sha512-38C0WKOKzfwC8dLdWo8Ng5XVLaBCvHbf7+/mAG3/v+4qMR2dGo9bFzWmAa167khPdso7xKZAHlig4Vd7PSARLQ==}
+
+  oci-ospgateway@2.146.0:
+    resolution: {integrity: sha512-G2I3iGUivEd2MwDQyrybB0pt6AxT352hUh/qjWw84EbF33QzhPSAuhKyzDp/lbh22ix+mkXESvHGDyq0B/GD+g==}
+
+  oci-osubbillingschedule@2.146.0:
+    resolution: {integrity: sha512-y2VQrE92U97rxihPtKNERSb35qdxsQ+bKF5hREGpmZ9C6XM4Vilc2fDZp8btAjc+1yCyns8IaB6SWClUuPpmCQ==}
+
+  oci-osuborganizationsubscription@2.146.0:
+    resolution: {integrity: sha512-GAxlUN0IcKN40XXqo8E9ZgRkVZ+vyNI8QHWdeeKHJBmfkCdd46Gt6M6LhTFoFQ6Q3AdSMoS4F3DOwqd+hU/WBg==}
+
+  oci-osubsubscription@2.146.0:
+    resolution: {integrity: sha512-JzjUHz31um4jZ/AqFVKImdRHvl/vdKIBPDXWGJt+oEZA0CLW3LUfbFdBrlxB0AxUtaGV1B1TaesN6wezKepOJA==}
+
+  oci-osubusage@2.146.0:
+    resolution: {integrity: sha512-9P5a+OPzrkNG84NYGGO+NGLdvV6aH25tpENpZPhMbbYem60vuhVuSu91rp8iHALZItqNL21R7ZfOiLa0ISSnRQ==}
+
+  oci-psa@2.146.0:
+    resolution: {integrity: sha512-COQKiHZQygFPPerUFcbckatSeuW7StGmNLso6HhVc4MHnR7McaLyhoAFYbFSsx8bV6915fgYFDNC5xENQwdLxw==}
+
+  oci-psql@2.146.0:
+    resolution: {integrity: sha512-kv7I8gmJzpzrI9vtAh8u0/HvlEzvA/kkR11bKpmoemwYpDPXg3Dkj98IBwZXlX3R5AkgkOZQYga5Yrl0n6dDjg==}
+
+  oci-pss@2.146.0:
+    resolution: {integrity: sha512-W6gRrE6FNVtIjdKWf0EQ+rRo2Dx2ga9gMSd9XKPIzSdOHT0XSovUEfRpBnlwTo9yogJ2eo8HqnJ5faQ22l2PJQ==}
+
+  oci-queue@2.146.0:
+    resolution: {integrity: sha512-4AJ2U4OmVkDaVCLtj18rCWy+cnljZUswVRzA1Fcm2CdG8vCZJ3dEDn9UcMCb45z6gEQ+zX/QCK/k76JmLq7W2A==}
+
+  oci-recovery@2.146.0:
+    resolution: {integrity: sha512-plZKlBY7eNeDTNa8JZsaA7Irf5DVeH3TZEM19NszI4On8Y+N/Ye05qn+GBdJmHk7tvGj0IzSdpaHS2ZlLXIoYQ==}
+
+  oci-redis@2.146.0:
+    resolution: {integrity: sha512-xfc92xOYDFkeU/iGPa12kJGxGJUb3z3oxPueBpaDsBSn/eE7hetoxUT+NqYI9kFzSYmzj8GvD2tcBfp5zlWZuA==}
+
+  oci-resourceanalytics@2.146.0:
+    resolution: {integrity: sha512-NGsHi3UZlewyvjMAoul809XvQtI6yBXjvVFqiQ6v3tXSqrvVHtXezyZA51ygzU/IKb4A9vB3BksAedJiV7a9Fg==}
+
+  oci-resourcemanager@2.146.0:
+    resolution: {integrity: sha512-28bOLd/Xgrmb7SvyozsDHdlZeM/ffDoZmdIf9RMAZIskyi9oWQyuCu+aJzC0V1k1AtWk4RrrERu5j1D0blupuA==}
+
+  oci-resourcescheduler@2.146.0:
+    resolution: {integrity: sha512-yGQ2h6MNhNLV24qUlTlVbCUenytcvzyONfx10dqM6Od/pwQTqKO2GO18FawYy+N69LQte8tnKR09LQdzd+nZWA==}
+
+  oci-resourcesearch@2.146.0:
+    resolution: {integrity: sha512-JvJLdA3FT1sz/eMeuUdy/wUQe0qkzpl9bc0ywFPTWYgRykqrX34pblISw/Xa8+899fCXHD2OgCMkARKIPH/Blw==}
+
+  oci-rover@2.146.0:
+    resolution: {integrity: sha512-zmepg6AN80Sx2NXdwxggZA0sSdxjHzmkFm5pKZ5gTJZjSBtqQlb5NaanIU+5N+mpO3zIP46PAUR5aM4p5vVxkw==}
+
+  oci-sch@2.146.0:
+    resolution: {integrity: sha512-o5BWh6nSK5ml8o6yMf8bGlqrTsJEIJYNOt2T0o/F10988Scw5H7ekwFgtJrCZ2AnEsaypH3kVp3EH9Y9KUF5mw==}
+
+  oci-sdk@2.146.0:
+    resolution: {integrity: sha512-oMu0VvXbcTfYLexlLjU3L5gkExV2/SqtFCHw14VqlZlQqP4ZxCdjDcS41HE4pJ0WlomB6Vmgb7A+RJZdse4vQA==}
+
+  oci-secrets@2.146.0:
+    resolution: {integrity: sha512-sWrjx69nJuyUbrfGBmbLEn88Mnkog2JSGIGverioV1sWVyxs5vhkEUGbEYmWmKrDoZoRjMkpjIAQcd6VqVsl8w==}
+
+  oci-securityattribute@2.146.0:
+    resolution: {integrity: sha512-PYQuzURQKCMGTsZhA/hA0/LHLLKFQjpugtIVwOGRXR35Y4L4BpXa6Ml/hB54+kIf7fFJW2mDFtYKtPOvZq9Afw==}
+
+  oci-self@2.146.0:
+    resolution: {integrity: sha512-HMZL83VvZMh1VxcqCQKiIwQFGR5I7JE1uQwTh25S8U2c97YsMtH0KZ58VOfZB+841GPtdU3P8eaX2K6agkzPrA==}
+
+  oci-servicecatalog@2.146.0:
+    resolution: {integrity: sha512-KI3H4hdDQcT3LwPNmyZpt78AO4BGxQlnoYNl4/LveBXgpz3G8p9Y591492YdQlf9lUHckCWx3e7wE3m72lWyDg==}
+
+  oci-servicemanagerproxy@2.146.0:
+    resolution: {integrity: sha512-fdohy/5AoJiSi9pxwXYp3TZnfj/5Vy0NtmiHr90VoUoXBcvVun5dngNixQhmLoRXw9ZZXg94h90J8iWZkmqWjg==}
+
+  oci-stackmonitoring@2.146.0:
+    resolution: {integrity: sha512-inrBzzEQt/QPKDltUdlLiCyYK7A6yepPGPm84sLRhxVzYWVOkSSyj0EzKBlIJPhV/Y41PtKKxADkuHCDXX34sQ==}
+
+  oci-streaming@2.146.0:
+    resolution: {integrity: sha512-5SPlyqahp4sQDInH41CwuojbeDKCHUxINiPeb62IELyOtHBJtq1z6Eba3H4ob6JRCID0UNYFjt54XX7ygtZSvg==}
+
+  oci-tenantmanagercontrolplane@2.146.0:
+    resolution: {integrity: sha512-mnpydl7XO4SxnaJJd1a24sYjsjR1o6UJ2IEfec4jS1u3GxEu88tUMU42PTnvetn5rL/otWHoSUJPqJwhj5Zj7Q==}
+
+  oci-threatintelligence@2.146.0:
+    resolution: {integrity: sha512-jNHw9+mnSKd8QaK4gCPeN/zNxrUdsx87OrRmzQ0vepm96aurtL6lu4jl3kA1P6maPvFGEyM6wDChEyIqTtWuvQ==}
+
+  oci-usage@2.146.0:
+    resolution: {integrity: sha512-IoJrciFcjQUGvoRZv4sZi83SlpUPFYRWt7ZxUUJH65y4Vn2RIQWiawgm/lGMYS3VQ24dvT07s3oBWuOuRyG+yQ==}
+
+  oci-usageapi@2.146.0:
+    resolution: {integrity: sha512-8EOc68zydTgLUrXHPgznPxB7OPk9OwrMMqAmNwpu+yuRlhu2v/aRizfZqXCw8D+3U2OOGcoTP3jhQnACweuN9w==}
+
+  oci-vault@2.146.0:
+    resolution: {integrity: sha512-bX4/YHP+gPsdWBO/aQtl8XPh/V6Ier/AZb1bNSZnLKol1OVaFRCZLcMYrIJMfKdlYzZXFr3NTEDkyT6hYKqCiQ==}
+
+  oci-vbsinst@2.146.0:
+    resolution: {integrity: sha512-ca5TaNiiVzonlzVv+KMAJPYsPMDJEDn8VRWMTw2nj1VfppQGFwsrAl7sZ4oYOuQjoyEPt64K0mJD6ZV/uNoPxQ==}
+
+  oci-visualbuilder@2.146.0:
+    resolution: {integrity: sha512-lnTe8oGLYK1B51yNKyuCccFgZ0pbfWuNsWUKPjxJ9Jfqfrvl3PZPwXSF5LaAketS9JR5nWS3GMYhRpETZODArw==}
+
+  oci-vnmonitoring@2.146.0:
+    resolution: {integrity: sha512-+vL/Pu9rtvC/KQS7Z4xY96EXPn1HgjhKgHQcMjDbA48wN838qei9HAxO80AQ5D3uxeyl7fpqpgZQV2P1q5BdPA==}
+
+  oci-vulnerabilityscanning@2.146.0:
+    resolution: {integrity: sha512-HgSqh2wpuacUwHEQfhSO8yqjA0SwANw3XI6VGV+WdjbV3E80kl1KBuORPED/TP5Hut+igeAH48DmnGgOIUmTBg==}
+
+  oci-waa@2.146.0:
+    resolution: {integrity: sha512-MqUTMv5TYpPDwdzui2J+HInoALftvyckaLIZCYlxsuT3Utpqm017utXYJ4S9tV9UP7Ccr9QJYCAkZzXF65mO0g==}
+
+  oci-waas@2.146.0:
+    resolution: {integrity: sha512-hcTCVs9ZqoebIlmCz3AlzuzThvgXCg4h2eVjCjV1B8mepWpjjpStN9cOl4PlYXUWHDM0Zs0zWFZMw1aeW2XQMA==}
+
+  oci-waf@2.146.0:
+    resolution: {integrity: sha512-x8m9i+9EAk2Psmj8tLkYfOXEKy4Zk/ZYx4mykH9af4GSZCmK5r1+VZCDsQYm36ApikVSBWMB/ZVhpsPM/EOKCQ==}
+
+  oci-wlms@2.146.0:
+    resolution: {integrity: sha512-vFoGpTsrLG4nprfBPxVii0HaRnwJFdlX32gwUEPehExwZspzhNgC9Nnaydpr5JsSA+5aT29t8JZ5MV3nhOr33g==}
+
+  oci-workrequests@2.146.0:
+    resolution: {integrity: sha512-0SzMsW+Lo93pVhhgo28NYaGDH/w+Sr3jjNbyIjqGsSEKD4ei7najohMKsZNmPFn5OnmwmbfjFIUx2oyYZ70gRw==}
+
+  oci-zpr@2.146.0:
+    resolution: {integrity: sha512-K1yrIo7zgIfwNGMQIaVH/XxhDGUiugs7vYnum3GwxbrUFoqSMPnunXm/9pQp32yQz6Vu9gU9W1uRa1LcCDaRxg==}
+
+  opossum@5.0.1:
+    resolution: {integrity: sha512-iUDUQmFl3RanaBVLMDTZ6WtXj/Hk84pwJ5JWoJaQd1lXGifdApHhszI3biZvdBDdpTERCmB6x+7+uNvzhzVZIg==}
+    engines: {node: '>= 10'}
+
+  picocolors@1.1.1:
+    resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
+
+  picomatch@4.0.7:
+    resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
+    engines: {node: '>=12'}
+
+  postcss@8.5.32:
+    resolution: {integrity: sha512-LJlKCCAUFKOuZxipUdYw1NzIITEsPcgyOG9LkvRJvuKj/bRzbuRY0ARXvL0pWGpsZvn8jku+LMep2eU0seHp8g==}
+    engines: {node: ^10 || ^12 || >=14}
+
+  rolldown@1.2.19:
+    resolution: {integrity: sha512-QIiV1J9d0pzN4jeeTH4sjPy0AZ6cAy2cG0ExeoE1+U8Rvj+hR3gYkokx0YbeUNGlZqiQJJ2utcETe0oKXwzsuA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+
+  safe-buffer@5.2.1:
+    resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
+
+  safer-buffer@2.1.2:
+    resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
+
+  semver@7.8.6:
+    resolution: {integrity: sha512-9lpSSU4Mly3mrtruwLs1eLK6+gzbzqeBFwRNjIjE+9LuDpWdYctrQlQ3ej1Ilgi7gknpsTRnPoLP8DpCHqHIJw==}
+    engines: {node: '>=10'}
+    hasBin: true
+
+  source-map-js@1.2.2:
+    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
+    engines: {node: '>=0.10.0'}
+
+  sshpk@1.18.0:
+    resolution: {integrity: sha512-2p2KJZTSqQ/I3+HX42EpYOa2l3f8Erv8MWKsy2I9uf4wA7yFIkXRffYdsx86y6z4vHtV8u7g+pPlr8/4ouAxsQ==}
+    engines: {node: '>=0.10.0'}
+    hasBin: true
+
+  std-env@4.3.0:
+    resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
+
+  tinybench@6.2.3:
+    resolution: {integrity: sha512-Al01C2JIBnO2CXCAPbpAl6sUiOZHeThGtHYNTa51JRw9PyWOCdr+9Ong05R4qg/Sk3+H645E8ov1h2c58ityNw==}
+    engines: {node: '>=20.0.0'}
+
+  tinyexec@1.3.1:
+    resolution: {integrity: sha512-GCvB3aoys96IuDFBMcTB46JOR6mdMtAToqwiW8JlWhsoh1mhHi/xn9ss/Dg7N555GiJyEt2qzoG/NHCwM6h1EA==}
+    engines: {node: '>=18'}
+
+  tinyglobby@0.2.17:
+    resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
+    engines: {node: '>=12.0.0'}
+
+  tr46@0.0.3:
+    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
+
+  tslib@2.9.1:
+    resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
+
+  tsx@4.23.15:
+    resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  tweetnacl@0.14.5:
+    resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
+
+  typescript@7.0.2:
+    resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
+    engines: {node: '>=16.20.0'}
+    hasBin: true
+
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
+
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
+
+  uuid@11.1.1:
+    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
+    hasBin: true
+
+  verror@1.10.0:
+    resolution: {integrity: sha512-ZZKSmDAEFOijERBLkmYfJ+vmk3w+7hOLYDNkRCuRuMJGEmqYNCNLyBBFwWKVMhfwaEF3WOd0Zlw86U/WC/+nYw==}
+    engines: {'0': node >=0.6.0}
+
+  vite@8.3.8:
+    resolution: {integrity: sha512-LzOn3h9rG/0vhLdXrV4yJ4QFA9eEoqCl+Yx+kGJd7aB9w6nfNgVHKSYwLPZUHrz4ZGa+t+kXjV9itvcHDLQouA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^20.19.0 || >=22.12.0
+      '@vitejs/devtools': ^0.7.1 || ^0.8.0
+      esbuild: ^0.27.0 || ^0.28.0
+      jiti: '>=1.21.0'
+      less: ^4.0.0
+      sass: ^1.70.0
+      sass-embedded: ^1.70.0
+      stylus: '>=0.54.8'
+      sugarss: ^5.0.0
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      '@vitejs/devtools':
+        optional: true
+      esbuild:
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      yaml:
+        optional: true
+
+  vitest@5.1.0:
+    resolution: {integrity: sha512-MzmNFnrwa8v8lF1bLxw3UJ4EREwVOVb75VqJZmUDRjJ6EluK/x9th7qTbaeDk41WxE1GxWqmTXcdsfobfH5sOA==}
+    engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
+    hasBin: true
+    peerDependencies:
+      '@edge-runtime/vm': '*'
+      '@opentelemetry/api': ^1.9.0
+      '@types/node': ^22.0.0 || >=24.0.0
+      '@vitest/browser-playwright': 5.1.0
+      '@vitest/browser-preview': 5.1.0
+      '@vitest/browser-webdriverio': ^5.0.0-beta.5 || >=5.0.0
+      '@vitest/coverage-istanbul': 5.1.0
+      '@vitest/coverage-v8': 5.1.0
+      '@vitest/ui': 5.1.0
+      happy-dom: '*'
+      jsdom: '*'
+      vite: ^6.4.0 || ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      '@edge-runtime/vm':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+      '@types/node':
+        optional: true
+      '@vitest/browser-playwright':
+        optional: true
+      '@vitest/browser-preview':
+        optional: true
+      '@vitest/browser-webdriverio':
+        optional: true
+      '@vitest/coverage-istanbul':
+        optional: true
+      '@vitest/coverage-v8':
+        optional: true
+      '@vitest/ui':
+        optional: true
+      happy-dom:
+        optional: true
+      jsdom:
+        optional: true
+
+  webidl-conversions@3.0.1:
+    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
+
+  whatwg-fetch@3.6.20:
+    resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
+
+  whatwg-url@5.0.0:
+    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
+
+  why-is-node-running@3.2.1:
+    resolution: {integrity: sha512-Tb2FUhB4vUsGQlfSquQLYkApkuPAFQXGFzxWKHHumVz2dK+X1RUm/HnID4+TfIGYJ1kTcwOaCk/buYCEJr6YjQ==}
+    engines: {node: '>=20.11'}
+    hasBin: true
+
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
+snapshots:
+
+  '@aws-sdk/client-freetier@3.1167.0':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/credential-provider-node': 3.972.97
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/fetch-http-handler': 5.8.1
+      '@smithy/node-http-handler': 4.14.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/client-sts@3.1167.0':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/credential-provider-node': 3.972.97
+      '@aws-sdk/signature-v4-multi-region': 3.996.52
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/fetch-http-handler': 5.8.1
+      '@smithy/node-http-handler': 4.14.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/core@3.981.0':
+    dependencies:
+      '@aws-sdk/types': 3.975.1
+      '@aws-sdk/xml-builder': 3.972.43
+      '@aws/lambda-invoke-store': 0.3.0
+      '@smithy/core': 3.40.0
+      '@smithy/signature-v4': 5.7.5
+      '@smithy/types': 4.20.0
+      bowser: 2.15.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-env@3.972.84':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-http@3.972.86':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/fetch-http-handler': 5.8.1
+      '@smithy/node-http-handler': 4.14.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-ini@3.973.30':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/credential-provider-env': 3.972.84
+      '@aws-sdk/credential-provider-http': 3.972.86
+      '@aws-sdk/credential-provider-login': 3.972.92
+      '@aws-sdk/credential-provider-process': 3.972.84
+      '@aws-sdk/credential-provider-sso': 3.973.28
+      '@aws-sdk/credential-provider-web-identity': 3.972.90
+      '@aws-sdk/nested-clients': 3.998.3
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/credential-provider-imds': 4.5.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-login@3.972.92':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/nested-clients': 3.998.3
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-node@3.972.97':
+    dependencies:
+      '@aws-sdk/credential-provider-env': 3.972.84
+      '@aws-sdk/credential-provider-http': 3.972.86
+      '@aws-sdk/credential-provider-ini': 3.973.30
+      '@aws-sdk/credential-provider-process': 3.972.84
+      '@aws-sdk/credential-provider-sso': 3.973.28
+      '@aws-sdk/credential-provider-web-identity': 3.972.90
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/credential-provider-imds': 4.5.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-process@3.972.84':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-sso@3.973.28':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/nested-clients': 3.998.3
+      '@aws-sdk/token-providers': 3.1166.0
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/credential-provider-web-identity@3.972.90':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/nested-clients': 3.998.3
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/nested-clients@3.998.3':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/signature-v4-multi-region': 3.996.52
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/fetch-http-handler': 5.8.1
+      '@smithy/node-http-handler': 4.14.2
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/signature-v4-multi-region@3.996.52':
+    dependencies:
+      '@aws-sdk/types': 3.975.1
+      '@smithy/signature-v4': 5.7.5
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/token-providers@3.1166.0':
+    dependencies:
+      '@aws-sdk/core': 3.981.0
+      '@aws-sdk/nested-clients': 3.998.3
+      '@aws-sdk/types': 3.975.1
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/types@3.975.1':
+    dependencies:
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws-sdk/xml-builder@3.972.43':
+    dependencies:
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@aws/lambda-invoke-store@0.3.0': {}
+
+  '@emnapi/core@2.0.0-beta.2':
+    dependencies:
+      '@emnapi/wasi-threads': 2.2.0
+      tslib: 2.9.1
+    optional: true
+
+  '@emnapi/runtime@2.0.0-beta.2':
+    dependencies:
+      tslib: 2.9.1
+    optional: true
+
+  '@emnapi/wasi-threads@2.2.0':
+    dependencies:
+      tslib: 2.9.1
+    optional: true
+
+  '@esbuild/aix-ppc64@0.28.2':
+    optional: true
+
+  '@esbuild/android-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/android-arm@0.28.2':
+    optional: true
+
+  '@esbuild/android-x64@0.28.2':
+    optional: true
+
+  '@esbuild/darwin-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/darwin-x64@0.28.2':
+    optional: true
+
+  '@esbuild/freebsd-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/freebsd-x64@0.28.2':
+    optional: true
+
+  '@esbuild/linux-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/linux-arm@0.28.2':
+    optional: true
+
+  '@esbuild/linux-ia32@0.28.2':
+    optional: true
+
+  '@esbuild/linux-loong64@0.28.2':
+    optional: true
+
+  '@esbuild/linux-mips64el@0.28.2':
+    optional: true
+
+  '@esbuild/linux-ppc64@0.28.2':
+    optional: true
+
+  '@esbuild/linux-riscv64@0.28.2':
+    optional: true
+
+  '@esbuild/linux-s390x@0.28.2':
+    optional: true
+
+  '@esbuild/linux-x64@0.28.2':
+    optional: true
+
+  '@esbuild/netbsd-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/netbsd-x64@0.28.2':
+    optional: true
+
+  '@esbuild/openbsd-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/openbsd-x64@0.28.2':
+    optional: true
+
+  '@esbuild/openharmony-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/sunos-x64@0.28.2':
+    optional: true
+
+  '@esbuild/win32-arm64@0.28.2':
+    optional: true
+
+  '@esbuild/win32-ia32@0.28.2':
+    optional: true
+
+  '@esbuild/win32-x64@0.28.2':
+    optional: true
+
+  '@jridgewell/resolve-uri@3.1.2': {}
+
+  '@jridgewell/sourcemap-codec@1.6.0': {}
+
+  '@jridgewell/trace-mapping@0.3.31':
+    dependencies:
+      '@jridgewell/resolve-uri': 3.1.2
+      '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@napi-rs/wasm-runtime@1.2.6(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2)':
+    dependencies:
+      '@emnapi/core': 2.0.0-beta.2
+      '@emnapi/runtime': 2.0.0-beta.2
+      '@tybys/wasm-util': 0.10.4
+    optional: true
+
+  '@opencode/cli-darwin-arm64@2.2.7':
+    optional: true
+
+  '@opencode/cli-darwin-x64-baseline@2.2.7':
+    optional: true
+
+  '@opencode/cli-darwin-x64@2.2.7':
+    optional: true
+
+  '@opencode/cli-linux-arm64-musl@2.2.7':
+    optional: true
+
+  '@opencode/cli-linux-arm64@2.2.7':
+    optional: true
+
+  '@opencode/cli-linux-x64-baseline-musl@2.2.7':
+    optional: true
+
+  '@opencode/cli-linux-x64-baseline@2.2.7':
+    optional: true
+
+  '@opencode/cli-linux-x64-musl@2.2.7':
+    optional: true
+
+  '@opencode/cli-linux-x64@2.2.7':
+    optional: true
+
+  '@opencode/cli-windows-arm64@2.2.7':
+    optional: true
+
+  '@opencode/cli-windows-x64-baseline@2.2.7':
+    optional: true
+
+  '@opencode/cli-windows-x64@2.2.7':
+    optional: true
+
+  '@opencode/cli@2.2.7':
+    optionalDependencies:
+      '@opencode/cli-darwin-arm64': 2.2.7
+      '@opencode/cli-darwin-x64': 2.2.7
+      '@opencode/cli-darwin-x64-baseline': 2.2.7
+      '@opencode/cli-linux-arm64': 2.2.7
+      '@opencode/cli-linux-arm64-musl': 2.2.7
+      '@opencode/cli-linux-x64': 2.2.7
+      '@opencode/cli-linux-x64-baseline': 2.2.7
+      '@opencode/cli-linux-x64-baseline-musl': 2.2.7
+      '@opencode/cli-linux-x64-musl': 2.2.7
+      '@opencode/cli-windows-arm64': 2.2.7
+      '@opencode/cli-windows-x64': 2.2.7
+      '@opencode/cli-windows-x64-baseline': 2.2.7
+
+  '@oxc-project/types@0.156.0': {}
+
+  '@rolldown/binding-android-arm-eabi@1.2.19':
+    optional: true
+
+  '@rolldown/binding-android-arm64@1.2.19':
+    optional: true
+
+  '@rolldown/binding-darwin-arm64@1.2.19':
+    optional: true
+
+  '@rolldown/binding-darwin-x64@1.2.19':
+    optional: true
+
+  '@rolldown/binding-freebsd-x64@1.2.19':
+    optional: true
+
+  '@rolldown/binding-linux-arm-gnueabihf@1.2.19':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-gnu@1.2.19':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-musl@1.2.19':
+    optional: true
+
+  '@rolldown/binding-linux-ppc64-gnu@1.2.19':
+    optional: true
+
+  '@rolldown/binding-linux-s390x-gnu@1.2.19':
+    optional: true
+
+  '@rolldown/binding-linux-x64-gnu@1.2.19':
+    optional: true
+
+  '@rolldown/binding-linux-x64-musl@1.2.19':
+    optional: true
+
+  '@rolldown/binding-openharmony-arm64@1.2.19':
+    optional: true
+
+  '@rolldown/binding-wasm32-wasi@1.2.19':
+    dependencies:
+      '@emnapi/core': 2.0.0-beta.2
+      '@emnapi/runtime': 2.0.0-beta.2
+      '@napi-rs/wasm-runtime': 1.2.6(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2)
+    optional: true
+
+  '@rolldown/binding-win32-arm64-msvc@1.2.19':
+    optional: true
+
+  '@rolldown/binding-win32-x64-msvc@1.2.19':
+    optional: true
+
+  '@rolldown/pluginutils@1.1.0': {}
+
+  '@smithy/core@3.40.0':
+    dependencies:
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/credential-provider-imds@4.5.2':
+    dependencies:
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/fetch-http-handler@5.8.1':
+    dependencies:
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/node-http-handler@4.14.2':
+    dependencies:
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/signature-v4@5.7.5':
+    dependencies:
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/types@4.20.0':
+    dependencies:
+      tslib: 2.9.1
+
+  '@tybys/wasm-util@0.10.4':
+    dependencies:
+      tslib: 2.9.1
+    optional: true
+
+  '@types/chai@5.2.3':
+    dependencies:
+      '@types/deep-eql': 4.0.2
+      assertion-error: 2.0.1
+
+  '@types/deep-eql@4.0.2': {}
+
+  '@types/estree@1.0.10': {}
+
+  '@types/isomorphic-fetch@0.0.35': {}
+
+  '@types/jsonwebtoken@9.0.3':
+    dependencies:
+      '@types/node': 26.6.6
+
+  '@types/node@24.19.2':
+    dependencies:
+      undici-types: 7.24.6
+
+  '@types/node@26.6.6':
+    dependencies:
+      undici-types: 8.9.0
+
+  '@types/opossum@4.1.1':
+    dependencies:
+      '@types/node': 26.6.6
+
+  '@types/sshpk@1.10.3':
+    dependencies:
+      '@types/node': 26.6.6
+
+  '@types/uuid@8.3.4': {}
+
+  '@typescript/typescript-aix-ppc64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-darwin-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-darwin-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-freebsd-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-freebsd-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-arm@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-loong64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-mips64el@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-ppc64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-riscv64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-s390x@7.0.2':
+    optional: true
+
+  '@typescript/typescript-linux-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-netbsd-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-netbsd-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-openbsd-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-openbsd-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-sunos-x64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-win32-arm64@7.0.2':
+    optional: true
+
+  '@typescript/typescript-win32-x64@7.0.2':
+    optional: true
+
+  '@vitest/mocker@5.1.0(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))':
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      '@vitest/spy': 5.1.0
+      estree-walker: 3.0.3
+      magic-string: 1.4.5
+    optionalDependencies:
+      vite: 8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)
+
+  '@vitest/spy@5.1.0': {}
+
+  asn1@0.2.6:
+    dependencies:
+      safer-buffer: 2.1.2
+
+  assert-plus@1.0.0: {}
+
+  assertion-error@2.0.1: {}
+
+  await-semaphore@0.1.3: {}
+
+  bcrypt-pbkdf@1.0.2:
+    dependencies:
+      tweetnacl: 0.14.5
+
+  bowser@2.15.0: {}
+
+  buffer-equal-constant-time@1.0.1: {}
+
+  chai@6.3.0: {}
+
+  core-util-is@1.0.2: {}
+
+  dashdash@1.14.1:
+    dependencies:
+      assert-plus: 1.0.0
+
+  detect-libc@2.1.2: {}
+
+  ecc-jsbn@0.1.2:
+    dependencies:
+      jsbn: 0.1.1
+      safer-buffer: 2.1.2
+
+  ecdsa-sig-formatter@1.0.11:
+    dependencies:
+      safe-buffer: 5.2.1
+
+  es-module-lexer@2.3.2: {}
+
+  es6-promise@4.2.6: {}
+
+  esbuild@0.28.2:
+    optionalDependencies:
+      '@esbuild/aix-ppc64': 0.28.2
+      '@esbuild/android-arm': 0.28.2
+      '@esbuild/android-arm64': 0.28.2
+      '@esbuild/android-x64': 0.28.2
+      '@esbuild/darwin-arm64': 0.28.2
+      '@esbuild/darwin-x64': 0.28.2
+      '@esbuild/freebsd-arm64': 0.28.2
+      '@esbuild/freebsd-x64': 0.28.2
+      '@esbuild/linux-arm': 0.28.2
+      '@esbuild/linux-arm64': 0.28.2
+      '@esbuild/linux-ia32': 0.28.2
+      '@esbuild/linux-loong64': 0.28.2
+      '@esbuild/linux-mips64el': 0.28.2
+      '@esbuild/linux-ppc64': 0.28.2
+      '@esbuild/linux-riscv64': 0.28.2
+      '@esbuild/linux-s390x': 0.28.2
+      '@esbuild/linux-x64': 0.28.2
+      '@esbuild/netbsd-arm64': 0.28.2
+      '@esbuild/netbsd-x64': 0.28.2
+      '@esbuild/openbsd-arm64': 0.28.2
+      '@esbuild/openbsd-x64': 0.28.2
+      '@esbuild/openharmony-arm64': 0.28.2
+      '@esbuild/sunos-x64': 0.28.2
+      '@esbuild/win32-arm64': 0.28.2
+      '@esbuild/win32-ia32': 0.28.2
+      '@esbuild/win32-x64': 0.28.2
+
+  estree-walker@3.0.3:
+    dependencies:
+      '@types/estree': 1.0.10
+
+  expect-type@1.4.0: {}
+
+  extsprintf@1.3.0: {}
+
+  fdir@6.5.0(picomatch@4.0.7):
+    optionalDependencies:
+      picomatch: 4.0.7
+
+  fsevents@2.3.3:
+    optional: true
+
+  getpass@0.1.7:
+    dependencies:
+      assert-plus: 1.0.0
+
+  http-signature@1.3.1:
+    dependencies:
+      assert-plus: 1.0.0
+      jsprim: 1.4.2
+      sshpk: 1.18.0
+
+  isomorphic-fetch@3.0.0:
+    dependencies:
+      node-fetch: 2.7.0
+      whatwg-fetch: 3.6.20
+    transitivePeerDependencies:
+      - encoding
+
+  jsbn@0.1.1: {}
+
+  json-schema@0.4.0: {}
+
+  jsonwebtoken@9.0.3:
+    dependencies:
+      jws: 4.0.1
+      lodash.includes: 4.3.0
+      lodash.isboolean: 3.0.3
+      lodash.isinteger: 4.0.4
+      lodash.isnumber: 3.0.3
+      lodash.isplainobject: 4.0.6
+      lodash.isstring: 4.0.1
+      lodash.once: 4.1.1
+      ms: 2.1.3
+      semver: 7.8.6
+
+  jsprim@1.4.2:
+    dependencies:
+      assert-plus: 1.0.0
+      extsprintf: 1.3.0
+      json-schema: 0.4.0
+      verror: 1.10.0
+
+  jssha@3.3.1: {}
+
+  jwa@2.0.1:
+    dependencies:
+      buffer-equal-constant-time: 1.0.1
+      ecdsa-sig-formatter: 1.0.11
+      safe-buffer: 5.2.1
+
+  jws@4.0.1:
+    dependencies:
+      jwa: 2.0.1
+      safe-buffer: 5.2.1
+
+  lightningcss-android-arm64@1.33.0:
+    optional: true
+
+  lightningcss-darwin-arm64@1.33.0:
+    optional: true
+
+  lightningcss-darwin-x64@1.33.0:
+    optional: true
+
+  lightningcss-freebsd-x64@1.33.0:
+    optional: true
+
+  lightningcss-linux-arm-gnueabihf@1.33.0:
+    optional: true
+
+  lightningcss-linux-arm64-gnu@1.33.0:
+    optional: true
+
+  lightningcss-linux-arm64-musl@1.33.0:
+    optional: true
+
+  lightningcss-linux-x64-gnu@1.33.0:
+    optional: true
+
+  lightningcss-linux-x64-musl@1.33.0:
+    optional: true
+
+  lightningcss-win32-arm64-msvc@1.33.0:
+    optional: true
+
+  lightningcss-win32-x64-msvc@1.33.0:
+    optional: true
+
+  lightningcss@1.33.0:
+    dependencies:
+      detect-libc: 2.1.2
+    optionalDependencies:
+      lightningcss-android-arm64: 1.33.0
+      lightningcss-darwin-arm64: 1.33.0
+      lightningcss-darwin-x64: 1.33.0
+      lightningcss-freebsd-x64: 1.33.0
+      lightningcss-linux-arm-gnueabihf: 1.33.0
+      lightningcss-linux-arm64-gnu: 1.33.0
+      lightningcss-linux-arm64-musl: 1.33.0
+      lightningcss-linux-x64-gnu: 1.33.0
+      lightningcss-linux-x64-musl: 1.33.0
+      lightningcss-win32-arm64-msvc: 1.33.0
+      lightningcss-win32-x64-msvc: 1.33.0
+
+  lodash.includes@4.3.0: {}
+
+  lodash.isboolean@3.0.3: {}
+
+  lodash.isinteger@4.0.4: {}
+
+  lodash.isnumber@3.0.3: {}
+
+  lodash.isplainobject@4.0.6: {}
+
+  lodash.isstring@4.0.1: {}
+
+  lodash.once@4.1.1: {}
+
+  magic-string@1.4.5:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.6.0
+
+  ms@2.1.3: {}
+
+  nanoid@3.3.20: {}
+
+  node-fetch@2.7.0:
+    dependencies:
+      whatwg-url: 5.0.0
+
+  obug@3.0.0: {}
+
+  oci-accessgovernancecp@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-adm@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-aidataplatform@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-aidocument@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ailanguage@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-aispeech@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-aivision@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-analytics@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-announcementsservice@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-apiaccesscontrol@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-apigateway@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-apiplatform@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-apmconfig@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-apmcontrolplane@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-apmsynthetics@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-apmtraces@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-appmgmtcontrol@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-artifacts@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-audit@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-autoscaling@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-bastion@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-batch@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-bds@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-blockchain@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-budget@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-capacitymanagement@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ccdoffers@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-certificates@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-certificatesmanagement@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-cims@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-cloudbridge@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-cloudguard@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-cloudmigrations@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-clusterhealth@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-clusterplacementgroups@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-common@2.146.0:
+    dependencies:
+      '@types/isomorphic-fetch': 0.0.35
+      '@types/jsonwebtoken': 9.0.3
+      '@types/opossum': 4.1.1
+      '@types/sshpk': 1.10.3
+      '@types/uuid': 8.3.4
+      es6-promise: 4.2.6
+      http-signature: 1.3.1
+      isomorphic-fetch: 3.0.0
+      jsonwebtoken: 9.0.3
+      jssha: 3.3.1
+      node-fetch: 2.7.0
+      opossum: 5.0.1
+      sshpk: 1.18.0
+      uuid: 11.1.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-computecloudatcustomer@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-computeinstanceagent@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-containerengine@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-containerinstances@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-containerregistry@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-core@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      oci-workrequests: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-costad@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-dashboardservice@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-database@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      oci-workrequests: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-databasemanagement@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-databasemigration@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-databasetools@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-databasetoolsruntime@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-datacatalog@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-datacc@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-dataflow@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-dataintegration@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-datalabelingservice@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-datalabelingservicedataplane@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-datasafe@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-datascience@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-dblm@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-dbmulticloud@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ddfs@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-delegateaccesscontrol@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-demandsignal@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-desktops@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-devops@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-dif@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-disasterrecovery@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-distributeddatabase@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-dns@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      oci-workrequests: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-email@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-emaildataplane@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-emwarehouse@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-events@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-filestorage@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-fleetappsmanagement@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-fleetsoftwareupdate@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-functions@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-fusionapps@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-gdp@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-generativeai@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-generativeaiagent@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-generativeaiagentruntime@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-generativeaidata@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-generativeaiinference@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-generativeaisandbox@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-genericartifactscontent@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-goldengate@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-governancerulescontrolplane@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-healthchecks@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-identity@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-identitydataplane@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-identitydomains@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-integration@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-iot@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-jms@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-jmsjavadownloads@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-jmsutils@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-keymanagement@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-licensemanager@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-limits@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-limitsincrease@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-loadbalancer@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-lockbox@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-loganalytics@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-logging@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-loggingingestion@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-loggingsearch@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-lustrefilestorage@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-managedkafka@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-managementagent@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-managementdashboard@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-marketplace@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-marketplaceprivateoffer@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-marketplacepublisher@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-mediaservices@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-mngdmac@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-modeldeployment@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-monitoring@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-multicloud@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-mysql@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-networkfirewall@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-networkloadbalancer@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-nosql@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-objectstorage@2.146.0:
+    dependencies:
+      await-semaphore: 0.1.3
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-oce@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ocicontrolcenter@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ociproductcatalog@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ocvp@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-oda@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-onesubscription@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ons@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-opa@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-opensearch@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-operatoraccesscontrol@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-opsi@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-optimizer@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-osmanagementhub@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-ospgateway@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-osubbillingschedule@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-osuborganizationsubscription@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-osubsubscription@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-osubusage@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-psa@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-psql@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-pss@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-queue@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-recovery@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-redis@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-resourceanalytics@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-resourcemanager@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-resourcescheduler@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-resourcesearch@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-rover@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-sch@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-sdk@2.146.0:
+    dependencies:
+      oci-accessgovernancecp: 2.146.0
+      oci-adm: 2.146.0
+      oci-aidataplatform: 2.146.0
+      oci-aidocument: 2.146.0
+      oci-ailanguage: 2.146.0
+      oci-aispeech: 2.146.0
+      oci-aivision: 2.146.0
+      oci-analytics: 2.146.0
+      oci-announcementsservice: 2.146.0
+      oci-apiaccesscontrol: 2.146.0
+      oci-apigateway: 2.146.0
+      oci-apiplatform: 2.146.0
+      oci-apmconfig: 2.146.0
+      oci-apmcontrolplane: 2.146.0
+      oci-apmsynthetics: 2.146.0
+      oci-apmtraces: 2.146.0
+      oci-appmgmtcontrol: 2.146.0
+      oci-artifacts: 2.146.0
+      oci-audit: 2.146.0
+      oci-autoscaling: 2.146.0
+      oci-bastion: 2.146.0
+      oci-batch: 2.146.0
+      oci-bds: 2.146.0
+      oci-blockchain: 2.146.0
+      oci-budget: 2.146.0
+      oci-capacitymanagement: 2.146.0
+      oci-ccdoffers: 2.146.0
+      oci-certificates: 2.146.0
+      oci-certificatesmanagement: 2.146.0
+      oci-cims: 2.146.0
+      oci-cloudbridge: 2.146.0
+      oci-cloudguard: 2.146.0
+      oci-cloudmigrations: 2.146.0
+      oci-clusterhealth: 2.146.0
+      oci-clusterplacementgroups: 2.146.0
+      oci-common: 2.146.0
+      oci-computecloudatcustomer: 2.146.0
+      oci-computeinstanceagent: 2.146.0
+      oci-containerengine: 2.146.0
+      oci-containerinstances: 2.146.0
+      oci-containerregistry: 2.146.0
+      oci-core: 2.146.0
+      oci-costad: 2.146.0
+      oci-dashboardservice: 2.146.0
+      oci-database: 2.146.0
+      oci-databasemanagement: 2.146.0
+      oci-databasemigration: 2.146.0
+      oci-databasetools: 2.146.0
+      oci-databasetoolsruntime: 2.146.0
+      oci-datacatalog: 2.146.0
+      oci-datacc: 2.146.0
+      oci-dataflow: 2.146.0
+      oci-dataintegration: 2.146.0
+      oci-datalabelingservice: 2.146.0
+      oci-datalabelingservicedataplane: 2.146.0
+      oci-datasafe: 2.146.0
+      oci-datascience: 2.146.0
+      oci-dblm: 2.146.0
+      oci-dbmulticloud: 2.146.0
+      oci-ddfs: 2.146.0
+      oci-delegateaccesscontrol: 2.146.0
+      oci-demandsignal: 2.146.0
+      oci-desktops: 2.146.0
+      oci-devops: 2.146.0
+      oci-dif: 2.146.0
+      oci-disasterrecovery: 2.146.0
+      oci-distributeddatabase: 2.146.0
+      oci-dns: 2.146.0
+      oci-email: 2.146.0
+      oci-emaildataplane: 2.146.0
+      oci-emwarehouse: 2.146.0
+      oci-events: 2.146.0
+      oci-filestorage: 2.146.0
+      oci-fleetappsmanagement: 2.146.0
+      oci-fleetsoftwareupdate: 2.146.0
+      oci-functions: 2.146.0
+      oci-fusionapps: 2.146.0
+      oci-gdp: 2.146.0
+      oci-generativeai: 2.146.0
+      oci-generativeaiagent: 2.146.0
+      oci-generativeaiagentruntime: 2.146.0
+      oci-generativeaidata: 2.146.0
+      oci-generativeaiinference: 2.146.0
+      oci-generativeaisandbox: 2.146.0
+      oci-genericartifactscontent: 2.146.0
+      oci-goldengate: 2.146.0
+      oci-governancerulescontrolplane: 2.146.0
+      oci-healthchecks: 2.146.0
+      oci-identity: 2.146.0
+      oci-identitydataplane: 2.146.0
+      oci-identitydomains: 2.146.0
+      oci-integration: 2.146.0
+      oci-iot: 2.146.0
+      oci-jms: 2.146.0
+      oci-jmsjavadownloads: 2.146.0
+      oci-jmsutils: 2.146.0
+      oci-keymanagement: 2.146.0
+      oci-licensemanager: 2.146.0
+      oci-limits: 2.146.0
+      oci-limitsincrease: 2.146.0
+      oci-loadbalancer: 2.146.0
+      oci-lockbox: 2.146.0
+      oci-loganalytics: 2.146.0
+      oci-logging: 2.146.0
+      oci-loggingingestion: 2.146.0
+      oci-loggingsearch: 2.146.0
+      oci-lustrefilestorage: 2.146.0
+      oci-managedkafka: 2.146.0
+      oci-managementagent: 2.146.0
+      oci-managementdashboard: 2.146.0
+      oci-marketplace: 2.146.0
+      oci-marketplaceprivateoffer: 2.146.0
+      oci-marketplacepublisher: 2.146.0
+      oci-mediaservices: 2.146.0
+      oci-mngdmac: 2.146.0
+      oci-modeldeployment: 2.146.0
+      oci-monitoring: 2.146.0
+      oci-multicloud: 2.146.0
+      oci-mysql: 2.146.0
+      oci-networkfirewall: 2.146.0
+      oci-networkloadbalancer: 2.146.0
+      oci-nosql: 2.146.0
+      oci-objectstorage: 2.146.0
+      oci-oce: 2.146.0
+      oci-ocicontrolcenter: 2.146.0
+      oci-ociproductcatalog: 2.146.0
+      oci-ocvp: 2.146.0
+      oci-oda: 2.146.0
+      oci-onesubscription: 2.146.0
+      oci-ons: 2.146.0
+      oci-opa: 2.146.0
+      oci-opensearch: 2.146.0
+      oci-operatoraccesscontrol: 2.146.0
+      oci-opsi: 2.146.0
+      oci-optimizer: 2.146.0
+      oci-osmanagementhub: 2.146.0
+      oci-ospgateway: 2.146.0
+      oci-osubbillingschedule: 2.146.0
+      oci-osuborganizationsubscription: 2.146.0
+      oci-osubsubscription: 2.146.0
+      oci-osubusage: 2.146.0
+      oci-psa: 2.146.0
+      oci-psql: 2.146.0
+      oci-pss: 2.146.0
+      oci-queue: 2.146.0
+      oci-recovery: 2.146.0
+      oci-redis: 2.146.0
+      oci-resourceanalytics: 2.146.0
+      oci-resourcemanager: 2.146.0
+      oci-resourcescheduler: 2.146.0
+      oci-resourcesearch: 2.146.0
+      oci-rover: 2.146.0
+      oci-sch: 2.146.0
+      oci-secrets: 2.146.0
+      oci-securityattribute: 2.146.0
+      oci-self: 2.146.0
+      oci-servicecatalog: 2.146.0
+      oci-servicemanagerproxy: 2.146.0
+      oci-stackmonitoring: 2.146.0
+      oci-streaming: 2.146.0
+      oci-tenantmanagercontrolplane: 2.146.0
+      oci-threatintelligence: 2.146.0
+      oci-usage: 2.146.0
+      oci-usageapi: 2.146.0
+      oci-vault: 2.146.0
+      oci-vbsinst: 2.146.0
+      oci-visualbuilder: 2.146.0
+      oci-vnmonitoring: 2.146.0
+      oci-vulnerabilityscanning: 2.146.0
+      oci-waa: 2.146.0
+      oci-waas: 2.146.0
+      oci-waf: 2.146.0
+      oci-wlms: 2.146.0
+      oci-workrequests: 2.146.0
+      oci-zpr: 2.146.0
+    transitivePeerDependencies:
+      - encoding
+
+  oci-secrets@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-securityattribute@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-self@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-servicecatalog@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-servicemanagerproxy@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-stackmonitoring@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-streaming@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-tenantmanagercontrolplane@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-threatintelligence@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-usage@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-usageapi@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-vault@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      oci-workrequests: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-vbsinst@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-visualbuilder@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-vnmonitoring@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-vulnerabilityscanning@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-waa@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-waas@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-waf@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-wlms@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-workrequests@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  oci-zpr@2.146.0:
+    dependencies:
+      oci-common: 2.146.0
+      opossum: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  opossum@5.0.1: {}
+
+  picocolors@1.1.1: {}
+
+  picomatch@4.0.7: {}
+
+  postcss@8.5.32:
+    dependencies:
+      nanoid: 3.3.20
+      picocolors: 1.1.1
+      source-map-js: 1.2.2
+
+  rolldown@1.2.19:
+    dependencies:
+      '@oxc-project/types': 0.156.0
+      '@rolldown/pluginutils': 1.1.0
+    optionalDependencies:
+      '@rolldown/binding-android-arm-eabi': 1.2.19
+      '@rolldown/binding-android-arm64': 1.2.19
+      '@rolldown/binding-darwin-arm64': 1.2.19
+      '@rolldown/binding-darwin-x64': 1.2.19
+      '@rolldown/binding-freebsd-x64': 1.2.19
+      '@rolldown/binding-linux-arm-gnueabihf': 1.2.19
+      '@rolldown/binding-linux-arm64-gnu': 1.2.19
+      '@rolldown/binding-linux-arm64-musl': 1.2.19
+      '@rolldown/binding-linux-ppc64-gnu': 1.2.19
+      '@rolldown/binding-linux-s390x-gnu': 1.2.19
+      '@rolldown/binding-linux-x64-gnu': 1.2.19
+      '@rolldown/binding-linux-x64-musl': 1.2.19
+      '@rolldown/binding-openharmony-arm64': 1.2.19
+      '@rolldown/binding-wasm32-wasi': 1.2.19
+      '@rolldown/binding-win32-arm64-msvc': 1.2.19
+      '@rolldown/binding-win32-x64-msvc': 1.2.19
+
+  safe-buffer@5.2.1: {}
+
+  safer-buffer@2.1.2: {}
+
+  semver@7.8.6: {}
+
+  source-map-js@1.2.2: {}
+
+  sshpk@1.18.0:
+    dependencies:
+      asn1: 0.2.6
+      assert-plus: 1.0.0
+      bcrypt-pbkdf: 1.0.2
+      dashdash: 1.14.1
+      ecc-jsbn: 0.1.2
+      getpass: 0.1.7
+      jsbn: 0.1.1
+      safer-buffer: 2.1.2
+      tweetnacl: 0.14.5
+
+  std-env@4.3.0: {}
+
+  tinybench@6.2.3: {}
+
+  tinyexec@1.3.1: {}
+
+  tinyglobby@0.2.17:
+    dependencies:
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
+
+  tr46@0.0.3: {}
+
+  tslib@2.9.1: {}
+
+  tsx@4.23.15:
+    dependencies:
+      esbuild: 0.28.2
+    optionalDependencies:
+      fsevents: 2.3.3
+
+  tweetnacl@0.14.5: {}
+
+  typescript@7.0.2:
+    optionalDependencies:
+      '@typescript/typescript-aix-ppc64': 7.0.2
+      '@typescript/typescript-darwin-arm64': 7.0.2
+      '@typescript/typescript-darwin-x64': 7.0.2
+      '@typescript/typescript-freebsd-arm64': 7.0.2
+      '@typescript/typescript-freebsd-x64': 7.0.2
+      '@typescript/typescript-linux-arm': 7.0.2
+      '@typescript/typescript-linux-arm64': 7.0.2
+      '@typescript/typescript-linux-loong64': 7.0.2
+      '@typescript/typescript-linux-mips64el': 7.0.2
+      '@typescript/typescript-linux-ppc64': 7.0.2
+      '@typescript/typescript-linux-riscv64': 7.0.2
+      '@typescript/typescript-linux-s390x': 7.0.2
+      '@typescript/typescript-linux-x64': 7.0.2
+      '@typescript/typescript-netbsd-arm64': 7.0.2
+      '@typescript/typescript-netbsd-x64': 7.0.2
+      '@typescript/typescript-openbsd-arm64': 7.0.2
+      '@typescript/typescript-openbsd-x64': 7.0.2
+      '@typescript/typescript-sunos-x64': 7.0.2
+      '@typescript/typescript-win32-arm64': 7.0.2
+      '@typescript/typescript-win32-x64': 7.0.2
+
+  undici-types@7.24.6: {}
+
+  undici-types@8.9.0: {}
+
+  uuid@11.1.1: {}
+
+  verror@1.10.0:
+    dependencies:
+      assert-plus: 1.0.0
+      core-util-is: 1.0.2
+      extsprintf: 1.3.0
+
+  vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.7
+      postcss: 8.5.32
+      rolldown: 1.2.19
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 24.19.2
+      esbuild: 0.28.2
+      fsevents: 2.3.3
+      tsx: 4.23.15
+
+  vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)):
+    dependencies:
+      '@types/chai': 5.2.3
+      '@vitest/mocker': 5.1.0(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15))
+      chai: 6.3.0
+      es-module-lexer: 2.3.2
+      expect-type: 1.4.0
+      magic-string: 1.4.5
+      obug: 3.0.0
+      picomatch: 4.0.7
+      std-env: 4.3.0
+      tinybench: 6.2.3
+      tinyexec: 1.3.1
+      tinyglobby: 0.2.17
+      vite: 8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)
+      why-is-node-running: 3.2.1
+    optionalDependencies:
+      '@types/node': 24.19.2
+    transitivePeerDependencies:
+      - msw
+
+  webidl-conversions@3.0.1: {}
+
+  whatwg-fetch@3.6.20: {}
+
+  whatwg-url@5.0.0:
+    dependencies:
+      tr46: 0.0.3
+      webidl-conversions: 3.0.1
+
+  why-is-node-running@3.2.1: {}
+
+  zod@4.6.7: {}
