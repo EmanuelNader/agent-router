@@ -33,6 +33,22 @@ OCI requires an existing API-signing configuration and permission to list region
 
 AWS uses the SDK credential chain and reads STS identity plus the Free Tier account plan. Both scripts omit account identifiers and always return `provisioningAllowed: false`. Live SDK account calls have not been verified for this project. Quota availability does not establish free allowance, physical capacity, or zero cost.
 
+To prepare a local signing key for a dedicated OCI inspector, use the checked-in [inspection policy](infra/oci/inspection-policy.txt) for its group. Keep the directory outside any Git checkout. Its parent must already exist.
+
+```sh
+pnpm connect:oci prepare --directory /absolute/new/private-directory
+```
+
+In the inspector user's **Tokens and keys → Add API key**, choose the public key file printed by the command. Compare the Oracle fingerprint with the generated fingerprint. Then create a local SDK config with the inspector user and tenancy OCIDs shown in Oracle. [Oracle API signing instructions](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm).
+
+```sh
+pnpm connect:oci configure --directory /absolute/new/private-directory \
+  --user USER_OCID --tenancy TENANCY_OCID --region HOME_REGION
+pnpm inspect:oci --config /absolute/new/private-directory/config
+```
+
+The helper creates a private directory with mode `0700` and key and config files with mode `0600`. The private PEM has no passphrase and stays on the local machine. The helper refuses to replace existing files. Revoke the registered key in Oracle when the inspection connection is no longer needed.
+
 ## Preview an Oracle deployment
 
 Try without credentials or cloud calls:
