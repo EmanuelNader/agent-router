@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { chmod, lstat, mkdir, readFile, readdir, rm } from 'node:fs/promises';
+import { chmod, lstat, mkdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { sessionTransferSchema, type SessionTransfer } from '../../agent-opencode/src/client.js';
 import { SnapshotError, SnapshotManifest, WORKSPACE_EXCLUSIONS, type SnapshotHost, type SnapshotManifestData } from '../../domain/src/snapshot.js';
@@ -22,8 +22,12 @@ export class WorkspaceRestore {
     const manifest = SnapshotManifest.parse(input.manifest);
     SnapshotManifest.assertCompatible(manifest, input.host);
     const target = path.resolve(input.targetDirectory);
-    await WorkspaceRestore.assertFresh(target);
-    await mkdir(target, { mode: 0o700 });
+    await WorkspaceRestore.assertAbsent(target);
+    try { await mkdir(target, { mode: 0o700 }); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new Error('Restore target parent must exist');
+      throw error;
+    }
     try {
       await input.repository.verify(manifest.snapshotId);
       await input.repository.restore(manifest.snapshotId, manifest.archivePath, target);
@@ -34,14 +38,13 @@ export class WorkspaceRestore {
     }
   }
 
-  private static async assertFresh(target: string): Promise<void> {
-    try {
-      const stat = await lstat(target);
-      if (!stat.isDirectory() || (await readdir(target)).length > 0) throw new Error('Restore target must be a fresh directory');
-    } catch (error) {
+  private static async assertAbsent(target: string): Promise<void> {
+    try { await lstat(target); }
+    catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
       throw error;
     }
+    throw new Error('Restore target must not already exist');
   }
 
   private static async verifyTree(target: string, manifest: SnapshotManifestData): Promise<RestoredWorkspace> {

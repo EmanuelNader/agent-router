@@ -35,9 +35,9 @@ export class ResticRepository implements CheckpointRepository {
 
   async backup(directory: string): Promise<CheckpointSnapshot> {
     const source = await ResticRepository.realDirectory(directory);
-    await mkdir(this.repository, { recursive: true, mode: 0o700 });
     await this.assertPasswordFile();
     await SnapshotPaths.assertDisjoint(this.repository, source, 'Snapshot repository must be independent of the backed-up directory');
+    await mkdir(this.repository, { recursive: true, mode: 0o700 });
     await this.assertBinary();
     await this.ensureRepository();
     const result = await this.execute(['--no-cache', 'backup', '--json', '--one-file-system', source]);

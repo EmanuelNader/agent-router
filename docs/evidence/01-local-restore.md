@@ -5,17 +5,17 @@ Recorded 2026-11-13 on Linux x86_64. This file is part of the commit that record
 | Check | Observed result |
 | --- | --- |
 | Runtime | Node v24.22.3, pnpm 11.25.0, restic 0.19.1 compiled with go1.26.4 |
-| `pnpm check` | PASS: typecheck and 39 tests |
+| `pnpm check` | PASS: typecheck and 42 tests |
 | Encrypted checkpoint | PASS: restic 0.19.1 repository, password file outside the Git checkout |
 | Plaintext in repository | PASS: fixture phrases absent from repository bytes |
 | Fresh-directory restore | PASS: file hashes, executable script, hidden and untracked files, rename, Git HEAD/index/status |
-| Cache exclusion | PASS: `node_modules` and `.cache` absent after restore |
+| Cache exclusion | PASS: `node_modules` and `.cache` absent at every depth, including a relative `node_modules` symlink |
 | Fresh OpenCode process | PASS: same session id, settled shell output, target directory binding, second shell command accepted |
 | Tampered manifest | PASS: refused, partial directory removed |
 | Corrupted pack | PASS: refused after `restic check --read-data` |
 | Wrong version | PASS: format 2, agent 9.9.9, architecture `sparc`, runtime digest, and restic 0.0.0 refused before a workspace was left behind |
 | Incomplete snapshot | PASS: missing session export and missing snapshot id refused |
-| Symlink and nested repository | PASS: symlink not checkpointed; repository inside the workspace refused |
+| Symlink and nested repository | PASS: symlink not checkpointed; repository inside the workspace refused and `nested-repo` was not created |
 | Model inference | UNTESTED |
 | Pending prompt inbox | NOT TRANSFERRED |
 | Cross-host and cloud restore | UNTESTED |
@@ -53,37 +53,38 @@ restic 0.19.1 compiled with go1.26.4 on linux/amd64
 
 | Command | Elapsed | Exit |
 | --- | --- | --- |
-| `pnpm check` | 41.7s | 0 |
+| `pnpm check` | 45.358s | 0 |
 | `pnpm agent:probe` | 4.290s | 0 |
 | `pnpm agent:roundtrip` | 4.793s | 0 |
-| `pnpm agent:restore` | 10.911s | 0 |
+| `pnpm agent:restore` | 11.046s | 0 |
 
-Inside `agent:restore`, capture took 3500 ms, restore 2072 ms, and the fresh OpenCode process became ready and imported the session in 235 ms. The scenario file `tests/scenarios/local-restore.test.ts` passed 7 tests in 37.43s. The full `pnpm check` run passed 11 files and 39 tests in 38.32s.
+Inside the re-run of `agent:restore`, capture took 3621 ms, restore 2167 ms, and the fresh OpenCode process became ready and imported the session in 234 ms. `pnpm check` passed 12 files and 42 tests. Probe and round trip times are from the earlier run on the same machine; those scripts did not change.
 
 ## What is checkpointed
 
 The adapter exports settled history, then stops the source process. Capture hashes the workspace with `hashWorkspace`, omitting `.git` from the receipt and omitting `node_modules` and `.cache` from both the receipt and the backup. It copies the remaining tree, including `.git`, plus `session.json` into a staging directory and runs `restic backup`. The manifest is format version 1 and records the workspace id, architecture, platform, OpenCode version, a runtime digest, the restic snapshot id, the file receipt, the session id, and the session sha256.
 
-The runtime digest is sha256 of `node=<process.version>`, `agent=2.2.7`, and `restic=0.19.1`. No container image is built in this milestone. Consistency is `agent-stopped-session-exported`.
+The runtime digest is sha256 of `node=<process.version>`, `agent=2.2.7`, and `restic=0.19.1`. No container image is built in this milestone. Consistency is `agent-stopped-session-exported`. Copy drops any entry named `node_modules` or `.cache` at any depth, so the staged tree matches the receipt. A relative `node_modules` symlink is not copied and is not turned into a link back to the source host.
 
 Source and target file receipts were equal:
 
 | Path | Executable | sha256 |
 | --- | --- | --- |
-| `.gitignore` | false | `af4ab05e427b8408f81adcadfbc042fc81f69e62cc750bece8b8bde1152886ee` |
+| `.gitignore` | false | `3d922d8396e7e5d1c4af0efd78ad59349a1491bc62c51f4c7e1d750b0ed86641` |
 | `.workspace-note` | false | `ea512d015314550ca448655a76011ef00affae231a7d7db95956214901f5c769` |
 | `PROJECT.md` | false | `d42749a1197647f667c05ef769b7ca6efd59f3567cb23c8923fbe23a2e677d55` |
 | `notes.txt` | false | `28c6a3c6ddbf69cd861036f1f2a680de80d618b382d03bf939320ce31ed3f8ca` |
+| `packages/foo/keep.txt` | false | `8c0ae7cd289480c07541b69e4b53f1bd1d3bd6dd1db83391beaa964178af20e5` |
 | `scripts/check.sh` | true | `7dfa6db94c265e31e910edd896afae736a649f9c33499e29a1f59b55b83d6b64` |
 | `src/message.txt` | false | `f778c15db55770eb42e069e6e9cdd912b9955cb825d663ef61fa984b7f67889e` |
 
-`scripts/check.sh` printed `fixture-ok`. `PROJECT.md` replaced `README.md`. `notes.txt` and `.workspace-note` were present. After the checkpoint was taken, changing `notes.txt` in the source did not change the restored copy. Git HEAD, index, and porcelain status matched. `node_modules/skipped.txt` and `.cache/tmp` were not restored.
+`scripts/check.sh` printed `fixture-ok`. `PROJECT.md` replaced `README.md`. `notes.txt`, `.workspace-note`, and `packages/foo/keep.txt` were present. After the checkpoint was taken, changing `notes.txt` in the source did not change the restored copy. Git HEAD, index, and porcelain status matched. `node_modules`, `.cache`, `packages/foo/node_modules`, `packages/foo/.cache`, and the `packages/bar/node_modules` symlink were not restored. `.git` is restored with the workspace so HEAD, index, and status survive; the content receipt still skips it.
 
 The repository did not contain `router-history-fixture`, `keep this hidden note`, `unfinished work survives migration`, or `dependency cache stays behind`. A unit test also started a stand-in restic binary and checked that the password value was neither an argument nor an environment variable. A group-readable key file is refused before a process starts.
 
 The fresh process kept session id and the message list from the export, with the session location set to the restored directory. It then ran `printf 'router-history-continued\n'` and a later export contained both that output and `router-history-fixture`.
 
-Observed snapshot id from this run: `fc2801534099ce4e3de23f36141a18f82cad1a335ade1e6ae06f138889cc724d`.
+Observed snapshot id from the re-run: `b3cfe51ca906c61d005b3a9dd423f0cfdce0924c1c33840512a3638f867a08fe`.
 
 ## Failure cases
 
@@ -103,7 +104,8 @@ Observed snapshot id from this run: `fc2801534099ce4e3de23f36141a18f82cad1a335ad
 | Snapshot id absent from the repository | `INCOMPLETE`: Snapshot is incomplete: requested snapshot is missing |
 | Manifest missing `snapshotId` | `INCOMPLETE`: Snapshot manifest is incomplete |
 | Symlink inside the workspace | Capture throws before backup |
-| Repository directory inside the workspace | Snapshot repository must be independent of the workspace |
+| Repository directory inside the workspace | Snapshot repository must be independent of the workspace, and `nested-repo` is not created |
+| Existing empty restore directory | Restore target must not already exist, and the caller's directory is left empty |
 
 A wrong-version manifest is rejected before restore writes a workspace. Tamper and corruption checks delete the target directory when verification fails.
 
@@ -114,4 +116,4 @@ A wrong-version manifest is rejected before restore writes a workspace. Tamper a
 - Pending inbox prompts are still outside the export, as in the readiness round trip. This checkpoint does not add that transfer.
 - No model credential was used. The continued command is a fixed shell `printf`, not model recall.
 - The restic repository is a local directory created for the test, not off-host object storage. Retention, locks across hosts, and pruning were not exercised.
-- `restic check --read-data` covered these small repositories only.
+- `restic check --read-data` covered these small repositories only. The restic wrapper's 60 second limit and 1 MB output cap are sized for this fixture, not for a large workspace.

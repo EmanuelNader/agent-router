@@ -26,11 +26,13 @@ export class WorkspaceCapture {
     const sessionBytes = Buffer.from(JSON.stringify(session));
     const stage = await mkdtemp(path.join(tmpdir(), 'router-checkpoint-'));
     try {
-      await mkdir(request.repository.directory(), { recursive: true, mode: 0o700 });
       await SnapshotPaths.assertDisjoint(workspace, stage, 'Checkpoint staging must stay outside the workspace');
       await SnapshotPaths.assertDisjoint(workspace, request.repository.directory(), 'Snapshot repository must be independent of the workspace');
-      await cp(workspace, path.join(stage, 'workspace'), { recursive: true });
-      for (const name of WORKSPACE_EXCLUSIONS) await rm(path.join(stage, 'workspace', name), { recursive: true, force: true });
+      await mkdir(request.repository.directory(), { recursive: true, mode: 0o700 });
+      await cp(workspace, path.join(stage, 'workspace'), {
+        recursive: true,
+        filter: (source) => WorkspaceCapture.include(workspace, source),
+      });
       await writeFile(path.join(stage, 'session.json'), sessionBytes, { mode: 0o600 });
       const stored = await request.repository.backup(stage);
       return SnapshotManifest.create({
@@ -47,6 +49,12 @@ export class WorkspaceCapture {
     } finally {
       await rm(stage, { recursive: true, force: true });
     }
+  }
+
+  /** Keep the workspace root, and drop excluded directory names at every depth before copy. */
+  private static include(workspace: string, source: string): boolean {
+    if (path.resolve(source) === workspace) return true;
+    return !(WORKSPACE_EXCLUSIONS as readonly string[]).includes(path.basename(source));
   }
 
   /** Key material for a test or local repository. Never written inside the Git checkout. */

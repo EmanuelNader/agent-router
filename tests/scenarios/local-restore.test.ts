@@ -100,7 +100,10 @@ test('restores the quiesced workspace and session from an encrypted repository',
   expect(beforeGit).not.toContain('node_modules');
   const manifest = await harness.capture();
   await writeFile(path.join(harness.workspace, 'notes.txt'), 'changed after checkpoint\n');
-  for (const phrase of ['router-history-fixture', 'keep this hidden note', 'unfinished work survives migration', 'dependency cache stays behind']) {
+  for (const phrase of [
+    'router-history-fixture', 'keep this hidden note', 'unfinished work survives migration',
+    'dependency cache stays behind', 'nested dependency cache stays behind', 'nested tool cache stays behind', 'symlink cache stays behind',
+  ]) {
     expect(await SnapshotPrivacy.contains(harness.repository.directory(), phrase)).toBe(false);
   }
   const restored = await harness.restore(manifest, 'restored');
@@ -108,9 +111,11 @@ test('restores the quiesced workspace and session from an encrypted repository',
   expect(await readFile(path.join(restored.workspaceDirectory, 'notes.txt'), 'utf8')).toBe('keep this untracked note\n');
   expect(await readFile(path.join(restored.workspaceDirectory, '.workspace-note'), 'utf8')).toBe('keep this hidden note\n');
   expect(await readFile(path.join(restored.workspaceDirectory, 'PROJECT.md'), 'utf8')).toBe('router migration fixture\n');
+  expect(await readFile(path.join(restored.workspaceDirectory, 'packages/foo/keep.txt'), 'utf8')).toBe('nested source file survives\n');
   expect(execFileSync(path.join(restored.workspaceDirectory, 'scripts/check.sh'), { encoding: 'utf8' })).toBe('fixture-ok\n');
-  await expect(lstat(path.join(restored.workspaceDirectory, 'node_modules'))).rejects.toThrow();
-  await expect(lstat(path.join(restored.workspaceDirectory, '.cache'))).rejects.toThrow();
+  for (const relative of ['node_modules', '.cache', 'packages/foo/node_modules', 'packages/foo/.cache', 'packages/bar/node_modules']) {
+    await expect(lstat(path.join(restored.workspaceDirectory, relative))).rejects.toThrow();
+  }
   expect(MigrationFixture.git(restored.workspaceDirectory, ['status', '--porcelain=v1', '--untracked-files=all'])).toBe(beforeGit);
   expect(MigrationFixture.git(restored.workspaceDirectory, ['rev-parse', 'HEAD'])).toBe(MigrationFixture.git(harness.workspace, ['rev-parse', 'HEAD']));
   expect(MigrationFixture.git(restored.workspaceDirectory, ['ls-files', '--stage'])).toBe(MigrationFixture.git(harness.workspace, ['ls-files', '--stage']));
@@ -201,6 +206,22 @@ test('does not checkpoint a symlink or a repository nested in the workspace', as
   await expect(WorkspaceCapture.checkpoint({
     workspaceDirectory: other.workspace, session: savedSession, host: other.host, repository: nested,
   })).rejects.toThrow(/independent/);
+  await expect(lstat(path.join(other.workspace, 'nested-repo'))).rejects.toThrow();
+}, 60_000);
+
+test('refuses an existing empty restore directory and leaves it in place', async () => {
+  const harness = await CheckpointHarness.open();
+  const manifest = await harness.capture();
+  const target = path.join(harness.root, 'empty-target');
+  await mkdir(target);
+  await expect(WorkspaceRestore.restore({
+    manifest, repository: harness.repository, host: harness.host, targetDirectory: target,
+  })).rejects.toThrow('Restore target must not already exist');
+  expect(await readdir(target)).toEqual([]);
+  const missingParent = path.join(harness.root, 'nonexistent-parent', 'target');
+  await expect(WorkspaceRestore.restore({
+    manifest, repository: harness.repository, host: harness.host, targetDirectory: missingParent,
+  })).rejects.toThrow('Restore target parent must exist');
 }, 60_000);
 
 test('fresh OpenCode process keeps the checkpointed history and accepts another command', async () => {

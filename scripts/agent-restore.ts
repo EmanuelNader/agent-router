@@ -41,7 +41,10 @@ try {
   const captureStart = performance.now();
   const manifest = await WorkspaceCapture.checkpoint({ workspaceDirectory: source, session: transfer, host, repository });
   const captureMs = elapsed(captureStart);
-  for (const phrase of ['router-history-fixture', 'keep this hidden note', 'unfinished work survives migration', 'dependency cache stays behind']) {
+  for (const phrase of [
+    'router-history-fixture', 'keep this hidden note', 'unfinished work survives migration',
+    'dependency cache stays behind', 'nested dependency cache stays behind', 'nested tool cache stays behind', 'symlink cache stays behind',
+  ]) {
     if (await SnapshotPrivacy.contains(repository.directory(), phrase)) throw new Error('Checkpoint repository contains plaintext');
   }
   const restoreStart = performance.now();
@@ -51,9 +54,11 @@ try {
   assert.equal(await readFile(join(restored.workspaceDirectory, '.workspace-note'), 'utf8'), 'keep this hidden note\n');
   assert.equal(await readFile(join(restored.workspaceDirectory, 'notes.txt'), 'utf8'), 'keep this untracked note\n');
   assert.equal(await readFile(join(restored.workspaceDirectory, 'PROJECT.md'), 'utf8'), 'router migration fixture\n');
+  assert.equal(await readFile(join(restored.workspaceDirectory, 'packages/foo/keep.txt'), 'utf8'), 'nested source file survives\n');
   await assert.rejects(access(join(restored.workspaceDirectory, 'README.md')));
-  await assert.rejects(lstat(join(restored.workspaceDirectory, 'node_modules')));
-  await assert.rejects(lstat(join(restored.workspaceDirectory, '.cache')));
+  for (const relative of ['node_modules', '.cache', 'packages/foo/node_modules', 'packages/foo/.cache', 'packages/bar/node_modules']) {
+    await assert.rejects(lstat(join(restored.workspaceDirectory, relative)));
+  }
   assert.equal(execFileSync(join(restored.workspaceDirectory, 'scripts/check.sh'), { encoding: 'utf8' }), 'fixture-ok\n');
   assert.equal(MigrationFixture.git(restored.workspaceDirectory, ['status', '--porcelain=v1', '--untracked-files=all']), beforeGit);
   assert.equal(MigrationFixture.git(restored.workspaceDirectory, ['rev-parse', 'HEAD']), beforeHead);
