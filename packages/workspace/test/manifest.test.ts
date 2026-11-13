@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from 'vitest';
+import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, writeFile, chmod, symlink, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -37,6 +38,16 @@ test('rejects symlinks instead of reading outside the selected workspace', async
   const root = await fixture();
   await symlink('/etc/passwd', path.join(root, 'outside'));
   await expect(hashWorkspace(root)).rejects.toThrow(/symlink/i);
+});
+
+test('can exclude named caches without dropping hidden files', async () => {
+  const root = await fixture();
+  await mkdir(path.join(root, 'node_modules'), { recursive: true });
+  await writeFile(path.join(root, 'node_modules', 'pkg'), 'skip');
+  await writeFile(path.join(root, '.note'), 'keep');
+  expect(await hashWorkspace(root, ['node_modules'])).toEqual([
+    { path: '.note', executable: false, sha256: createHash('sha256').update('keep').digest('hex') },
+  ]);
 });
 
 test('rejects a symlink used as the workspace root', async () => {

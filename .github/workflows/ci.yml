@@ -15,8 +15,11 @@ jobs:
         with:
           node-version: '24'
       - run: npm install --global pnpm@11.25.0
+      - run: bash scripts/install-restic.sh
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm plan:oci --demo
       - run: pnpm agent:probe
       - run: pnpm agent:roundtrip
+      - run: pnpm agent:restore

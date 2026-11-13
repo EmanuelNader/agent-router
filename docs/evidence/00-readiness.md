@@ -48,7 +48,7 @@ A pending prompt is durably admitted to the inbox, but is not settled history. T
 Code review found that isolated HOME/XDG paths alone did not prevent ancestor `opencode.json` discovery. A regression reproduced the leak before the fix and now verifies its exclusion via the real configuration endpoint. The harness sets `OPENCODE_DISABLE_PROJECT_CONFIG=1` and `OPENCODE_DISABLE_CLAUDE_CODE=1`, following the [pinned server startup](https://github.com/anomalyco/opencode/blob/v2.2.7/packages/cli/src/server-process.ts). Review also strengthened the shell-history check: the fixture now requires exited status, zero exit code, completion timestamp, exact captured output, and target-directory rebinding. TypeScript checks, 14 unit tests, the auth/config probe, and the strengthened native round trip pass locally.
 
 1. Verify OCI delegated access, actual home region, compartment inventory, entitlement/tenancy-wide usage, architecture and image compatibility, and all related costs. Unknown data must block provisioning.
-2. Build and failure-test quiescing, encrypted snapshots, restore verification, and pending-input handling.
+2. Build and failure-test quiescing, encrypted snapshots, restore verification, and pending-input handling. Local checkpoint and restore is recorded in `docs/evidence/01-local-restore.md`. Pending inbox transfer and any cross-host restore remain open.
 3. Verify supported model authentication and real task resumption without copying a personal home directory.
 4. Test idempotent OCI creation/reconciliation/deletion in a dedicated compartment; prove cleanup and budget controls.
 5. Connect a second eligible provider and test interrupted migration, rollback, and stable ingress.

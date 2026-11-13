@@ -8,7 +8,7 @@
 
 **Initial stack:** TypeScript; Node 24; Next.js dashboard; Fastify API; DBOS durable operations; PostgreSQL; official AWS and OCI SDKs; cloud-init/systemd; restic; frp/Caddy. Exact dependency and binary versions are selected and pinned during the first milestone's compatibility check.
 
-**Status on November 13, 2026:** The readiness slice is in this repository and recorded in `docs/evidence/00-readiness.md`: local OpenCode portability, read-only Oracle quota inspection, and deployment previews. Later milestones — provisioning, durable workflows, migration, and the dashboard — have not been started. Live Oracle and AWS account calls remain unverified.
+**Status on November 13, 2026:** The readiness slice is in this repository and recorded in `docs/evidence/00-readiness.md`: local OpenCode portability, read-only Oracle quota inspection, and deployment previews. Milestone 1 local encrypted restore is recorded in `docs/evidence/01-local-restore.md`. Later milestones — provisioning, durable workflows, cross-cloud migration, and the dashboard — have not been started. Live Oracle and AWS account calls remain unverified.
 
 **Constraints that apply to every milestone:**
 
@@ -60,12 +60,12 @@ Provider adapters consume a customer-scoped credential reference and operation I
 
 Files: `packages/agent-opencode/src/adapter.ts`, `packages/snapshots/src/capture.ts`, `packages/snapshots/src/restore.ts`, `packages/domain/src/snapshot.ts`, `tests/scenarios/local-restore.test.ts`.
 
-- [ ] Create a fixture with tracked/untracked/hidden files, a rename, executable permissions and conversation history.
-- [ ] Define a versioned manifest with workspace ID, architecture, agent version, runtime digest, exact snapshot ID, file hashes and consistency method.
-- [ ] Pause/flush the agent and make an encrypted checkpoint to an independent test repository.
-- [ ] Restore into a fresh worker directory/process and verify files plus session behavior.
-- [ ] Reject wrong-version, incomplete and corrupted checkpoints.
-- [ ] Record the source/target hashes and observed restart behavior in `docs/evidence/01-local-restore.md`.
+- [x] Create a fixture with tracked/untracked/hidden files, a rename, executable permissions and conversation history.
+- [x] Define a versioned manifest with workspace ID, architecture, agent version, runtime digest, exact snapshot ID, file hashes and consistency method.
+- [x] Pause/flush the agent and make an encrypted checkpoint to an independent test repository.
+- [x] Restore into a fresh worker directory/process and verify files plus session behavior.
+- [x] Reject wrong-version, incomplete and corrupted checkpoints.
+- [x] Record the source/target hashes and observed restart behavior in `docs/evidence/01-local-restore.md`.
 
 **Gate:** The restored fixture matches the expected saved state and the agent can continue the prior conversation. An upload receipt alone cannot pass this gate.
 

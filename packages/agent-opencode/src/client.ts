@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-const transferSchema = z.object({
+export const sessionTransferSchema = z.object({
   info: z.object({ id: z.string().min(1) }).passthrough(),
   messages: z.array(z.unknown()),
 }).passthrough();
-export type SessionTransfer = z.infer<typeof transferSchema>;
+export type SessionTransfer = z.infer<typeof sessionTransferSchema>;
 
 /** Pinned to OpenCode 2.2.7. Transfer data can contain private conversation text. */
 export class OpenCodeClient {
@@ -59,7 +59,7 @@ export class OpenCodeClient {
   }
 
   async exportSession(sessionId: string): Promise<SessionTransfer> {
-    const result = z.object({ data: transferSchema }).safeParse(
+    const result = z.object({ data: sessionTransferSchema }).safeParse(
       await this.request(`/api/experimental/session/${encodeURIComponent(sessionId)}/export`),
     );
     if (!result.success) throw new Error('Invalid OpenCode transfer response');
@@ -68,7 +68,7 @@ export class OpenCodeClient {
 
   async importSession(transfer: SessionTransfer, directory: string): Promise<string> {
     const result = z.object({ data: z.object({ id: z.string().min(1) }) }).safeParse(
-      await this.request('/api/experimental/session/import', { ...transferSchema.parse(transfer), location: { directory } }),
+      await this.request('/api/experimental/session/import', { ...sessionTransferSchema.parse(transfer), location: { directory } }),
     );
     if (!result.success) throw new Error('Invalid OpenCode import response');
     return result.data.data.id;

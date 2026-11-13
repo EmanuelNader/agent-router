@@ -10,13 +10,14 @@ export interface FileReceipt {
 }
 
 /** Content receipt only: callers must quiesce writers and back up Git/agent state separately. */
-export async function hashWorkspace(directory: string): Promise<FileReceipt[]> {
+export async function hashWorkspace(directory: string, excludeNames: readonly string[] = []): Promise<FileReceipt[]> {
   const root = path.resolve(directory);
   if (!(await lstat(root)).isDirectory()) throw new Error('Workspace must be a real directory');
+  const skipped = new Set(['.git', ...excludeNames]);
   const rows: FileReceipt[] = [];
   async function visit(relative: string): Promise<void> {
     for (const name of (await readdir(path.join(root, relative))).sort()) {
-      if (name === '.git') continue;
+      if (skipped.has(name)) continue;
       const entry = path.join(relative, name);
       const absolute = path.join(root, entry);
       const stat = await lstat(absolute);
