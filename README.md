@@ -16,9 +16,9 @@ pnpm agent:probe
 pnpm agent:roundtrip
 ```
 
-The probe starts a password-protected OpenCode 2.2.7 server on loopback and checks authenticated access and rejection without credentials. The round trip creates a fixture with unfinished Git changes, records a completed shell turn in a real session, stops the source, copies the workspace, and imports the session into fresh agent state. It compares file hashes, executable flags, Git HEAD/index/status, session ID, and settled messages.
+The probe starts a password-protected OpenCode 2.2.7 server on loopback and checks authenticated access, rejection without credentials, and exclusion of ancestor project configuration. The round trip creates a fixture with unfinished Git changes, records a completed shell turn in a real session, stops the source, copies the workspace, and imports the session into fresh agent state. It verifies successful shell output, target-directory binding, file hashes, executable flags, Git HEAD/index/status, session ID, and settled messages.
 
-Each run uses private temporary directories under ignored `.work/`, a generated password, and isolated HOME/XDG directories. It excludes inherited model/cloud credentials and removes its temporary state after stopping its own processes. The shell command is a fixed fixture; these checks perform no model inference. Docker is reported as an optional local tool; the scripts run native processes.
+Each run uses private temporary directories under ignored `.work/`, a generated password, and isolated HOME/XDG directories. Project/Claude configuration discovery is disabled to prevent ancestor configuration from loading. It excludes inherited model/cloud credentials and removes its temporary state after stopping its own processes. The shell command is a fixed fixture; these checks perform no model inference. Docker is reported as an optional local tool; the scripts run native processes.
 
 ## Optional cloud inspection
 

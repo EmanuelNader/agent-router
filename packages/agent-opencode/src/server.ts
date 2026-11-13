@@ -15,6 +15,7 @@ export function isolatedEnvironment(state: string, password: string, path: strin
     XDG_STATE_HOME: join(state, 'state'), XDG_CACHE_HOME: join(state, 'cache'),
     TMPDIR: join(state, 'tmp'), OPENCODE_TEST_HOME: join(state, 'home'),
     OPENCODE_CONFIG_DIR: join(state, 'config'), OPENCODE_PASSWORD: password,
+    OPENCODE_DISABLE_PROJECT_CONFIG: '1', OPENCODE_DISABLE_CLAUDE_CODE: '1',
   };
 }
 

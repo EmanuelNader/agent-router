@@ -4,6 +4,7 @@ import { cp, mkdtemp, mkdir, rm, writeFile, rename } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { startIsolatedServer } from '../packages/agent-opencode/src/server.js';
 import { hashWorkspace } from '../packages/workspace/src/manifest.js';
+import { requireCompletedShellOutput } from '../packages/agent-opencode/src/history.js';
 
 process.umask(0o077);
 await mkdir('.work', { recursive: true, mode: 0o700 });
@@ -27,10 +28,9 @@ try {
   const id = await server.client.createSession(source, 'Router portability fixture');
   // A completed shell turn is exportable history; a queued prompt is not.
   // This fixed fixture command needs no API key and performs no model inference.
-  const marker = 'router-history-fixture';
   await server.client.runShellCommand(id, "printf 'router-history-fixture\\n'");
   const transfer = await server.client.exportSession(id);
-  assert.ok(JSON.stringify(transfer.messages).includes(marker), 'Export must contain the fixture message');
+  requireCompletedShellOutput(transfer.messages, 'router-history-fixture\n');
   await server.stop(); server = undefined;
   const before = await hashWorkspace(source);
   const beforeGit = git(source, ['status', '--porcelain=v1', '--untracked-files=all']);
@@ -42,6 +42,8 @@ try {
   const imported = await server.client.importSession(transfer, target);
   assert.equal(imported, id);
   const restored = await server.client.exportSession(imported);
+  assert.equal((restored.info.location as { directory?: unknown } | undefined)?.directory, target, 'Imported session must use the target workspace');
+  requireCompletedShellOutput(restored.messages, 'router-history-fixture\n');
   assert.deepEqual(restored.messages, transfer.messages);
   assert.deepEqual(await hashWorkspace(target), before);
   assert.equal(git(target, ['status', '--porcelain=v1', '--untracked-files=all']), beforeGit);

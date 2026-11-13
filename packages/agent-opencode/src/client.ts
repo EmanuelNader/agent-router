@@ -41,6 +41,10 @@ export class OpenCodeClient {
 
   health() { return this.request('/api/info'); }
   listSessions() { return this.request('/api/session?limit=1'); }
+  configuration(directory: string) {
+    const query = new URLSearchParams({ 'location[directory]': directory });
+    return this.request(`/api/config?${query}`);
+  }
 
   async createSession(directory: string, title: string): Promise<string> {
     const result = z.object({ data: z.object({ id: z.string().min(1) }) }).safeParse(

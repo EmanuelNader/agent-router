@@ -7,6 +7,8 @@ test('isolates user state and does not inherit cloud or model credentials', () =
   expect(env.XDG_DATA_HOME).toBe('/sandbox/agent/data');
   expect(env.XDG_CONFIG_HOME).toBe('/sandbox/agent/config');
   expect(env.OPENCODE_PASSWORD).toBe('temporary-password');
+  expect(env.OPENCODE_DISABLE_PROJECT_CONFIG).toBe('1');
+  expect(env.OPENCODE_DISABLE_CLAUDE_CODE).toBe('1');
   expect(env).not.toHaveProperty('AWS_SECRET_ACCESS_KEY');
   expect(env).not.toHaveProperty('ANTHROPIC_API_KEY');
   expect(env).not.toHaveProperty('OPENAI_API_KEY');

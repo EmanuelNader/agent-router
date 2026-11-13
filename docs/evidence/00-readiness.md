@@ -9,7 +9,8 @@ Recorded 2026-11-12. This is a partial readiness milestone, not a production or 
 | OpenCode | PASS: installed `@opencode/cli` 2.2.7 | Exact package and dependencies in lockfile |
 | Isolated authenticated HTTP server | PASS | Loopback; random password; no inherited user/model/cloud configuration |
 | Unauthorized request | PASS: HTTP 401 | Session listing endpoint |
-| Fresh-state session import | PASS | Same session ID and settled shell-message history; different directory and independent agent state |
+| Ancestor project configuration | PASS: fixture marker excluded | Project and Claude discovery disabled; actual configuration endpoint checked |
+| Fresh-state session import | PASS | Same session ID and settled shell-message history; asserted target-directory binding and successful completed shell output |
 | Workspace copy | PASS | File hashes, hidden/untracked/modified/renamed files, executable flag, Git HEAD/index/status |
 | Pending user input | LIMITATION | `resume: false` queues a prompt; it is absent from transcript export |
 | Model inference and conversational recall | UNTESTED | No model credential supplied or accessed |
@@ -41,6 +42,8 @@ The checked release is [OpenCode v2.2.7](https://github.com/anomalyco/opencode/t
 A pending prompt is durably admitted to the inbox, but is not settled history. The first round-trip test deliberately failed when it expected a queued prompt in export. Changing the fixture to a completed shell turn established the supported saved-history boundary. Future migration must stop accepting input and drain or explicitly transfer pending inbox items; copying a transcript alone can lose queued work.
 
 ## Remaining gates
+
+Code review found that isolated HOME/XDG paths alone did not prevent ancestor `opencode.json` discovery. A regression reproduced the leak before the fix and now verifies its exclusion via the real configuration endpoint. The harness sets `OPENCODE_DISABLE_PROJECT_CONFIG=1` and `OPENCODE_DISABLE_CLAUDE_CODE=1`, following the [pinned server startup](https://github.com/anomalyco/opencode/blob/v2.2.7/packages/cli/src/server-process.ts). Review also strengthened the shell-history check: the fixture now requires exited status, zero exit code, completion timestamp, exact captured output, and target-directory rebinding. TypeScript checks, 14 unit tests, the auth/config probe, and the strengthened native round trip pass locally.
 
 1. Verify OCI delegated access, actual home region, compartment inventory, entitlement/tenancy-wide usage, architecture and image compatibility, and all related costs. Unknown data must block provisioning.
 2. Build and failure-test quiescing, encrypted snapshots, restore verification, and pending-input handling.
