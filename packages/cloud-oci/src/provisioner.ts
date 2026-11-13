@@ -152,8 +152,9 @@ export class OciProvisioner {
     const deadline = clock.now() + (input.deadlineMs ?? 15 * 60_000);
     const deleted = { instances: [] as string[], bootVolumes: [] as string[], subnets: [] as string[], internetGateways: [] as string[], securityLists: [] as string[], vcns: [] as string[] };
     const chosen = plan.wouldDelete;
-    const instance = chosen.find(item => item.type === 'instance');
-    if (instance && instance.lifecycleState !== 'TERMINATED') {
+    const instances = chosen.filter(item => item.type === 'instance');
+    for (const instance of instances) {
+      if (instance.lifecycleState === 'TERMINATED') continue;
       if (instance.lifecycleState !== 'TERMINATING') {
         const domain = instance.availabilityDomain;
         if (!domain) throw new DeployError('AD_NOT_RESOLVED');
@@ -196,7 +197,7 @@ export class OciProvisioner {
       for (const attachment of attachments) {
         if (attachment.lifecycleState === 'DETACHED' || !attachment.vnicId) continue;
         const vnic = await input.gateway.getVnic(attachment.vnicId);
-        if (vnic?.subnetId === subnet.id && attachment.instanceId !== instance?.id) {
+        if (vnic?.subnetId === subnet.id && !instances.some(item => item.id === attachment.instanceId)) {
           throw new DeployError('NETWORK_IN_USE', { deleted, preserved: plan.preserved, networkDeleted: false });
         }
       }
@@ -253,7 +254,7 @@ export class OciProvisioner {
         id => input.gateway.getVcn(id), () => input.gateway.listVcns(plan.compartmentId), vcn.id,
       ));
     }
-    if (input.saveState) await input.saveState({ ...input.state, resources: {} });
+    if (input.saveState) await input.saveState(OciDeployState.afterDestroy(input.state));
     return { action: 'destroy', executed: true, deleted, preserved: plan.preserved, networkDeleted: deleted.vcns.length > 0 };
   }
 

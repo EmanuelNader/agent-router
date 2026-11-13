@@ -57,6 +57,16 @@ export class OciDeployState {
     return { ...record, resources: { ...record.resources, ...patch } };
   }
 
+  /** New ids and tokens so a later launch does not replay creates OCI still remembers as deleted. */
+  static afterDestroy(record: DeployRecord): DeployRecord {
+    const fresh = this.create();
+    return {
+      ...fresh,
+      ...(record.region ? { region: record.region } : {}),
+      ...(record.compartmentId ? { compartmentId: record.compartmentId } : {}),
+    };
+  }
+
   /** Drop the recorded instance so the next launch does not replay a terminated create. */
   static withoutInstance(record: DeployRecord): DeployRecord {
     const resources = { ...record.resources };

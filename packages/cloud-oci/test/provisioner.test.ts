@@ -29,6 +29,7 @@ const eligibility = {
   schemaVersion: 1 as const, evidence: 'RECORDED' as const, accountClass: 'ALWAYS_FREE' as const,
   monthlyUsage: 'WITHIN_ALLOTMENT' as const, imageCharge: 'NONE' as const, networkCharge: 'NONE' as const,
   storageCharge: 'NONE' as const, capacity: 'AVAILABLE' as const, compartmentQuota: 'FITS' as const,
+  observedAt: now.toISOString(),
 };
 
 function own(cloud: MemoryCloud, deploymentId: string, patch: Partial<InstanceRecord> = {}) {
@@ -241,4 +242,40 @@ test('listing confirms a missing instance before another launch', async () => {
   expect(second.receipt.instanceSource).toBe('created');
   expect(cloud.attempts).toHaveLength(2);
   expect(cloud.attempts.every(attempt => attempt.shape === 'VM.Standard.A1.Flex')).toBe(true);
+});
+
+test('include-unrecorded terminates every tagged instance before it removes the network', async () => {
+  const cloud = new MemoryCloud();
+  const first = await run(cloud);
+  const extraId = 'ocid1.instance.oc1..extra';
+  cloud.instances.push({
+    id: extraId, displayName: OciResourcePlan.displayName, freeformTags: OciResourcePlan.tags(first.state.deploymentId),
+    lifecycleState: 'RUNNING', shape: OciResourcePlan.shape, availabilityDomain: 'kIdk:PHX-AD-1', ocpus: 1, memoryInGBs: 4,
+  });
+  cloud.vnics.push({ id: 'vnic-extra', subnetId: first.state.resources.subnetId ?? '', isPrimary: true, publicIp: '203.0.113.21' });
+  cloud.vnicAttachments.push({ id: 'att-extra', instanceId: extraId, vnicId: 'vnic-extra', lifecycleState: 'ATTACHED' });
+  const receipt = await OciProvisioner.destroy({
+    gateway: cloud, state: first.state, includeUnrecorded: true, clock, deadlineMs: 60_000,
+  });
+  expect(receipt.deleted.instances).toEqual(expect.arrayContaining([first.receipt.instanceId, extraId]));
+  expect(cloud.instances.find(item => item.id === extraId)?.lifecycleState).toBe('TERMINATED');
+  expect(receipt.networkDeleted).toBe(true);
+});
+
+test('destroy rotates retry tokens so the next deploy does not replay deleted resources', async () => {
+  const cloud = new MemoryCloud();
+  const first = await run(cloud);
+  let saved = first.state;
+  await OciProvisioner.destroy({
+    gateway: cloud, state: first.state, clock, deadlineMs: 60_000, saveState: async next => { saved = next; },
+  });
+  expect(saved.deploymentId).not.toBe(first.state.deploymentId);
+  expect(saved.tokens.vcn).not.toBe(first.state.tokens.vcn);
+  expect(saved.tokens.instance).not.toBe(first.state.tokens.instance);
+  expect(saved.password).not.toBe(first.state.password);
+  expect(saved.resources.vcnId).toBeUndefined();
+  const second = await run(cloud, saved);
+  expect(second.receipt.instanceSource).toBe('created');
+  expect(second.receipt.instanceId).not.toBe(first.receipt.instanceId);
+  expect(cloud.calls.createVcn).toBe(2);
 });

@@ -38,12 +38,15 @@ export class SshLoopbackTunnel {
     await new Promise<void>(resolve => child.once('close', () => resolve()));
   }
 
+  /** Password stays on stdin. The remote argv is root-only and does not include the secret. */
+  static remoteInstallCommand(): string {
+    return 'sudo -n sh -c \'install -d -m 0755 /etc/agent-router && cat > /etc/agent-router/opencode.env && chmod 0600 /etc/agent-router/opencode.env && systemctl daemon-reload && systemctl enable --now agent-router-opencode\'';
+  }
+
   static async deliverPassword(input: TunnelTarget & { password: string }): Promise<void> {
     if (!/^[a-f0-9]{64}$/.test(input.password)) throw new Error('SSH_TUNNEL_FAILED');
     if (input.freshHost) await this.forgetHost(input.knownHostsPath, input.host);
-    const child = spawn('ssh', this.remoteArgs(input).concat(
-      'install -d -m 0755 /etc/agent-router && cat > /etc/agent-router/opencode.env && chmod 0600 /etc/agent-router/opencode.env && systemctl daemon-reload && systemctl enable --now agent-router-opencode',
-    ), { stdio: ['pipe', 'ignore', 'ignore'] });
+    const child = spawn('ssh', this.remoteArgs(input).concat(this.remoteInstallCommand()), { stdio: ['pipe', 'ignore', 'ignore'] });
     child.stdin?.end(`OPENCODE_PASSWORD=${input.password}\n`);
     await this.finished(child);
   }

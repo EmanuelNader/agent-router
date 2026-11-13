@@ -13,6 +13,7 @@ export const eligibilitySchema = z.object({
   storageCharge: z.enum(['NONE', 'KNOWN_CHARGE', 'UNKNOWN']),
   capacity: z.enum(['AVAILABLE', 'UNKNOWN']),
   compartmentQuota: z.enum(['FITS', 'INSUFFICIENT', 'UNKNOWN']),
+  observedAt: z.iso.datetime(),
 });
 export type FreeTierEligibility = z.infer<typeof eligibilitySchema>;
 
@@ -42,6 +43,9 @@ export class OciFreeTierGate {
     const now = input.now ?? new Date();
     const preview = previewOciDeployment(input.report, this.request, now);
     const blockers = [...preview.blockers];
+    const eligibilityAge = now.getTime() - Date.parse(eligibility.observedAt);
+    if (eligibilityAge > 15 * 60_000) blockers.push('STALE_ELIGIBILITY');
+    if (eligibilityAge < 0) blockers.push('FUTURE_ELIGIBILITY');
     if (input.mode === 'LIVE' && preview.source !== 'OCI_API') blockers.push('DEMO_CANNOT_AUTHORIZE');
     if (eligibility.evidence === 'FIXTURE' && preview.source !== 'DEMO') blockers.push('FIXTURE_CANNOT_AUTHORIZE');
     if (input.mode === 'LIVE' && eligibility.evidence !== 'RECORDED') blockers.push('FIXTURE_CANNOT_AUTHORIZE');

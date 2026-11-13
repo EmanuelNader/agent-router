@@ -47,6 +47,15 @@ test('health uses the existing client and an injected loopback tunnel', async ()
   await expect(OpenCodeBootstrap.verify(`http://127.0.0.1:${address.port}`, 'cd'.repeat(32))).rejects.toThrow('AGENT_UNAUTHORIZED');
 });
 
+test('password delivery runs as root and keeps the secret off the command line', () => {
+  const command = SshLoopbackTunnel.remoteInstallCommand();
+  expect(command.startsWith('sudo -n sh -c ')).toBe(true);
+  expect(command).toContain('cat > /etc/agent-router/opencode.env');
+  expect(command).toContain('systemctl enable --now agent-router-opencode');
+  expect(command).not.toContain(password);
+  expect(command).not.toMatch(/[a-f0-9]{64}/);
+});
+
 test('the ssh forward targets loopback and refuses a shell metacharacter host', () => {
   const args = SshLoopbackTunnel.commandArgs({
     host: '203.0.113.20', privateKeyPath: '/tmp/id_ed25519', knownHostsPath: '/tmp/known_hosts', localPort: 4409,

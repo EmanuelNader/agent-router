@@ -42,7 +42,7 @@ pnpm inspect:oci --config /absolute/path/oci-provisioner/config > .work/oci-read
 pnpm plan:oci --report .work/oci-readiness.json
 ```
 
-4. Write `.work/oci-eligibility.json` only after checking each field in the console. `evidence` must be `RECORDED`. Any `UNKNOWN`, `TRIAL`, `EXCEEDS`, or `KNOWN_CHARGE` value makes the command refuse. `accountClass` must be `ALWAYS_FREE` unless you pass `--allow-payg`.
+4. Write `.work/oci-eligibility.json` only after checking each field in the console. `evidence` must be `RECORDED`. `observedAt` is the UTC time of that check and must be within 15 minutes of the launch, the same window as the quota report. A future timestamp is refused. Any `UNKNOWN`, `TRIAL`, `EXCEEDS`, or `KNOWN_CHARGE` value makes the command refuse. `accountClass` must be `ALWAYS_FREE` unless you pass `--allow-payg`.
 
 ```json
 {
@@ -54,7 +54,8 @@ pnpm plan:oci --report .work/oci-readiness.json
   "networkCharge": "NONE",
   "storageCharge": "NONE",
   "capacity": "AVAILABLE",
-  "compartmentQuota": "FITS"
+  "compartmentQuota": "FITS",
+  "observedAt": "2026-11-13T12:00:00.000Z"
 }
 ```
 

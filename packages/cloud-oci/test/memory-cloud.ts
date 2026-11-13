@@ -32,6 +32,7 @@ export class MemoryCloud implements OciGateway {
   ];
   private sequence = 1;
   private tokens = new Map<string, string>();
+  private graves = new Map<string, { id: string; lifecycleState: string }>();
 
   useRegion() {}
   useDeployment(deploymentId: string) { this.deploymentId = deploymentId; }
@@ -54,8 +55,8 @@ export class MemoryCloud implements OciGateway {
     this.calls.createVcn += 1;
     return vcn;
   }
-  async getVcn(id: string) { return this.vcns.find(item => item.id === id) ?? null; }
-  async deleteVcn(id: string) { this.vcns = this.vcns.filter(item => item.id !== id); }
+  async getVcn(id: string) { return this.vcns.find(item => item.id === id) ?? (this.graves.get(id) as VcnRecord | undefined) ?? null; }
+  async deleteVcn(id: string) { this.bury(this.vcns.find(item => item.id === id)); this.vcns = this.vcns.filter(item => item.id !== id); }
   async listInternetGateways(_compartmentId: string, vcnId: string) { return this.igws.filter(item => item.vcnId === vcnId); }
   async createInternetGateway(compartmentId: string, vcnId: string, token: string) {
     const existing = this.remember(token, this.igws);
@@ -69,8 +70,8 @@ export class MemoryCloud implements OciGateway {
     this.tokens.set(token, igw.id);
     return igw;
   }
-  async getInternetGateway(id: string) { return this.igws.find(item => item.id === id) ?? null; }
-  async deleteInternetGateway(id: string) { this.igws = this.igws.filter(item => item.id !== id); }
+  async getInternetGateway(id: string) { return this.igws.find(item => item.id === id) ?? (this.graves.get(id) as IgwRecord | undefined) ?? null; }
+  async deleteInternetGateway(id: string) { this.bury(this.igws.find(item => item.id === id)); this.igws = this.igws.filter(item => item.id !== id); }
   async getRouteTable(id: string) { return { id, routeRules: this.routes.get(id) ?? [] }; }
   async updateRouteTable(id: string, routeRules: RouteRuleRecord[]) { this.routes.set(id, routeRules); }
   async listSecurityLists(_compartmentId: string, vcnId: string) { return this.lists.filter(item => item.vcnId === vcnId); }
@@ -87,8 +88,8 @@ export class MemoryCloud implements OciGateway {
     return list;
   }
   async updateSecurityList() { this.calls.updateSecurity += 1; }
-  async getSecurityList(id: string) { return this.lists.find(item => item.id === id) ?? null; }
-  async deleteSecurityList(id: string) { this.lists = this.lists.filter(item => item.id !== id); }
+  async getSecurityList(id: string) { return this.lists.find(item => item.id === id) ?? (this.graves.get(id) as SecurityListRecord | undefined) ?? null; }
+  async deleteSecurityList(id: string) { this.bury(this.lists.find(item => item.id === id)); this.lists = this.lists.filter(item => item.id !== id); }
   async listSubnets(_compartmentId: string, vcnId: string) { return this.subnets.filter(item => item.vcnId === vcnId); }
   async createSubnet(input: { compartmentId: string; vcnId: string; routeTableId: string; securityListId: string }, token: string) {
     const existing = this.remember(token, this.subnets);
@@ -102,8 +103,8 @@ export class MemoryCloud implements OciGateway {
     this.tokens.set(token, subnet.id);
     return subnet;
   }
-  async getSubnet(id: string) { return this.subnets.find(item => item.id === id) ?? null; }
-  async deleteSubnet(id: string) { this.subnets = this.subnets.filter(item => item.id !== id); }
+  async getSubnet(id: string) { return this.subnets.find(item => item.id === id) ?? (this.graves.get(id) as SubnetRecord | undefined) ?? null; }
+  async deleteSubnet(id: string) { this.bury(this.subnets.find(item => item.id === id)); this.subnets = this.subnets.filter(item => item.id !== id); }
   async listImages() { return this.images; }
   async listInstances() { return this.instances; }
   async launchInstance(input: LaunchTarget, token: string) {
@@ -192,8 +193,14 @@ export class MemoryCloud implements OciGateway {
   }
 
   private next(kind: string) { return `ocid1.${kind}.oc1..n${this.sequence++}`; }
-  private remember<T extends { id: string }>(token: string, items: T[]): T | null {
+  private remember<T extends { id: string; lifecycleState: string }>(token: string, items: T[]): T | null {
     const id = this.tokens.get(token);
-    return id ? items.find(item => item.id === id) ?? null : null;
+    if (!id) return null;
+    return items.find(item => item.id === id) ?? (this.graves.get(id) as T | undefined) ?? null;
+  }
+
+  private bury(item: { id: string; lifecycleState: string } | undefined) {
+    if (!item) return;
+    this.graves.set(item.id, { ...item, lifecycleState: 'TERMINATED' });
   }
 }

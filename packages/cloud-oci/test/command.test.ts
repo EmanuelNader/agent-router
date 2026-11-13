@@ -72,6 +72,7 @@ test('a live command uses the injected gateway and refuses uncertain eligibility
   await writeFile(eligibilityPath, JSON.stringify({
     schemaVersion: 1, evidence: 'RECORDED', accountClass: 'ALWAYS_FREE', monthlyUsage: 'WITHIN_ALLOTMENT',
     imageCharge: 'NONE', networkCharge: 'NONE', storageCharge: 'NONE', capacity: 'UNKNOWN', compartmentQuota: 'FITS',
+    observedAt: now.toISOString(),
   }));
   let inspected = false;
   const blocked = await OciHostCommand.deploy(args, {
@@ -90,6 +91,7 @@ test('a live command uses the injected gateway and refuses uncertain eligibility
   await writeFile(eligibilityPath, JSON.stringify({
     schemaVersion: 1, evidence: 'RECORDED', accountClass: 'ALWAYS_FREE', monthlyUsage: 'WITHIN_ALLOTMENT',
     imageCharge: 'NONE', networkCharge: 'NONE', storageCharge: 'NONE', capacity: 'AVAILABLE', compartmentQuota: 'FITS',
+    observedAt: now.toISOString(),
   }));
   const verified: string[] = [];
   const launched = await OciHostCommand.deploy(args, {

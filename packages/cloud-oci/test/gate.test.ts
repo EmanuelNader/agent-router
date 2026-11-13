@@ -19,6 +19,7 @@ const free = {
   schemaVersion: 1 as const, evidence: 'RECORDED' as const, accountClass: 'ALWAYS_FREE' as const,
   monthlyUsage: 'WITHIN_ALLOTMENT' as const, imageCharge: 'NONE' as const, networkCharge: 'NONE' as const,
   storageCharge: 'NONE' as const, capacity: 'AVAILABLE' as const, compartmentQuota: 'FITS' as const,
+  observedAt: now.toISOString(),
 };
 
 test('a fresh Always Free report can authorize one A1 host', () => {
@@ -56,6 +57,14 @@ test('demo reports and fixture evidence cannot launch', () => {
   expect(OciFreeTierGate.evaluate({
     report: report('DEMO'), eligibility: { ...free, evidence: 'FIXTURE' }, mode: 'DRY_RUN', now,
   }).provisioningAllowed).toBe(true);
+});
+
+test('eligibility observations use the same freshness window as the quota report', () => {
+  const stale = { ...free, observedAt: '2026-11-13T11:44:59.000Z' };
+  const future = { ...free, observedAt: '2026-11-13T12:00:01.000Z' };
+  expect(OciFreeTierGate.evaluate({ report: report(), eligibility: stale, mode: 'LIVE', now }).blockers).toContain('STALE_ELIGIBILITY');
+  expect(OciFreeTierGate.evaluate({ report: report(), eligibility: future, mode: 'LIVE', now }).blockers).toContain('FUTURE_ELIGIBILITY');
+  expect(OciFreeTierGate.evaluate({ report: report(), eligibility: stale, mode: 'DRY_RUN', now }).provisioningAllowed).toBe(false);
 });
 
 test('stale or insufficient quota still blocks a free attestation', () => {

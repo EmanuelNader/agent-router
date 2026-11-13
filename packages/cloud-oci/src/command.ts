@@ -60,7 +60,8 @@ export class OciHostCommand {
       const now = options.now ?? new Date();
       const eligibilityPath = demo ? new URL('../../../fixtures/oci/always-free-eligibility.json', import.meta.url) : values.eligibility;
       if (!eligibilityPath) return this.invalid();
-      const eligibility: unknown = JSON.parse(await readFile(eligibilityPath, 'utf8'));
+      const parsedEligibility = JSON.parse(await readFile(eligibilityPath, 'utf8')) as Record<string, unknown>;
+      const eligibility = demo ? { ...parsedEligibility, observedAt: now.toISOString() } : parsedEligibility;
       const sshCidr = OciResourcePlan.sshCidr(values['ssh-cidr'] ?? (demo ? '203.0.113.10/32' : ''));
       const compartmentId = values.compartment ? OciResourcePlan.compartmentId(values.compartment) : demo ? 'DEMO' : '';
       if (!compartmentId) return this.invalid();
