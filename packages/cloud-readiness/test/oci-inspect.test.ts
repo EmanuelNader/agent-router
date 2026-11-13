@@ -54,7 +54,11 @@ test('inspects the home region and exact AD while omitting identities from the r
 });
 
 test('does not guess a home region or AD and rejects a different region', async () => {
+  const ready = (regionName: string) => ({ regionName, isHomeRegion: true, status: 'READY' });
   expect((await inspectOci(reader({ regions: async () => [] }))).issues).toContain('HOME_REGION_UNKNOWN');
+  expect((await inspectOci(reader({ regions: async () => [{ regionName: 'us-example-1', isHomeRegion: true, status: 'IN_PROGRESS' }] }))).issues).toContain('HOME_REGION_UNKNOWN');
+  expect((await inspectOci(reader({ regions: async () => [ready('not-a-region')] }))).issues).toContain('HOME_REGION_UNKNOWN');
+  expect((await inspectOci(reader({ regions: async () => [ready('us-example-1'), ready('us-example-2')] }))).issues).toContain('HOME_REGION_UNKNOWN');
   expect((await inspectOci(reader(), { region: 'other-region' })).issues).toContain('REGION_NOT_HOME');
   expect((await inspectOci(reader({ domains: async () => ['a:AD-1', 'b:AD-2'] }))).issues).toContain('AD_SELECTION_REQUIRED');
 });

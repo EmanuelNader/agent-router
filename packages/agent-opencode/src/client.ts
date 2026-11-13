@@ -54,11 +54,6 @@ export class OpenCodeClient {
     return result.data.data.id;
   }
 
-  /** Queue a message without calling a model or starting agent work. */
-  addPendingPrompt(sessionId: string, text: string) {
-    return this.request(`/api/session/${encodeURIComponent(sessionId)}/prompt`, { text, resume: false });
-  }
-
   runShellCommand(sessionId: string, command: string) {
     return this.request(`/api/session/${encodeURIComponent(sessionId)}/shell`, { command });
   }

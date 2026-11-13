@@ -15,7 +15,7 @@ Recorded 2026-11-12. This is a partial readiness milestone, not a production or 
 | Pending user input | LIMITATION | `resume: false` queues a prompt; it is absent from transcript export |
 | Model inference and conversational recall | UNTESTED | No model credential supplied or accessed |
 | Native CLI reconnect | UNTESTED | HTTP client exercised; interactive terminal client not exercised |
-| Linux runtime | UNTESTED locally | Ubuntu CI configured; record actual CI result separately |
+| Linux runtime | PASS: Node 24.22.3, pnpm 11.25.0, typecheck, unit tests, probe, and round trip | Ubuntu x64; Docker unavailable. GitHub Actions records the hosted result |
 | OCI console discovery | OBSERVED | Free Tier/home-region/quota views inspected read-only; historical observations predate user's reported instance deletion |
 | OCI SDK account discovery | UNTESTED LIVE | Read-only collector implemented; standard local config absent; no signing key read or SDK cloud request made |
 | Oracle deployment preview | PASS LOCALLY | Synthetic quota-fit, insufficient-storage, AD/regional-limit, missing-data, and freshness checks; provisioning always disabled |
@@ -63,4 +63,4 @@ Console observations are not substituted for live SDK evidence. The user reporte
 
 Oracle's [current Always Free documentation](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) describes 2 A1 OCPUs/12 GB equivalent, consistent with the console observation. Production eligibility must derive from current account benefits and measured usage. [Limits APIs](https://docs.oracle.com/en-us/iaas/Content/General/service-limits/view-tenancy.htm) may omit availability for some resources; omitted values remain UNKNOWN. [Boot-volume documentation](https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/bootvolumes.htm) confirms that termination can preserve the associated volume. Preview does not reserve capacity or release storage.
 
-Local validation: TypeScript checks and 25 unit tests pass. CLI smoke checks cover a fitting demo (exit 0), insufficient storage for two additional VMs (exit 2), invalid resource input (exit 1), absent config (exit 1), help (exit 0), and an invalid config path with sanitized error output (exit 1). CI includes the credential-free demo. Live account calls and actual launch remain untested.
+Local validation on Ubuntu x64 with Node 24.22.3 and pnpm 11.25.0: TypeScript checks and 26 unit tests pass, along with `pnpm readiness`, the auth/config probe, and the native round trip. CLI smoke checks cover a fitting demo (exit 0), insufficient storage for two additional VMs (exit 2), invalid resource input (exit 1), absent config (exit 1), help (exit 0), and an invalid config path with sanitized error output (exit 1). CI runs install, typecheck, test, the credential-free demo, the probe, and the round trip. Live account calls and actual launch remain untested.

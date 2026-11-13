@@ -8,7 +8,7 @@
 
 **Initial stack:** TypeScript; Node 24; Next.js dashboard; Fastify API; DBOS durable operations; PostgreSQL; official AWS and OCI SDKs; cloud-init/systemd; restic; frp/Caddy. Exact dependency and binary versions are selected and pinned during the first milestone's compatibility check.
 
-**Status on November 12, 2026:** Research and architecture documents exist. Product code, a product repository, cloud integrations, migrations and reliability checks do not yet exist. This plan has not been executed. Local read-only checks found Node v24.18.1 and pnpm 11.25.0; Docker CLI is present but its daemon is unreachable. The current research directory is not a Git repository.
+**Status on November 13, 2026:** The readiness slice is in this repository and recorded in `docs/evidence/00-readiness.md`: local OpenCode portability, read-only Oracle quota inspection, and deployment previews. Later milestones — provisioning, durable workflows, migration, and the dashboard — have not been started. Live Oracle and AWS account calls remain unverified.
 
 **Constraints that apply to every milestone:**
 
