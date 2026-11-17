@@ -2,7 +2,7 @@
 
 Local-first CLI and TypeScript toolkit to run isolated coding agents on your own compute (`OCI Always Free / PAYG-safe`, `SSH` / `Hetzner` VPSes, `AWS Free Plan`), guard against surprise cloud bills, and move unfinished workspaces + settled conversations cleanly across `laptop ↔ VPS ↔ cloud`.
 
-**Status: compatibility harness and Oracle deployment preview (Milestone 0).** OpenCode `2.2.7` isolated portability, deterministic workspace receipts, local OCI inspection key setup, read-only OCI/AWS inspection, and pure OCI A1 quota previews are implemented. Encrypted `restic` checkpoints, `laptop ↔ SSH/VPS` handoffs, and guarded OCI provisioning are planned next—without a hosted multi-tenant SaaS control plane or custom proxy gateway (remote access uses Tailscale or OpenCode's built-in `opencode pair --remote` / [OpenTunnel](https://github.com/anomalyco/opentunnel)). See the [November 2026 market & architecture reassessment](docs/research/2026-11-17-market-and-architecture-reassessment.md) and [updated execution plan](docs/plans/agent-router-execution-plan.md).
+**Status: local encrypted checkpoint/restore (Milestone 1) and Oracle deployment preview (Milestone 0).** OpenCode `2.2.7` isolated portability, deterministic workspace receipts, AES-256-GCM and `restic` encrypted local checkpoints ([observed evidence](docs/evidence/01-local-restore.md)), local OCI inspection key setup, read-only OCI/AWS inspection, and pure OCI A1 quota previews are implemented. `laptop ↔ SSH/VPS` handoffs and guarded OCI provisioning are planned next—without a hosted multi-tenant SaaS control plane or custom proxy gateway (remote access uses Tailscale or OpenCode's built-in `opencode pair --remote` / [OpenTunnel](https://github.com/anomalyco/opentunnel)). See the [November 2026 market & architecture reassessment](docs/research/2026-11-17-market-and-architecture-reassessment.md) and [updated execution plan](docs/plans/agent-router-execution-plan.md).
 
 ## Run the local proof
 
@@ -14,6 +14,7 @@ pnpm readiness
 pnpm check
 pnpm agent:probe
 pnpm agent:roundtrip
+pnpm checkpoint:roundtrip
 ```
 
 The probe starts a password-protected OpenCode 2.2.7 server on loopback and checks authenticated access, rejection without credentials, and exclusion of ancestor project configuration. The round trip creates a fixture with unfinished Git changes, records a completed shell turn in a real session, stops the source, copies the workspace, and imports the session into fresh agent state. It verifies successful shell output, target-directory binding, file hashes, executable flags, Git HEAD/index/status, session ID, and settled messages.

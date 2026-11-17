@@ -8,7 +8,7 @@
 
 **Stack:** TypeScript; Node 24; `pnpm@11.25.0`; `zod`; `vitest`; pinned `@opencode/cli@2.2.7`; official OCI and AWS SDKs; SSH/cloud-init/systemd; `restic`; Tailscale or OpenCode `OpenTunnel`.
 
-**Status on November 17, 2026:** The initial readiness and OCI preview slice is implemented and recorded in [00-readiness.md](../evidence/00-readiness.md): isolated OpenCode `2.2.7` portability, deterministic workspace hashing, local OCI inspector credential setup, read-only OCI/AWS inspection, and pure OCI A1 quota previews. Live cloud API verification, OCI PAYG-safe budget/quota guardrails, encrypted `restic` checkpoints, SSH/VPS handoffs, and VM provisioning remain open.
+**Status on November 17, 2026:** The initial readiness slice ([00-readiness.md](../evidence/00-readiness.md)) and Milestone 1 local encrypted checkpoint/restore ([01-local-restore.md](../evidence/01-local-restore.md)) are implemented and verified locally (`AES-256-GCM` and `restic`). Live cloud API verification, OCI PAYG-safe budget/quota guardrails, `laptop ↔ SSH/VPS` handoffs, and VM provisioning remain open.
 
 ## Global constraints across every milestone
 
@@ -27,7 +27,7 @@
 | `packages/workspace/` | Deterministic file-content and executable-bit receipts (*implemented*) |
 | `packages/agent-opencode/` | Pinned OpenCode `2.2.7` isolated server, v2 HTTP client, settled-history checks, quiescing, and export/import (*initial slice implemented*) |
 | `packages/cloud-readiness/` | Read-only OCI/AWS inspection, local OCI key/config setup, pure A1 quota previews, and PAYG-safe guardrail checks (*initial slice implemented*) |
-| `packages/snapshots/` | Versioned checkpoint manifests, quiesced session + workspace capture, `restic` encryption, and verified restore (*planned — Milestone 1*) |
+| `packages/snapshots/` | Versioned checkpoint manifests, quiesced session + workspace capture, AES-256-GCM / `restic` encryption, and verified restore (*implemented — Milestone 1*) |
 | `packages/host-ssh/` | Restricted remote lifecycle commands, fencing, and workspace/checkpoint transfer over SSH/Tailscale (*planned — Milestone 2*) |
 | `packages/cloud-oci/` | Idempotent OCI VM/network/volume provisioning, reconciliation, fencing, and leak-free cleanup (*planned — Milestone 3*) |
 | `packages/cli/` | Unified `agent-router` CLI commands wrapping the local operation journal (*planned — Milestones 1–3*) |
@@ -51,18 +51,18 @@ Detailed in [agent-router-first-milestone.md](./agent-router-first-milestone.md)
 
 **Gate:** Sanitized live inspection evidence and model-recall compatibility are recorded in `docs/evidence/00-readiness.md`. Unknown or missing cloud evidence continues to block provisioning.
 
-## Milestone 1: prove local encrypted checkpoint and restore *(next code slice)*
+## Milestone 1: prove local encrypted checkpoint and restore *(completed locally)*
 
-Detailed in [2026-11-17-local-checkpoint-restore.md](./2026-11-17-local-checkpoint-restore.md).
+Detailed in [2026-11-17-local-checkpoint-restore.md](./2026-11-17-local-checkpoint-restore.md) and verified in [01-local-restore.md](../evidence/01-local-restore.md).
 
-Files: `packages/snapshots/src/manifest.ts`, `packages/snapshots/src/restic.ts`, `packages/snapshots/src/checkpoint.ts`, `packages/snapshots/test/*.test.ts`, `scripts/checkpoint-roundtrip.ts`, `docs/evidence/01-local-restore.md`.
+Files: `packages/snapshots/src/manifest.ts`, `packages/snapshots/src/store.ts`, `packages/snapshots/src/restic.ts`, `packages/snapshots/src/checkpoint.ts`, `packages/snapshots/test/*.test.ts`, `scripts/checkpoint-roundtrip.ts`, `docs/evidence/01-local-restore.md`.
 
-- [ ] Define a versioned Zod checkpoint manifest (`schemaVersion`, `checkpointId`, `createdAt`, `architecture`, `opencodeVersion`, `sessionIds`, `workspaceFiles`, `gitHead`, `gitStatusPorcelain`, `resticSnapshotId`).
-- [ ] Quiesce/stop the source OpenCode server after exporting settled sessions and verifying no silent loss of unfinished state.
-- [ ] Capture an encrypted `restic` snapshot of the staged workspace + session bundle into an isolated local repository (compatible with S3/R2/OCI Object Storage backends).
-- [ ] Restore into a fresh directory and fresh isolated OpenCode state, rebinding the session directory cleanly without `opencode.db` path drift.
-- [ ] Reject wrong-version, tampered, incomplete, or mismatched-hash checkpoints before starting the target agent.
-- [ ] Record measured capture/restore behavior in `docs/evidence/01-local-restore.md`.
+- [x] Define a versioned Zod checkpoint manifest (`schemaVersion`, `checkpointId`, `createdAt`, `architecture`, `opencodeVersion`, `sessionIds`, `workspaceFiles`, `git`).
+- [x] Quiesce/stop the source OpenCode server after exporting settled sessions and rejecting unfinished shell turns.
+- [x] Capture an encrypted snapshot (`LocalEncryptedStore` AES-256-GCM and `ResticRepositoryStore` `restic`) of the staged workspace + session bundle.
+- [x] Restore into a fresh directory and fresh isolated OpenCode state, verifying files and Git state before starting the target server.
+- [x] Reject wrong-version, tampered, incomplete, or mismatched-hash checkpoints before starting the target agent.
+- [x] Record measured capture/restore behavior in `docs/evidence/01-local-restore.md`.
 
 **Gate:** Restored workspace hashes, Git working tree, session ID, and settled history match the pre-checkpoint receipt, and tampered archives fail closed.
 

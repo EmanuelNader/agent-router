@@ -29,7 +29,7 @@
 - Consumes: `FileReceipt` from `../../workspace/src/manifest.js`, `OPENCODE_VERSION` from `../../agent-opencode/src/server.js`, `SessionTransfer` from `../../agent-opencode/src/client.js`.
 - Produces: `checkpointManifestSchema`, `CheckpointManifest`, `assertSafeRelativePath(entryPath: string): string`.
 
-- [ ] **Step 1: Write the failing manifest schema and path-validation tests**
+- [x] **Step 1: Write the failing manifest schema and path-validation tests**
 
 Create `packages/snapshots/test/manifest.test.ts`:
 
@@ -83,12 +83,12 @@ test('assertSafeRelativePath rejects traversal, absolute, empty, and NUL paths',
 });
 ```
 
-- [ ] **Step 2: Run Vitest to verify it fails**
+- [x] **Step 2: Run Vitest to verify it fails**
 
 Run: `pnpm vitest run packages/snapshots/test/manifest.test.ts`
 Expected: FAIL (`Cannot find module '../src/manifest.js'`)
 
-- [ ] **Step 3: Implement `packages/snapshots/src/manifest.ts`**
+- [x] **Step 3: Implement `packages/snapshots/src/manifest.ts`**
 
 Create `packages/snapshots/src/manifest.ts`:
 
@@ -147,12 +147,12 @@ export const checkpointManifestSchema = z.object({
 export type CheckpointManifest = z.infer<typeof checkpointManifestSchema>;
 ```
 
-- [ ] **Step 4: Run tests and typecheck**
+- [x] **Step 4: Run tests and typecheck**
 
 Run: `pnpm vitest run packages/snapshots/test/manifest.test.ts && pnpm typecheck`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/snapshots/src/manifest.ts packages/snapshots/test/manifest.test.ts
@@ -172,7 +172,7 @@ git commit -m "Add versioned checkpoint manifest and path validation"
 - Consumes: `assertSafeRelativePath` from `./manifest.js`.
 - Produces: `SnapshotEntry`, `SnapshotStore`, `LocalEncryptedStore`, `isResticAvailable(): boolean`, `ResticRepositoryStore`.
 
-- [ ] **Step 1: Write failing encryption/tamper/symlink store tests**
+- [x] **Step 1: Write failing encryption/tamper/symlink store tests**
 
 Create `packages/snapshots/test/store.test.ts`:
 
@@ -229,12 +229,12 @@ test('rejects tampered ciphertext and wrong encryption keys', async () => {
 });
 ```
 
-- [ ] **Step 2: Run Vitest to verify failure**
+- [x] **Step 2: Run Vitest to verify failure**
 
 Run: `pnpm vitest run packages/snapshots/test/store.test.ts`
 Expected: FAIL (`Cannot find module '../src/store.js'`)
 
-- [ ] **Step 3: Implement `packages/snapshots/src/store.ts` and `packages/snapshots/src/restic.ts`**
+- [x] **Step 3: Implement `packages/snapshots/src/store.ts` and `packages/snapshots/src/restic.ts`**
 
 Create `packages/snapshots/src/store.ts`:
 
@@ -345,12 +345,12 @@ export function isResticAvailable(): boolean {
 }
 ```
 
-- [ ] **Step 4: Run tests and typecheck**
+- [x] **Step 4: Run tests and typecheck**
 
 Run: `pnpm vitest run packages/snapshots/test/store.test.ts && pnpm typecheck`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/snapshots/src/store.ts packages/snapshots/src/restic.ts packages/snapshots/test/store.test.ts
@@ -370,7 +370,7 @@ git commit -m "Add authenticated AES-256-GCM snapshot store"
 - Consumes: `hashWorkspace` from `../../workspace/src/manifest.js`, `OpenCodeClient` / `SessionTransfer` from `../../agent-opencode/src/client.js`, `OPENCODE_VERSION` / `startIsolatedServer` from `../../agent-opencode/src/server.js`, `checkpointManifestSchema` / `CheckpointManifest` from `./manifest.js`, `SnapshotStore` / `SnapshotEntry` from `./store.js`.
 - Produces: `captureCheckpoint(...)` and `restoreCheckpoint(...)`.
 
-- [ ] **Step 1: Write failing end-to-end checkpoint & restore tests (including corruption rejection)**
+- [x] **Step 1: Write failing end-to-end checkpoint & restore tests (including corruption rejection)**
 
 Create `packages/snapshots/test/checkpoint.test.ts`:
 
@@ -494,12 +494,12 @@ test('refuses to import sessions if restored file hashes do not match the manife
 });
 ```
 
-- [ ] **Step 2: Run Vitest to verify failure**
+- [x] **Step 2: Run Vitest to verify failure**
 
 Run: `pnpm vitest run packages/snapshots/test/checkpoint.test.ts`
 Expected: FAIL (`Cannot find module '../src/checkpoint.js'`)
 
-- [ ] **Step 3: Implement `packages/snapshots/src/checkpoint.ts`**
+- [x] **Step 3: Implement `packages/snapshots/src/checkpoint.ts`**
 
 Create `packages/snapshots/src/checkpoint.ts`:
 
@@ -661,12 +661,12 @@ export async function restoreCheckpoint(options: {
 }
 ```
 
-- [ ] **Step 4: Run tests and typecheck**
+- [x] **Step 4: Run tests and typecheck**
 
 Run: `pnpm vitest run packages/snapshots/test/checkpoint.test.ts && pnpm check`
 Expected: PASS
 
-- [ ] **Step 5: Add live OpenCode `checkpoint:roundtrip` verification script & evidence doc**
+- [x] **Step 5: Add live OpenCode `checkpoint:roundtrip` verification script & evidence doc**
 
 Create `scripts/checkpoint-roundtrip.ts`:
 
@@ -739,7 +739,7 @@ try {
 
 Add `"checkpoint:roundtrip": "tsx scripts/checkpoint-roundtrip.ts"` to `package.json` scripts and `.github/workflows/ci.yml`, run `pnpm check && pnpm agent:probe && pnpm agent:roundtrip && pnpm checkpoint:roundtrip`, and record the sanitized receipt in `docs/evidence/01-local-restore.md`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/snapshots scripts/checkpoint-roundtrip.ts package.json .github/workflows/ci.yml docs/evidence/01-local-restore.md

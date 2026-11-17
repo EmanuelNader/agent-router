@@ -17,6 +17,7 @@
     "readiness": "tsx scripts/readiness.ts",
     "agent:probe": "tsx scripts/probe-agent.ts",
     "agent:roundtrip": "tsx scripts/agent-roundtrip.ts",
+    "checkpoint:roundtrip": "tsx scripts/checkpoint-roundtrip.ts",
     "inspect:aws": "tsx scripts/inspect-aws.ts",
     "connect:oci": "tsx scripts/connect-oci.ts",
     "inspect:oci": "tsx scripts/inspect-oci.ts",
