@@ -21,7 +21,7 @@ Recorded 2026-11-12. This is a partial readiness milestone, not a production or 
 | Oracle deployment preview | PASS LOCALLY | Synthetic quota-fit, insufficient-storage, AD/regional-limit, missing-data, and freshness checks; provisioning always disabled |
 | AWS account discovery | UNTESTED | No AWS account connected |
 | Cloud provisioning and free eligibility | NOT IMPLEMENTED | Read-only discovery cannot authorize launch |
-| Automatic migration/stable ingress | NOT IMPLEMENTED | Later milestone |
+| Encrypted checkpoints & SSH/cloud migration | NOT IMPLEMENTED | Later milestones (ingress delegated to Tailscale / OpenCode `OpenTunnel` per [2026-11-17 reassessment](../research/2026-11-17-market-and-architecture-reassessment.md)) |
 
 ## Reproduce
 

@@ -1,5 +1,7 @@
 **Research and build proposal: automatic free-compute routing for coding agents and bots**
 
+> **Superseded in part on November 17, 2026:** See [2026-11-17-market-and-architecture-reassessment.md](./2026-11-17-market-and-architecture-reassessment.md) and the updated [agent-router-execution-plan.md](../plans/agent-router-execution-plan.md). Live late-2026 pricing, OCI capacity findings, model-subscription ToS rules, and upstream OpenCode `OpenTunnel` support shifted the project from a hosted "$5–$9/mo credit-hopping SaaS" to a local-first, serverless BYOC CLI and portable checkpoint toolkit. This November 12 report is retained as historical background.
+
 Research date: November 12, 2026. Research used Firecrawl searches and page retrieval, with an additional Context7 check of OpenCode's remote-server architecture. This is a feasibility investigation and proposed engineering design. No customer cloud accounts were connected, no VPS was provisioned, and no migration was tested.
 
 The product evaluated is exactly this: a customer connects a supported coding agent or bot and their own eligible cloud accounts; the service provisions suitable compute, installs the agent, tracks remaining benefits, and restores the agent on another eligible provider before the current benefit runs out. The customer retains a stable connection and saved workspace. The proposal does not assume that we supply unlimited subsidized compute or replace the customer's agent interface.
