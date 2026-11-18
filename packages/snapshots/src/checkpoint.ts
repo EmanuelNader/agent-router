@@ -219,25 +219,32 @@ export async function captureAgentCheckpoint(options: {
   let sessionIds: string[] = [];
   let agentEnvelope: z.infer<typeof agentBundleEnvelopeSchema>;
 
-  if (options.agent.kind === 'none') {
-    agentEnvelope = { kind: 'none' };
-  } else if (options.agent.kind === 'opencode') {
+  if (options.agent.kind === 'opencode') {
+    // OpenCode exports over HTTP before its server is stopped by quiesceSource.
     const sessions = await options.agent.exportSessions();
     assertSettledSessions(sessions);
     sessionIds = sessions.map(s => s.info.id);
     agentEnvelope = { kind: 'opencode', sessions };
-  } else if (options.agent.kind === 'codex-cli') {
-    const bundle = await exportCodexRolloutBundle(options.agent.codexHome, root);
-    sessionIds = bundle.rollouts.map(r => r.threadId);
-    agentEnvelope = { kind: 'codex-cli', bundle };
+    if (options.quiesceSource) {
+      await options.quiesceSource();
+    }
   } else {
-    const bundle = await exportClaudeProjectBundle(options.agent.claudeConfigDir, root);
-    sessionIds = bundle.sessions.map(s => s.sessionId);
-    agentEnvelope = { kind: 'claude-code', bundle };
-  }
-
-  if (options.quiesceSource) {
-    await options.quiesceSource();
+    // File-backed agents (codex-cli, claude-code) and workspace-only checkpoints
+    // quiesce/stop the source process FIRST so final JSONL buffers flush to disk before export.
+    if (options.quiesceSource) {
+      await options.quiesceSource();
+    }
+    if (options.agent.kind === 'none') {
+      agentEnvelope = { kind: 'none' };
+    } else if (options.agent.kind === 'codex-cli') {
+      const bundle = await exportCodexRolloutBundle(options.agent.codexHome, root);
+      sessionIds = bundle.rollouts.map(r => r.threadId);
+      agentEnvelope = { kind: 'codex-cli', bundle };
+    } else {
+      const bundle = await exportClaudeProjectBundle(options.agent.claudeConfigDir, root);
+      sessionIds = bundle.sessions.map(s => s.sessionId);
+      agentEnvelope = { kind: 'claude-code', bundle };
+    }
   }
 
   const workspaceFiles = await hashWorkspace(root);

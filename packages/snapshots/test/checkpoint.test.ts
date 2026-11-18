@@ -167,20 +167,24 @@ test('captures and restores v2 polymorphic checkpoints for codex-cli and claude-
   const codexHomeA = join(root, 'codex-a');
   const rolloutDir = join(codexHomeA, 'sessions', '2026', '11', '17');
   await mkdir(rolloutDir, { recursive: true, mode: 0o700 });
-  await writeFile(
-    join(rolloutDir, 'rollout-2026-11-17T20-00-00-01a1ec9c-1111-7111-8111-111111111111.jsonl'),
-    `${JSON.stringify({
-      timestamp: '2026-11-17T20:00:00Z',
-      type: 'session_meta',
-      payload: { id: '01a1ec9c-1111-7111-8111-111111111111', cwd: srcWs },
-    })}\n`,
-    { mode: 0o600 },
-  );
+  const rolloutFile = join(rolloutDir, 'rollout-2026-11-17T20-00-00-01a1ec9c-1111-7111-8111-111111111111.jsonl');
 
   const codexManifest = await captureAgentCheckpoint({
     workspace: srcWs,
     store,
     agent: { kind: 'codex-cli', codexHome: codexHomeA },
+    quiesceSource: async () => {
+      // Simulate codex flushing its rollout JSONL during graceful stop in quiesceSource
+      await writeFile(
+        rolloutFile,
+        `${JSON.stringify({
+          timestamp: '2026-11-17T20:00:00Z',
+          type: 'session_meta',
+          payload: { id: '01a1ec9c-1111-7111-8111-111111111111', cwd: srcWs },
+        })}\n`,
+        { mode: 0o600 },
+      );
+    },
   });
   expect(codexManifest.schemaVersion).toBe(2);
   expect(codexManifest.agentKind).toBe('codex-cli');
