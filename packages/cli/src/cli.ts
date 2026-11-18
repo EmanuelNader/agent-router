@@ -24,10 +24,19 @@ import {
   evaluateGcpAlwaysFreeGuardrails,
   gcpFreeTierSnapshotSchema,
 } from '../../cloud-readiness/src/gcp-free-tier.js';
+import { parseGitHubCodespacesBillingUsage } from '../../cloud-readiness/src/github-billing-api.js';
 import { inspectOciGuardrails, type OciGuardrailReport } from '../../cloud-readiness/src/oci-guardrails.js';
 import { inspectOci } from '../../cloud-readiness/src/oci-inspect.js';
 import type { OciInspection } from '../../cloud-readiness/src/oci-report.js';
 import { createOciGuardrailSdkReader, createOciSdkReader } from '../../cloud-readiness/src/oci-sdk.js';
+import {
+  evaluateR2FreeTierGuardrails,
+  r2FreeTierSnapshotSchema,
+} from '../../cloud-readiness/src/r2-free-tier.js';
+import {
+  prepareIsolatedCodespaceSshConfig,
+  type PreparedCodespaceSshConfig,
+} from '../../host-ssh/src/codespaces-ssh.js';
 import { pairingAgentKindSchema, runRemotePairingOverSsh } from '../../host-ssh/src/pairing.js';
 import { discoverTailscalePeers } from '../../host-ssh/src/tailscale.js';
 import { LoopbackHostTransport, SshCliTransport } from '../../host-ssh/src/transport.js';
@@ -37,11 +46,14 @@ import {
   type CaptureAgentSpec,
   type RestoreAgentSpec,
 } from '../../snapshots/src/checkpoint.js';
+import { pruneLocalCheckpoints } from '../../snapshots/src/prune.js';
 import { LocalEncryptedStore } from '../../snapshots/src/store.js';
 import { OperationJournal } from './journal.js';
 import { migrateWorkspace } from './migrate.js';
+import { renderLaunchdPlist, renderSystemdUserUnits } from './service-units.js';
+import { runAllowanceWatchLoop } from './watch.js';
 
-export const ROUTER_CLI_VERSION = '0.2.0';
+export const ROUTER_CLI_VERSION = '0.3.0';
 
 export interface RouterCliIo {
   stdout: (line: string) => void;
@@ -63,16 +75,21 @@ Local journal, Tailscale peers, pairing, checkpoints & handoffs:
   status                  [--journal-dir .work/router-journal]
   reconcile               --operation op_<hex> --summary "<reason>" [--journal-dir .work/router-journal]
   peers                   [--status-file <json>] [--include-offline] [--ssh-user agentrouter]
-  pair                    --ssh-target <user@host> --agent <opencode|codex-cli|claude-code> [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--session-name <name>]
+  pair                    (--ssh-target <user@host> | --codespace <name>) --agent <opencode|codex-cli|claude-code> [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--session-name <name>]
   checkpoint              --workspace <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path> --session-id <id>] [--codex-home <dir>] [--claude-config-dir <dir>]
   restore                 --checkpoint chk_<hex> --target <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path>] [--codex-home <dir>] [--claude-config-dir <dir>]
-  handoff                 --workspace <dir> --target-workspace <dir> --ssh-target <user@host> --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>]
+  handoff                 --workspace <dir> --target-workspace <dir> (--ssh-target <user@host> | --codespace <name>) --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>]
+  prune                   --store <dir> --keep-last <int> [--journal-dir .work/router-journal]
   migrate:simulate        [--workspace-key ws-sim]
+  watch:simulate          [--workspace-key ws-watch-sim] [--max-ticks 3]
+  service:emit            --platform <systemd|launchd> --work-dir <abs-dir> [--interval-sec 300] [--service-name agent-router-watch]
 
 Cloud allowance & worker lifecycle commands:
   aws:allowance           (--demo | --report <path>) [--min-credit-usd 5] [--min-days 7]
   gcp:guard               (--demo | --report <path>)
+  r2:guard                (--demo | --report <path>)
   codespaces:allowance    (--demo | --report <path>)
+  codespaces:parse-billing --usage-file <path> [--cores <2|4|8|16|32>]
   oci:simulate-lifecycle  [--workspace-key ws-sim]
   oci:up                  --workspace-key <name> --config <path> --compartment-id <OCID> --compartment-name <name> --subnet-id <OCID> --image-id <OCID> --ssh-pubkey-file <path> [--ocpus 1] [--memory-gb 4] [--boot-gb 50]
   oci:status              --workspace-key <name> --config <path> --compartment-id <OCID> --region <region>
@@ -158,11 +175,20 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         'include-offline': { type: 'boolean' },
         'ssh-user': { type: 'string' },
         'ssh-target': { type: 'string' },
+        codespace: { type: 'string' },
         'ssh-port': { type: 'string' },
         'identity-file': { type: 'string' },
         'known-hosts-file': { type: 'string' },
         'remote-spool': { type: 'string' },
         'session-name': { type: 'string' },
+        'keep-last': { type: 'string' },
+        'usage-file': { type: 'string' },
+        cores: { type: 'string', default: '2' },
+        platform: { type: 'string' },
+        'work-dir': { type: 'string' },
+        'interval-sec': { type: 'string', default: '300' },
+        'service-name': { type: 'string' },
+        'max-ticks': { type: 'string', default: '3' },
         report: { type: 'string' },
         demo: { type: 'boolean' },
         'min-credit-usd': { type: 'string', default: '5' },
@@ -304,24 +330,45 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
 
     if (subcommand === 'pair') {
       const parsedAgent = pairingAgentKindSchema.safeParse(values.agent);
-      if (!values['ssh-target'] || !parsedAgent.success) {
-        throw new Error('pair requires --ssh-target and --agent <opencode|codex-cli|claude-code>');
+      if ((!values['ssh-target'] && !values.codespace) || !parsedAgent.success) {
+        throw new Error('pair requires (--ssh-target or --codespace) and --agent <opencode|codex-cli|claude-code>');
+      }
+      if (values['ssh-target'] && values.codespace) {
+        throw new Error('pair accepts either --ssh-target or --codespace, not both');
       }
       const pairingAgent = parsedAgent.data;
-      const transport = new SshCliTransport({
-        target: values['ssh-target'],
-        remoteSpoolDirectory: values['remote-spool'] ?? '/var/lib/agent-router/spool',
-        ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),
-        ...(values['identity-file'] !== undefined ? { identityFile: path.resolve(values['identity-file']) } : {}),
-        ...(values['known-hosts-file'] !== undefined
-          ? { knownHostsFile: path.resolve(values['known-hosts-file']) }
-          : {}),
-      });
-      const paired = await runRemotePairingOverSsh(transport, pairingAgent, {
-        ...(values['session-name'] !== undefined ? { sessionName: values['session-name'] } : {}),
-      });
-      io.stdout(JSON.stringify(paired, null, 2));
-      return 0;
+      let preparedCs: PreparedCodespaceSshConfig | undefined;
+      try {
+        if (values.codespace) {
+          preparedCs = await prepareIsolatedCodespaceSshConfig({ codespaceName: values.codespace });
+        }
+        const transport = new SshCliTransport({
+          target: preparedCs ? preparedCs.sshTarget : values['ssh-target']!,
+          remoteSpoolDirectory: values['remote-spool'] ?? '/var/lib/agent-router/spool',
+          ...(preparedCs
+            ? {
+                configFile: preparedCs.configFile,
+                knownHostsFile: preparedCs.knownHostsFile,
+                strictHostKeyChecking: preparedCs.strictHostKeyChecking,
+              }
+            : {
+                ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),
+                ...(values['identity-file'] !== undefined
+                  ? { identityFile: path.resolve(values['identity-file']) }
+                  : {}),
+                ...(values['known-hosts-file'] !== undefined
+                  ? { knownHostsFile: path.resolve(values['known-hosts-file']) }
+                  : {}),
+              }),
+        });
+        const paired = await runRemotePairingOverSsh(transport, pairingAgent, {
+          ...(values['session-name'] !== undefined ? { sessionName: values['session-name'] } : {}),
+        });
+        io.stdout(JSON.stringify(paired, null, 2));
+        return 0;
+      } finally {
+        if (preparedCs) await preparedCs.cleanup();
+      }
     }
 
     if (subcommand === 'checkpoint') {
@@ -385,13 +432,16 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       if (
         !values.workspace ||
         !values['target-workspace'] ||
-        !values['ssh-target'] ||
+        (!values['ssh-target'] && !values.codespace) ||
         !values['remote-spool'] ||
         !values['key-file']
       ) {
         throw new Error(
-          'handoff requires --workspace, --target-workspace, --ssh-target, --remote-spool, and --key-file',
+          'handoff requires --workspace, --target-workspace, (--ssh-target or --codespace), --remote-spool, and --key-file',
         );
+      }
+      if (values['ssh-target'] && values.codespace) {
+        throw new Error('handoff accepts either --ssh-target or --codespace, not both');
       }
       const key = await loadOwnerOnlyMasterKey(values['key-file']);
       const captureAgent = await resolveCaptureAgent(values.agent);
@@ -405,70 +455,129 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       }
 
       const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.workspace));
-
-      const transport = new SshCliTransport({
-        target: values['ssh-target'],
-        remoteSpoolDirectory: values['remote-spool'],
-        ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),
-        ...(values['identity-file'] !== undefined ? { identityFile: path.resolve(values['identity-file']) } : {}),
-        ...(values['known-hosts-file'] !== undefined
-          ? { knownHostsFile: path.resolve(values['known-hosts-file']) }
-          : {}),
-      });
-
-      const op = await journal.begin({
-        kind: 'HANDOFF',
-        workspaceKey: wsKey,
-        summary: `Handoff (${captureAgent.kind}) for ${wsKey}`,
-      });
-      const scratch = await mkdtemp(path.join(tmpdir(), 'router-cli-handoff-'));
-      let transferredToRemote = false;
+      let preparedCs: PreparedCodespaceSshConfig | undefined;
       try {
-        const stageStoreDir = path.join(scratch, 'stage-store');
-        const recvStoreDir = path.join(scratch, 'recv-store');
-        await mkdir(stageStoreDir, { recursive: true, mode: 0o700 });
-        await mkdir(recvStoreDir, { recursive: true, mode: 0o700 });
-
-        const stageStore = new LocalEncryptedStore(stageStoreDir, key);
-        const manifest = await captureAgentCheckpoint({
-          workspace: values.workspace,
-          store: stageStore,
-          agent: captureAgent,
-        });
-
-        const ciphertext = await readFile(path.join(stageStoreDir, `${manifest.checkpointId}.enc`));
-        await transport.transferEncryptedCheckpoint(manifest.checkpointId, ciphertext);
-        transferredToRemote = true;
-
-        const downloaded = await transport.readTransferredCheckpoint(manifest.checkpointId);
-        await writeFile(path.join(recvStoreDir, `${manifest.checkpointId}.enc`), downloaded, {
-          mode: 0o600,
-          flag: 'wx',
-        });
-
-        const recvStore = new LocalEncryptedStore(recvStoreDir, key);
-        await restoreAgentCheckpoint({
-          checkpointId: manifest.checkpointId,
-          targetWorkspace: resolvedTargetWs,
-          store: recvStore,
-          agent: restoreAgent,
-        });
-
-        const completed = await journal.complete(op.operationId, `Completed handoff ${manifest.checkpointId}`);
-        io.stdout(JSON.stringify({ operation: completed, manifest }, null, 2));
-        return 0;
-      } catch (err) {
-        if (transferredToRemote) {
-          await journal
-            .markNeedsReconcile(op.operationId, 'CLI handoff failed after remote spool transfer; reconcile before retry')
-            .catch(() => undefined);
-        } else {
-          await journal.abortUnfenced(op.operationId).catch(() => undefined);
+        if (values.codespace) {
+          preparedCs = await prepareIsolatedCodespaceSshConfig({ codespaceName: values.codespace });
         }
-        throw err;
+
+        const transport = new SshCliTransport({
+          target: preparedCs ? preparedCs.sshTarget : values['ssh-target']!,
+          remoteSpoolDirectory: values['remote-spool'],
+          ...(preparedCs
+            ? {
+                configFile: preparedCs.configFile,
+                knownHostsFile: preparedCs.knownHostsFile,
+                strictHostKeyChecking: preparedCs.strictHostKeyChecking,
+              }
+            : {
+                ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),
+                ...(values['identity-file'] !== undefined
+                  ? { identityFile: path.resolve(values['identity-file']) }
+                  : {}),
+                ...(values['known-hosts-file'] !== undefined
+                  ? { knownHostsFile: path.resolve(values['known-hosts-file']) }
+                  : {}),
+              }),
+        });
+
+        const op = await journal.begin({
+          kind: 'HANDOFF',
+          workspaceKey: wsKey,
+          summary: `Handoff (${captureAgent.kind}) for ${wsKey}`,
+        });
+        const scratch = await mkdtemp(path.join(tmpdir(), 'router-cli-handoff-'));
+        let transferredToRemote = false;
+        let capturedId: string | undefined;
+        try {
+          const stageStoreDir = path.join(scratch, 'stage-store');
+          const recvStoreDir = path.join(scratch, 'recv-store');
+          await mkdir(stageStoreDir, { recursive: true, mode: 0o700 });
+          await mkdir(recvStoreDir, { recursive: true, mode: 0o700 });
+
+          const stageStore = new LocalEncryptedStore(stageStoreDir, key);
+          const manifest = await captureAgentCheckpoint({
+            workspace: values.workspace,
+            store: stageStore,
+            agent: captureAgent,
+          });
+          capturedId = manifest.checkpointId;
+
+          const ciphertext = await readFile(path.join(stageStoreDir, `${manifest.checkpointId}.enc`));
+          await transport.transferEncryptedCheckpoint(manifest.checkpointId, ciphertext);
+          transferredToRemote = true;
+
+          const downloaded = await transport.readTransferredCheckpoint(manifest.checkpointId);
+          await writeFile(path.join(recvStoreDir, `${manifest.checkpointId}.enc`), downloaded, {
+            mode: 0o600,
+            flag: 'wx',
+          });
+
+          const recvStore = new LocalEncryptedStore(recvStoreDir, key);
+          await restoreAgentCheckpoint({
+            checkpointId: manifest.checkpointId,
+            targetWorkspace: resolvedTargetWs,
+            store: recvStore,
+            agent: restoreAgent,
+          });
+
+          const completed = await journal.complete(op.operationId, `Completed handoff ${manifest.checkpointId}`);
+          io.stdout(JSON.stringify({ operation: completed, manifest }, null, 2));
+          return 0;
+        } catch (err) {
+          if (transferredToRemote) {
+            await journal
+              .markNeedsReconcile(
+                op.operationId,
+                `CLI handoff failed after remote spool transfer${capturedId ? ` (${capturedId})` : ''}; reconcile before retry`,
+              )
+              .catch(() => undefined);
+          } else {
+            await journal.abortUnfenced(op.operationId).catch(() => undefined);
+          }
+          throw err;
+        } finally {
+          await rm(scratch, { recursive: true, force: true });
+        }
       } finally {
-        await rm(scratch, { recursive: true, force: true });
+        if (preparedCs) await preparedCs.cleanup();
       }
+    }
+
+    if (subcommand === 'prune') {
+      if (!values.store || !values['keep-last']) {
+        throw new Error('prune requires --store and --keep-last <int>');
+      }
+      const protectedCheckpointIds = await journal.collectProtectedCheckpointIds();
+      const result = await pruneLocalCheckpoints({
+        storeDirectory: values.store,
+        keepLast: Number(values['keep-last']),
+        protectedCheckpointIds,
+      });
+      io.stdout(JSON.stringify(result, null, 2));
+      return 0;
+    }
+
+    if (subcommand === 'service:emit') {
+      if (!values.platform || !values['work-dir']) {
+        throw new Error('service:emit requires --platform <systemd|launchd> and --work-dir <abs-dir>');
+      }
+      const spec = {
+        ...(values['service-name'] !== undefined ? { serviceName: values['service-name'] } : {}),
+        cliEntrypoint: path.resolve('bin/agent-router.mjs'),
+        workingDirectory: values['work-dir'],
+        routerArgs: ['watch:simulate', '--workspace-key', values['workspace-key'] ?? 'ws-daemon'],
+        intervalSec: Number(values['interval-sec']),
+      };
+      if (values.platform === 'systemd') {
+        io.stdout(JSON.stringify(renderSystemdUserUnits(spec), null, 2));
+        return 0;
+      }
+      if (values.platform === 'launchd') {
+        io.stdout(JSON.stringify(renderLaunchdPlist(spec), null, 2));
+        return 0;
+      }
+      throw new Error('service:emit --platform must be "systemd" or "launchd"');
     }
 
     if (subcommand === 'aws:allowance') {
@@ -523,6 +632,27 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       return evaluation.status === 'GUARDED_FREE_ELIGIBLE' ? 0 : 2;
     }
 
+    if (subcommand === 'r2:guard') {
+      const now = new Date();
+      const snapshot = values.demo
+        ? r2FreeTierSnapshotSchema.parse({
+            observedAt: now.toISOString(),
+            storageClass: 'STANDARD',
+            storedGbMonth: 2.5,
+            monthlyClassAOps: 12_000,
+            monthlyClassBOps: 85_000,
+            publicDevelopmentUrlEnabled: false,
+          })
+        : values.report
+          ? r2FreeTierSnapshotSchema.parse(JSON.parse(await readFile(path.resolve(values.report), 'utf8')))
+          : null;
+
+      if (!snapshot) throw new Error('r2:guard requires --demo or --report <path>');
+      const evaluation = evaluateR2FreeTierGuardrails(snapshot, { now });
+      io.stdout(JSON.stringify(evaluation, null, 2));
+      return evaluation.status === 'GUARDED_FREE_ELIGIBLE' ? 0 : 2;
+    }
+
     if (subcommand === 'codespaces:allowance') {
       const now = new Date();
       const snapshot = values.demo
@@ -542,6 +672,113 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       const evaluation = evaluateCodespacesAllowance(snapshot, { now });
       io.stdout(JSON.stringify(evaluation, null, 2));
       return evaluation.decision === 'HEALTHY' ? 0 : 2;
+    }
+
+    if (subcommand === 'codespaces:parse-billing') {
+      if (!values['usage-file']) {
+        throw new Error('codespaces:parse-billing requires --usage-file <path>');
+      }
+      const rawCores = Number(values.cores);
+      if (rawCores !== 2 && rawCores !== 4 && rawCores !== 8 && rawCores !== 16 && rawCores !== 32) {
+        throw new Error('codespaces:parse-billing --cores must be 2, 4, 8, 16, or 32');
+      }
+      const now = new Date();
+      const payload = JSON.parse(await readFile(path.resolve(values['usage-file']), 'utf8')) as unknown;
+      const snapshot = parseGitHubCodespacesBillingUsage(payload, {
+        observedAt: now.toISOString(),
+        activeMachineCores: rawCores,
+      });
+      const evaluation = evaluateCodespacesAllowance(snapshot, { now });
+      io.stdout(JSON.stringify({ snapshot, evaluation }, null, 2));
+      return evaluation.decision === 'HEALTHY' ? 0 : 2;
+    }
+
+    if (subcommand === 'watch:simulate') {
+      const workspaceKey = values['workspace-key'] ?? 'ws-watch-sim';
+      const maxTicks = Number(values['max-ticks']);
+      const scratch = await mkdtemp(path.join(tmpdir(), 'router-watch-sim-'));
+      try {
+        const srcWs = path.join(scratch, 'src-ws');
+        await mkdir(srcWs, { recursive: true, mode: 0o700 });
+        await writeFile(path.join(srcWs, 'state.txt'), 'watch-portable-state\n', { mode: 0o600 });
+        const simJournal = new OperationJournal(path.join(scratch, 'journal'));
+        const key = randomBytes(32);
+        const now = new Date();
+        const observedAt = new Date(now.getTime() - 10_000).toISOString();
+
+        const watchResult = await runAllowanceWatchLoop({
+          workspaceKey,
+          journal: simJournal,
+          maxTicks,
+          pollAllowance: async tick => ({
+            kind: 'GITHUB_BILLING_USAGE',
+            observedAt,
+            activeMachineCores: 4,
+            now,
+            payload: {
+              usageItems: [
+                {
+                  product: 'codespaces',
+                  sku: 'codespaces_compute_d4',
+                  unitType: 'hours',
+                  grossQuantity: tick === 1 ? 10 : 28.5,
+                },
+              ],
+            },
+          }),
+          executeMigration: async trigger =>
+            await migrateWorkspace({
+              workspaceKey,
+              journal: simJournal,
+              encryptionKey: key,
+              trigger,
+              source: {
+                workspacePath: srcWs,
+                stagingDir: path.join(scratch, 'stage'),
+                exportSessions: async () => [{ info: { id: 'ses_watch_sim' }, messages: [] }],
+                fenceAgent: async () => {},
+                teardownCompute: async () => {},
+              },
+              candidates: [
+                {
+                  name: 'oci-a1-primary',
+                  targetWorkspace: path.join(scratch, 'dst-oci'),
+                  transport: new LoopbackHostTransport(path.join(scratch, 'spool-oci')),
+                  prepareCompute: async () => ({ status: 'OUT_OF_CAPACITY' }),
+                  activateAndImportSession: async t => t.info.id,
+                },
+                {
+                  name: 'hetzner-cax11-fallback',
+                  targetWorkspace: path.join(scratch, 'dst-hetzner'),
+                  transport: new LoopbackHostTransport(path.join(scratch, 'spool-hetzner')),
+                  prepareCompute: async () => ({ status: 'READY', targetFingerprint: 'hcloud_watch01234567' }),
+                  activateAndImportSession: async t => t.info.id,
+                },
+              ],
+            }),
+        });
+
+        io.stdout(
+          JSON.stringify(
+            watchResult.outcome === 'EVACUATED'
+              ? {
+                  outcome: watchResult.outcome,
+                  workspaceKey,
+                  ticksRun: watchResult.ticksRun,
+                  triggerReasons: watchResult.triggerReasons,
+                  selectedTarget: watchResult.migration.selectedTarget,
+                  skippedTargets: watchResult.migration.skippedTargets,
+                  sourceTornDown: watchResult.migration.sourceTornDown,
+                }
+              : watchResult,
+            null,
+            2,
+          ),
+        );
+        return watchResult.outcome === 'EVACUATED' || watchResult.outcome === 'HEALTHY_MAX_TICKS_REACHED' ? 0 : 2;
+      } finally {
+        await rm(scratch, { recursive: true, force: true });
+      }
     }
 
     if (subcommand === 'oci:simulate-lifecycle') {

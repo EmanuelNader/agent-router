@@ -143,7 +143,7 @@ test('router CLI supports --version, aws:allowance, hetzner:simulate-lifecycle, 
 
   const verIo = captureIo();
   expect(await runRouterCli(['--version'], verIo.io)).toBe(0);
-  expect(verIo.out.join('\n').trim()).toBe('0.2.0');
+  expect(verIo.out.join('\n').trim()).toBe('0.3.0');
 
   const awsReportPath = join(root, 'aws-low.json');
   await writeFile(
@@ -371,4 +371,55 @@ test('router CLI supports peers --status-file, polymorphic --agent checkpoints, 
     ),
   ).toBe(1);
   expect(badOcIo.err.join('\n')).toMatch(/--opencode-url/);
+
+  // v0.3.0: r2:guard, codespaces:parse-billing, watch:simulate, service:emit, and prune
+  const r2DemoIo = captureIo();
+  expect(await runRouterCli(['r2:guard', '--demo'], r2DemoIo.io)).toBe(0);
+  expect(JSON.parse(r2DemoIo.out.join('\n'))).toMatchObject({ status: 'GUARDED_FREE_ELIGIBLE' });
+
+  const usageFile = join(root, 'gh-usage.json');
+  await writeFile(
+    usageFile,
+    JSON.stringify({
+      usageItems: [
+        { product: 'codespaces', sku: 'codespaces_compute_d4', unitType: 'hours', grossQuantity: 28.5 },
+      ],
+    }),
+    { mode: 0o600 },
+  );
+  const csBillIo = captureIo();
+  expect(await runRouterCli(['codespaces:parse-billing', '--usage-file', usageFile, '--cores', '4'], csBillIo.io)).toBe(
+    2,
+  );
+  expect(JSON.parse(csBillIo.out.join('\n'))).toMatchObject({
+    snapshot: { usedCoreHours: 114 },
+    evaluation: { decision: 'MIGRATE_NOW', shouldMigrate: true },
+  });
+
+  const watchSimIo = captureIo();
+  expect(await runRouterCli(['watch:simulate', '--workspace-key', 'ws-watch-cli'], watchSimIo.io)).toBe(0);
+  expect(JSON.parse(watchSimIo.out.join('\n'))).toMatchObject({
+    outcome: 'EVACUATED',
+    workspaceKey: 'ws-watch-cli',
+    ticksRun: 2,
+    selectedTarget: 'hetzner-cax11-fallback',
+    sourceTornDown: true,
+  });
+
+  const svcIo = captureIo();
+  expect(
+    await runRouterCli(['service:emit', '--platform', 'systemd', '--work-dir', '/var/lib/agent-router'], svcIo.io),
+  ).toBe(0);
+  expect(JSON.parse(svcIo.out.join('\n')).serviceUnitName).toBe('agent-router-watch.service');
+
+  const pruneIo = captureIo();
+  expect(
+    await runRouterCli(['prune', '--store', join(root, 'nonexistent-store'), '--keep-last', '2'], pruneIo.io),
+  ).toBe(0);
+  expect(JSON.parse(pruneIo.out.join('\n'))).toEqual({
+    keptIds: [],
+    deletedIds: [],
+    skippedProtectedIds: [],
+    reclaimedBytes: 0,
+  });
 }, 20_000);

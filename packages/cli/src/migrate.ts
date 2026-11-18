@@ -3,6 +3,10 @@ import {
   evaluateAwsFreePlanAllowance,
   type AwsAllowanceSnapshot,
 } from '../../cloud-readiness/src/aws-allowance.js';
+import {
+  evaluateCodespacesAllowance,
+  type CodespacesAllowanceSnapshot,
+} from '../../cloud-readiness/src/codespaces-allowance.js';
 import { handoffWorkspace } from '../../host-ssh/src/handoff.js';
 import type { HostTransport } from '../../host-ssh/src/transport.js';
 import type { CheckpointManifest } from '../../snapshots/src/manifest.js';
@@ -15,6 +19,13 @@ export type MigrationTrigger =
       snapshot: AwsAllowanceSnapshot;
       minCreditFloorUsd?: number;
       minDaysRemaining?: number;
+      now?: Date;
+    }
+  | {
+      kind: 'CODESPACES';
+      snapshot: CodespacesAllowanceSnapshot;
+      minCoreHoursBuffer?: number;
+      maxStorageGbMonthBuffer?: number;
       now?: Date;
     };
 
@@ -77,15 +88,26 @@ export async function migrateWorkspace(options: {
   let triggerReasons: string[] = ['MANUAL_REQUEST'];
 
   if (options.trigger !== 'MANUAL') {
-    const evalResult = evaluateAwsFreePlanAllowance(options.trigger.snapshot, {
-      ...(options.trigger.minCreditFloorUsd !== undefined
-        ? { minCreditFloorUsd: options.trigger.minCreditFloorUsd }
-        : {}),
-      ...(options.trigger.minDaysRemaining !== undefined
-        ? { minDaysRemaining: options.trigger.minDaysRemaining }
-        : {}),
-      ...(options.trigger.now !== undefined ? { now: options.trigger.now } : {}),
-    });
+    const evalResult =
+      options.trigger.kind === 'AWS_FREE_PLAN'
+        ? evaluateAwsFreePlanAllowance(options.trigger.snapshot, {
+            ...(options.trigger.minCreditFloorUsd !== undefined
+              ? { minCreditFloorUsd: options.trigger.minCreditFloorUsd }
+              : {}),
+            ...(options.trigger.minDaysRemaining !== undefined
+              ? { minDaysRemaining: options.trigger.minDaysRemaining }
+              : {}),
+            ...(options.trigger.now !== undefined ? { now: options.trigger.now } : {}),
+          })
+        : evaluateCodespacesAllowance(options.trigger.snapshot, {
+            ...(options.trigger.minCoreHoursBuffer !== undefined
+              ? { minCoreHoursBuffer: options.trigger.minCoreHoursBuffer }
+              : {}),
+            ...(options.trigger.maxStorageGbMonthBuffer !== undefined
+              ? { maxStorageGbMonthBuffer: options.trigger.maxStorageGbMonthBuffer }
+              : {}),
+            ...(options.trigger.now !== undefined ? { now: options.trigger.now } : {}),
+          });
 
     if (evalResult.decision === 'BLOCKED') {
       throw new Error(`ALLOWANCE_CHECK_BLOCKED: ${evalResult.reasons.join(', ')}`);

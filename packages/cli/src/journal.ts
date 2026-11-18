@@ -80,6 +80,27 @@ export class OperationJournal {
     return records;
   }
 
+  async listBlocking(workspaceKey?: string): Promise<OperationRecord[]> {
+    const all = await this.list();
+    return all.filter(
+      record =>
+        (workspaceKey === undefined || record.workspaceKey === workspaceKey) &&
+        (record.status === 'PENDING' || record.status === 'NEEDS_RECONCILE'),
+    );
+  }
+
+  async collectProtectedCheckpointIds(): Promise<string[]> {
+    const blocking = await this.listBlocking();
+    const ids = new Set<string>();
+    const pattern = /chk_[a-f0-9]{16,64}/g;
+    for (const record of blocking) {
+      for (const match of record.summary.matchAll(pattern)) {
+        ids.add(match[0]);
+      }
+    }
+    return [...ids];
+  }
+
   async begin(input: { kind: OperationKind; workspaceKey: string; summary: string }): Promise<OperationRecord> {
     await this.ensureDirectory();
     const existing = await this.list();
