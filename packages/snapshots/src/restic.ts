@@ -9,6 +9,170 @@ import { checkpointIdSchema, type SnapshotEntry, type SnapshotStore } from './st
 
 const execFileAsync = promisify(execFile);
 
+const sftpDefaultOption = 'sftp.args=-o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15';
+
+export type ResticRemoteInput =
+  | {
+      kind: 'sftp';
+      target: string;
+      path: string;
+      port?: number;
+    }
+  | {
+      kind: 'oci-s3';
+      namespace: string;
+      region: string;
+      bucket: string;
+      prefix?: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+    }
+  | {
+      kind: 'r2';
+      accountId: string;
+      bucket: string;
+      prefix?: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+    }
+  | {
+      kind: 'aws-s3';
+      region: string;
+      bucket: string;
+      prefix?: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+    };
+
+export interface ResticAwsCredentials {
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+export interface ResticRemoteConfig {
+  repository: string;
+  options: string[];
+  awsCredentials?: ResticAwsCredentials;
+}
+
+export interface ResticStoreConfig {
+  options?: string[];
+  awsCredentials?: ResticAwsCredentials;
+  extraEnv?: Record<string, string>;
+  resticBinary?: string;
+}
+
+function validateSftpTarget(target: string): string {
+  if (
+    !target ||
+    target.startsWith('-') ||
+    /[\s\r\n\0:\\/]/.test(target) ||
+    !/^(?:[A-Za-z0-9._-]+@)?(?:[A-Za-z0-9.-]+|\[[0-9a-fA-F:]+\])$/.test(target)
+  ) {
+    throw new Error('Invalid SFTP target: expected safe host or user@host');
+  }
+  return target;
+}
+
+function validateSftpPath(remotePath: string): { isAbsolute: boolean; normalized: string } {
+  if (!remotePath || remotePath.includes('~') || remotePath.startsWith('-') || /[\s\r\n\0:\\]/.test(remotePath)) {
+    throw new Error('Invalid SFTP path: tilde expansion, flags, colons, and whitespace are forbidden');
+  }
+  if (remotePath.startsWith('/')) {
+    const normalized = path.posix.normalize(remotePath).replace(/\/+$/, '');
+    if (!normalized.startsWith('/') || normalized === '/' || remotePath.split('/').includes('..')) {
+      throw new Error('Invalid SFTP absolute path');
+    }
+    return { isAbsolute: true, normalized };
+  }
+  return { isAbsolute: false, normalized: assertSafeRelativePath(remotePath) };
+}
+
+function validateBucket(bucket: string): string {
+  if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket) || bucket.includes('..')) {
+    throw new Error('Invalid S3 bucket name');
+  }
+  return bucket;
+}
+
+function validateAwsCredentials(accessKeyId: string, secretAccessKey: string): ResticAwsCredentials {
+  if (
+    !accessKeyId.trim() ||
+    !secretAccessKey.trim() ||
+    /[\r\n\0]/.test(accessKeyId) ||
+    /[\r\n\0]/.test(secretAccessKey)
+  ) {
+    throw new Error('Invalid S3 credentials');
+  }
+  return { accessKeyId, secretAccessKey };
+}
+
+function validateResticOption(option: string): string {
+  if (!/^[a-z0-9._-]+=[A-Za-z0-9._=:/ -]+$/.test(option) || /[\r\n\0]/.test(option)) {
+    throw new Error('Invalid restic -o option');
+  }
+  return option;
+}
+
+export function buildResticRemoteConfig(input: ResticRemoteInput): ResticRemoteConfig {
+  if (input.kind === 'sftp') {
+    const target = validateSftpTarget(input.target);
+    const checkedPath = validateSftpPath(input.path);
+    if (input.port !== undefined && (!Number.isInteger(input.port) || input.port < 1 || input.port > 65_535)) {
+      throw new Error('Invalid SFTP port');
+    }
+    const repository =
+      input.port !== undefined
+        ? checkedPath.isAbsolute
+          ? `sftp://${target}:${input.port}//${checkedPath.normalized.slice(1)}`
+          : `sftp://${target}:${input.port}/${checkedPath.normalized}`
+        : `sftp:${target}:${checkedPath.normalized}`;
+
+    return {
+      repository,
+      options: [sftpDefaultOption],
+    };
+  }
+
+  const bucket = validateBucket(input.bucket);
+  const suffix = input.prefix ? `/${assertSafeRelativePath(input.prefix)}` : '';
+  const awsCredentials = validateAwsCredentials(input.accessKeyId, input.secretAccessKey);
+
+  if (input.kind === 'oci-s3') {
+    if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(input.namespace)) {
+      throw new Error('Invalid OCI Object Storage namespace');
+    }
+    if (!/^[a-z]{2,3}-[a-z0-9-]+-\d+$/.test(input.region)) {
+      throw new Error('Invalid OCI region');
+    }
+    return {
+      repository: `s3:https://${input.namespace}.compat.objectstorage.${input.region}.oraclecloud.com/${bucket}${suffix}`,
+      options: ['s3.bucket-lookup=path', `s3.region=${input.region}`],
+      awsCredentials,
+    };
+  }
+
+  if (input.kind === 'r2') {
+    if (!/^[a-f0-9]{32}$/.test(input.accountId)) {
+      throw new Error('Invalid Cloudflare R2 account ID');
+    }
+    return {
+      repository: `s3:https://${input.accountId}.r2.cloudflarestorage.com/${bucket}${suffix}`,
+      options: ['s3.region=auto'],
+      awsCredentials,
+    };
+  }
+
+  if (!/^[a-z]{2,3}-[a-z0-9-]+-\d+$/.test(input.region)) {
+    throw new Error('Invalid AWS S3 region');
+  }
+  return {
+    repository: `s3:s3.${input.region}.amazonaws.com/${bucket}${suffix}`,
+    options: [`s3.region=${input.region}`],
+    awsCredentials,
+  };
+}
+
 export function isResticAvailable(): boolean {
   try {
     return execFileSync('restic', ['version'], {
@@ -26,16 +190,50 @@ const resticSnapshotsSchema = z.array(z.object({ id: z.string().min(1) }));
 export class ResticRepositoryStore implements SnapshotStore {
   private readonly repository: string;
   private readonly password: string;
+  private readonly options: string[];
+  private readonly awsCredentials: ResticAwsCredentials | undefined;
   private readonly extraEnv: Record<string, string>;
+  private readonly resticBinary: string;
   private initialized = false;
 
-  constructor(repository: string, password: string, extraEnv: Record<string, string> = {}) {
-    if (!repository.trim() || !password || password.length < 16) {
+  constructor(repository: string, password: string, extraEnvOrConfig: Record<string, string> | ResticStoreConfig = {}) {
+    if (!repository.trim() || /[\r\n\0]/.test(repository) || !password || password.length < 16) {
       throw new Error('Restic repository and a strong password (>= 16 chars) are required');
     }
     this.repository = repository;
     this.password = password;
-    this.extraEnv = { ...extraEnv };
+
+    if (
+      'options' in extraEnvOrConfig ||
+      'awsCredentials' in extraEnvOrConfig ||
+      'extraEnv' in extraEnvOrConfig ||
+      'resticBinary' in extraEnvOrConfig
+    ) {
+      const cfg = extraEnvOrConfig as ResticStoreConfig;
+      this.options = (cfg.options ?? []).map(validateResticOption);
+      this.awsCredentials = cfg.awsCredentials
+        ? validateAwsCredentials(cfg.awsCredentials.accessKeyId, cfg.awsCredentials.secretAccessKey)
+        : undefined;
+      this.extraEnv = { ...(cfg.extraEnv ?? {}) };
+      this.resticBinary = cfg.resticBinary ?? 'restic';
+    } else {
+      this.options = [];
+      this.awsCredentials = undefined;
+      this.extraEnv = { ...(extraEnvOrConfig as Record<string, string>) };
+      this.resticBinary = 'restic';
+    }
+  }
+
+  static fromRemoteConfig(
+    remote: ResticRemoteConfig,
+    password: string,
+    overrides: Omit<ResticStoreConfig, 'options' | 'awsCredentials'> = {},
+  ): ResticRepositoryStore {
+    return new ResticRepositoryStore(remote.repository, password, {
+      options: remote.options,
+      ...(remote.awsCredentials ? { awsCredentials: remote.awsCredentials } : {}),
+      ...overrides,
+    });
   }
 
   private async withRestic<T>(fn: (run: (args: string[], cwd?: string) => Promise<string>, scratch: string) => Promise<T>): Promise<T> {
@@ -47,6 +245,18 @@ export class ResticRepositoryStore implements SnapshotStore {
       await mkdir(cacheDir, { recursive: true, mode: 0o700 });
       await writeFile(passwordFile, this.password, { mode: 0o600, flag: 'wx' });
 
+      let credentialsEnv: Record<string, string> = {};
+      if (this.awsCredentials) {
+        const credentialsFile = path.join(scratch, 'aws-credentials');
+        const body = `[default]\naws_access_key_id = ${this.awsCredentials.accessKeyId}\naws_secret_access_key = ${this.awsCredentials.secretAccessKey}\n`;
+        await writeFile(credentialsFile, body, { mode: 0o600, flag: 'wx' });
+        await chmod(credentialsFile, 0o600);
+        credentialsEnv = {
+          AWS_SHARED_CREDENTIALS_FILE: credentialsFile,
+          AWS_PROFILE: 'default',
+        };
+      }
+
       const env: NodeJS.ProcessEnv = {
         PATH: process.env.PATH ?? '/usr/local/bin:/usr/bin:/bin',
         HOME: scratch,
@@ -54,16 +264,25 @@ export class ResticRepositoryStore implements SnapshotStore {
         TMPDIR: scratch,
         RESTIC_REPOSITORY: this.repository,
         RESTIC_PASSWORD_FILE: passwordFile,
+        ...credentialsEnv,
         ...this.extraEnv,
       };
 
+      const optionPrefix = this.options.flatMap(opt => ['-o', opt]);
+
       const run = async (args: string[], cwd = scratch): Promise<string> => {
+        const subcommand = args[0] ?? 'command';
         try {
-          const { stdout } = await execFileAsync('restic', args, { cwd, env, timeout: 60_000, maxBuffer: 16 * 1024 * 1024 });
+          const { stdout } = await execFileAsync(this.resticBinary, [...optionPrefix, ...args], {
+            cwd,
+            env,
+            timeout: 60_000,
+            maxBuffer: 16 * 1024 * 1024,
+          });
           return stdout;
         } catch {
           // Never expose repository credentials, paths, or raw stderr details.
-          throw new Error(`restic ${args[0] ?? 'command'} failed`);
+          throw new Error(`restic ${subcommand} failed`);
         }
       };
 
