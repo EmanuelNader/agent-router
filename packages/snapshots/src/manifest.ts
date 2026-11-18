@@ -66,8 +66,16 @@ export const checkpointManifestV2Schema = z.object({
 });
 export type CheckpointManifestV2 = z.infer<typeof checkpointManifestV2Schema>;
 
+export const checkpointManifestV3Schema = checkpointManifestV2Schema.extend({
+  schemaVersion: z.literal(3),
+  exclusions: z.array(z.string().regex(/^[A-Za-z0-9_.-]+$/).refine(s => s !== '.' && s !== '..' && s !== '.git')),
+  symlinks: z.array(z.object({ path: safePathSchema, target: z.string().min(1) })),
+});
+export type CheckpointManifestV3 = z.infer<typeof checkpointManifestV3Schema>;
+
 export const anyCheckpointManifestSchema = z.discriminatedUnion('schemaVersion', [
   checkpointManifestSchema,
   checkpointManifestV2Schema,
+  checkpointManifestV3Schema,
 ]);
 export type AnyCheckpointManifest = z.infer<typeof anyCheckpointManifestSchema>;

@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { SessionTransfer } from '../../agent-opencode/src/client.js';
 import type { OperationJournal, OperationRecord } from '../../cli/src/journal.js';
 import { captureCheckpoint, restoreCheckpoint } from '../../snapshots/src/checkpoint.js';
-import type { CheckpointManifest } from '../../snapshots/src/manifest.js';
+import type { CheckpointManifestV3 } from '../../snapshots/src/manifest.js';
 import { LocalEncryptedStore } from '../../snapshots/src/store.js';
 import type { HostTransport } from './transport.js';
 
@@ -20,7 +20,7 @@ export async function handoffWorkspace(options: {
   fenceSource: () => Promise<void>;
   assertTargetIdle?: () => Promise<void>;
   activateTargetAndImportSession: (transfer: SessionTransfer, directory: string) => Promise<string>;
-}): Promise<{ operation: OperationRecord; manifest: CheckpointManifest }> {
+}): Promise<{ operation: OperationRecord; manifest: CheckpointManifestV3 }> {
   const target = path.resolve(options.targetWorkspace);
   const sourceStage = path.resolve(options.sourceStagingDir);
   const op = await options.journal.begin({

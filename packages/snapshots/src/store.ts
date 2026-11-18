@@ -62,7 +62,7 @@ export class LocalEncryptedStore implements SnapshotStore {
   async get(checkpointId: string): Promise<SnapshotEntry[]> {
     const id = checkpointIdSchema.parse(checkpointId);
     const record = await readFile(join(this.directory, `${id}.enc`));
-    if (record.byteLength < 32 || record.subarray(0, 4).toString('ascii') !== 'AR01') {
+    if (record.byteLength < 32 || !record.subarray(0, 4).equals(Buffer.from('AR01'))) {
       throw new Error('Cannot decrypt invalid checkpoint container');
     }
     const iv = record.subarray(4, 16);

@@ -9,7 +9,7 @@ import {
 } from '../../cloud-readiness/src/codespaces-allowance.js';
 import { handoffWorkspace } from '../../host-ssh/src/handoff.js';
 import type { HostTransport } from '../../host-ssh/src/transport.js';
-import type { CheckpointManifest } from '../../snapshots/src/manifest.js';
+import type { CheckpointManifestV3 } from '../../snapshots/src/manifest.js';
 import type { OperationJournal } from './journal.js';
 
 export type MigrationTrigger =
@@ -67,7 +67,7 @@ export type MigrateWorkspaceResult =
       triggerReasons: string[];
       skippedTargets: { name: string; reason: 'OUT_OF_CAPACITY' }[];
       sourceTornDown: boolean;
-      manifest: CheckpointManifest;
+      manifest: CheckpointManifestV3;
     };
 
 /**

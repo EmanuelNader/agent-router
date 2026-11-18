@@ -5,14 +5,18 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { hashWorkspace } from '../../workspace/src/manifest.js';
+import { verificationDockerEnvironment } from '../../workspace/src/docker.js';
 
-const execFileAsync = promisify(execFile);
+const executeFile = promisify(execFile);
+const execFileAsync = (file: string, args: string[], options: { timeout: number }) =>
+  executeFile(file, args, { ...options, encoding: 'utf8', env: verificationDockerEnvironment() });
 
 export function isDockerImageAvailable(image: string): boolean {
   try {
     execFileSync('docker', ['image', 'inspect', image], {
       stdio: ['ignore', 'ignore', 'ignore'],
-      timeout: 5_000,
+      timeout: 3_000,
+      env: verificationDockerEnvironment(),
     });
     return true;
   } catch {

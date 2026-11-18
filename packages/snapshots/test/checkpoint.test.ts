@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { access, chmod, mkdtemp, mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdtemp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
@@ -27,6 +27,53 @@ function git(cwd: string, args: string[]): string {
     env: { PATH: process.env.PATH, HOME: cwd, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0' },
   });
 }
+
+test.each([false, true])('restores a dirty linked worktree independently after its original repository is removed (detached=%s)', async detached => {
+  const root = await mkdtemp(join(tmpdir(), 'router-linked-checkpoint-'));
+  tempDirs.push(root);
+  const main = join(root, 'main');
+  const linked = join(root, 'linked');
+  const target = join(root, 'restored');
+  await mkdir(main);
+  git(main, ['init', '-q']);
+  await writeFile(join(main, 'tracked.txt'), 'committed\n');
+  git(main, ['add', '.']);
+  git(main, ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture']);
+  git(main, ['worktree', 'add', '-q', ...(detached ? ['--detach'] : ['-b', 'linked-fixture']), linked]);
+  await writeFile(join(linked, 'tracked.txt'), 'staged-only blob\n');
+  git(linked, ['add', 'tracked.txt']);
+  await writeFile(join(linked, 'tracked.txt'), 'dirty bytes\n');
+  await writeFile(join(linked, 'untracked.txt'), 'untracked bytes\n');
+  const binary = Buffer.from([0, 255, 128, 10, 0, 1]);
+  await writeFile(join(linked, 'binary.dat'), binary);
+  git(linked, ['add', 'binary.dat']);
+  await writeFile(join(main, '.git/config'), `${await readFile(join(main, '.git/config'), 'utf8')}\n[router]\n\tprivateSentinel = fixture-private-value\n`);
+  await writeFile(join(main, '.git/hooks/post-checkout'), 'fixture hook must not travel');
+  const expected = {
+    head: git(linked, ['rev-parse', 'HEAD']),
+    index: git(linked, ['ls-files', '--stage']),
+    status: git(linked, ['status', '--porcelain=v1', '--untracked-files=all']),
+  };
+  const store = new LocalEncryptedStore(join(root, 'store'), randomBytes(32));
+  const manifest = await captureCheckpoint({
+    workspace: linked, store, exportSessions: async () => [], quiesceSource: async () => {},
+  });
+  await rm(main, { recursive: true, force: true });
+  await rm(linked, { recursive: true, force: true });
+  await restoreCheckpoint({
+    checkpointId: manifest.checkpointId, targetWorkspace: target, store,
+    importSession: async transfer => transfer.info.id,
+  });
+  expect(git(target, ['rev-parse', 'HEAD'])).toBe(expected.head);
+  expect(git(target, ['ls-files', '--stage'])).toBe(expected.index);
+  expect(git(target, ['status', '--porcelain=v1', '--untracked-files=all'])).toBe(expected.status);
+  expect(git(target, ['show', ':tracked.txt'])).toBe('staged-only blob\n');
+  expect(await readFile(join(target, 'tracked.txt'), 'utf8')).toBe('dirty bytes\n');
+  expect(await readFile(join(target, 'untracked.txt'), 'utf8')).toBe('untracked bytes\n');
+  expect(await readFile(join(target, 'binary.dat'))).toEqual(binary);
+  expect(await readFile(join(target, '.git/config'), 'utf8')).not.toContain('fixture-private-value');
+  await expect(access(join(target, '.git/hooks/post-checkout'))).rejects.toThrow();
+});
 
 test('quiesces source before hashing, then captures and restores dirty Git state, modes, and sessions', async () => {
   const root = await mkdtemp(join(tmpdir(), 'router-checkpoint-'));
@@ -152,7 +199,7 @@ test('cleans up target and skips session import when restored file bytes violate
   await expect(access(target)).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
-test('captures and restores v2 polymorphic checkpoints for codex-cli and claude-code and rejects mismatched agent restore', async () => {
+test('captures and restores v3 polymorphic checkpoints for codex-cli and claude-code and rejects mismatched agent restore', async () => {
   const root = await mkdtemp(join(tmpdir(), 'router-checkpoint-v2-'));
   tempDirs.push(root);
   const srcWs = join(root, 'src.ws');
@@ -186,7 +233,7 @@ test('captures and restores v2 polymorphic checkpoints for codex-cli and claude-
       );
     },
   });
-  expect(codexManifest.schemaVersion).toBe(2);
+  expect(codexManifest.schemaVersion).toBe(3);
   expect(codexManifest.agentKind).toBe('codex-cli');
   expect(codexManifest.sessionIds).toEqual(['01a1ec9c-1111-7111-8111-111111111111']);
 
