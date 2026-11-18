@@ -134,3 +134,65 @@ test('router CLI reconciles blocking journal entries and runs oci:simulate-lifec
     },
   });
 });
+
+test('router CLI supports --version, aws:allowance, hetzner:simulate-lifecycle, migrate:simulate, and 0600 token-file checks', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'router-cli-v01-'));
+  tempDirs.push(root);
+
+  const verIo = captureIo();
+  expect(await runRouterCli(['--version'], verIo.io)).toBe(0);
+  expect(verIo.out.join('\n').trim()).toBe('0.1.0');
+
+  const awsReportPath = join(root, 'aws-low.json');
+  await writeFile(
+    awsReportPath,
+    JSON.stringify({
+      observedAt: new Date().toISOString(),
+      accountPlanType: 'FREE',
+      accountPlanStatus: 'ACTIVE',
+      remainingCreditAmount: 2.5,
+      creditCurrency: 'USD',
+      expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+    }),
+    { mode: 0o600 },
+  );
+  const awsIo = captureIo();
+  expect(await runRouterCli(['aws:allowance', '--report', awsReportPath], awsIo.io)).toBe(2);
+  expect(JSON.parse(awsIo.out.join('\n'))).toMatchObject({
+    decision: 'MIGRATE_NOW',
+    shouldMigrate: true,
+  });
+
+  const hetznerSimIo = captureIo();
+  expect(await runRouterCli(['hetzner:simulate-lifecycle', '--workspace-key', 'ws-hsim'], hetznerSimIo.io)).toBe(0);
+  expect(JSON.parse(hetznerSimIo.out.join('\n'))).toMatchObject({
+    status: 'SIMULATION_VERIFIED',
+    createCount: 1,
+    reconcileOutcome: 'ADOPTED_EXISTING_SERVER',
+    fenced: true,
+    remnants: { servers: 0, volumes: 0, primaryIps: 0 },
+  });
+
+  const migSimIo = captureIo();
+  expect(await runRouterCli(['migrate:simulate', '--workspace-key', 'ws-msim'], migSimIo.io)).toBe(0);
+  expect(JSON.parse(migSimIo.out.join('\n'))).toMatchObject({
+    status: 'MIGRATED',
+    selectedTarget: 'hetzner-cax11-fallback',
+    skippedTargets: [{ name: 'oci-a1-primary', reason: 'OUT_OF_CAPACITY' }],
+    sourceTornDown: true,
+  });
+
+  // Live hetzner:* commands must reject non-0600 token files before any network call
+  const badTokenFile = join(root, 'hcloud.token');
+  await writeFile(badTokenFile, 'dummy-token-value\n', { mode: 0o644 });
+  await chmod(badTokenFile, 0o644);
+  const badHetznerIo = captureIo();
+  expect(
+    await runRouterCli(
+      ['hetzner:fence', '--workspace-key', 'ws-x', '--token-file', badTokenFile],
+      badHetznerIo.io,
+    ),
+  ).toBe(1);
+  expect(badHetznerIo.err.join('\n')).toMatch(/owner-only|0600/i);
+  expect(badHetznerIo.err.join('\n')).not.toContain('dummy-token-value');
+});
