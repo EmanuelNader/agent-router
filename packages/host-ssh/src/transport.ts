@@ -22,8 +22,12 @@ function buildSshBaseOptions(opts: SshConnectionOptions): string[] {
 }
 
 function validateSafeLocalAuthFile(filePath: string, label: string): string {
-  if (!path.isAbsolute(filePath) || /[\s\r\n\0"']/.test(filePath)) {
-    throw new Error(`Invalid SSH ${label}: expected absolute path without whitespace or quotes`);
+  if (
+    !path.isAbsolute(filePath) ||
+    /[\s\r\n\0"'%]/.test(filePath) ||
+    /^\/dev(\/|$)/.test(path.posix.normalize(filePath))
+  ) {
+    throw new Error(`Invalid SSH ${label}: expected regular absolute file path without whitespace, quotes, %, or /dev`);
   }
   return filePath;
 }

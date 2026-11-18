@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { access, chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { validateSshTarget } from './transport.js';
@@ -9,10 +9,12 @@ const execFileAsync = promisify(execFile);
 
 const safeCodespaceNamePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const safeSshUserPattern = /^[A-Za-z0-9._-]{1,64}$/;
+const safeResolvedIdentityPattern = /^\/[A-Za-z0-9._/@+-]+$/;
 
 export interface PrepareCodespaceSshConfigOptions {
   codespaceName: string;
   ghBinary?: string;
+  homeDir?: string;
   parentTempDir?: string;
   runGhConfig?: (codespaceName: string) => Promise<string>;
 }
@@ -41,9 +43,22 @@ function escapeRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function resolveAndValidateIdentityPath(rawPath: string, baseHomeDir: string): string {
+  const expanded = rawPath.startsWith('~/') ? path.join(baseHomeDir, rawPath.slice(2)) : rawPath;
+  if (
+    !path.isAbsolute(expanded) ||
+    !safeResolvedIdentityPattern.test(expanded) ||
+    expanded.split('/').includes('..') ||
+    /^\/dev(\/|$)/.test(path.posix.normalize(expanded))
+  ) {
+    throw new Error('Rejected unsafe IdentityFile path in gh codespace ssh --config output');
+  }
+  return expanded;
+}
+
 /**
  * Generates a sanitized, owner-only (`0600`) OpenSSH config for a GitHub Codespace without
- * touching `~/.ssh/config`. Mitigates `cli/cli#9817` (dangling `codespaces.auto` key reference)
+ * touching `~/.ssh/config`. Mitigates `cli/cli#9817` (dangling `~/.ssh/codespaces.auto` key reference)
  * and replaces `StrictHostKeyChecking no` / `UserKnownHostsFile=/dev/null` with an isolated TOFU
  * `known_hosts` file (`StrictHostKeyChecking=accept-new`).
  */
@@ -56,14 +71,25 @@ export async function prepareIsolatedCodespaceSshConfig(
   }
 
   const ghBinary = options.ghBinary ?? 'gh';
-  const rawConfig = options.runGhConfig
-    ? await options.runGhConfig(codespaceName)
-    : (
-        await execFileAsync(ghBinary, ['codespace', 'ssh', '--config', '-c', codespaceName], {
-          timeout: 20_000,
-          maxBuffer: 1024 * 1024,
-        })
-      ).stdout;
+  const baseHomeDir = options.homeDir ?? homedir();
+
+  let rawConfig: string;
+  if (options.runGhConfig) {
+    rawConfig = await options.runGhConfig(codespaceName);
+  } else {
+    try {
+      const res = await execFileAsync(ghBinary, ['codespace', 'ssh', '--config', '-c', codespaceName], {
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024,
+      });
+      rawConfig = res.stdout;
+    } catch (err) {
+      const code = typeof (err as { code?: unknown })?.code === 'number' ? (err as { code: number }).code : undefined;
+      throw new Error(
+        `gh codespace ssh --config failed${code !== undefined ? ` (exit ${code})` : ''}`,
+      );
+    }
+  }
 
   let hostAlias: string | undefined;
   let sshUser = 'codespace';
@@ -80,7 +106,7 @@ export async function prepareIsolatedCodespaceSshConfig(
     const value = match[2]!.trim();
 
     if (directive === 'host') {
-      if (hostAlias !== undefined) break; // Only parse the first matching stanza
+      if (hostAlias !== undefined) break;
       if (!/^cs\.[A-Za-z0-9._-]+$/.test(value)) {
         throw new Error('Unexpected Host alias in gh codespace ssh --config output');
       }
@@ -103,13 +129,12 @@ export async function prepareIsolatedCodespaceSshConfig(
     throw new Error('gh codespace ssh --config did not emit a complete Host / ProxyCommand stanza');
   }
 
-  // Reject shell metacharacters and require ProxyCommand to invoke gh cs ssh -c <codespaceName> --stdio
-  if (/[;|`$&<>\\\r\n\0'"]/.test(proxyCommand)) {
+  if (/[;|`$&<>\\\r\n\0'"%]/.test(proxyCommand)) {
     throw new Error('Rejected unsafe ProxyCommand in gh codespace ssh --config output');
   }
 
   const expectedProxyPattern = new RegExp(
-    `^(\\/[A-Za-z0-9._/-]+\\/gh|gh)\\s+(?:cs|codespace)\\s+ssh\\s+-c\\s+${escapeRegExp(codespaceName)}\\s+--stdio(?:\\s+--\\s+-i\\s+(\\/[A-Za-z0-9._/-]+))?$`,
+    `^(\\/[A-Za-z0-9._/-]+\\/gh|gh)\\s+(?:cs|codespace)\\s+ssh\\s+-c\\s+${escapeRegExp(codespaceName)}\\s+--stdio(?:\\s+--\\s+-i\\s+((?:~\\/|\\/)[A-Za-z0-9._/@+-]+))?$`,
   );
   const proxyMatch = expectedProxyPattern.exec(proxyCommand);
   if (!proxyMatch) {
@@ -118,16 +143,21 @@ export async function prepareIsolatedCodespaceSshConfig(
 
   const ghExecutable = proxyMatch[1]!;
   const proxyKeyPath = proxyMatch[2];
-  const candidateIdentity = identityFile ?? proxyKeyPath;
 
+  let resolvedProxyKey: string | undefined;
+  if (proxyKeyPath !== undefined) {
+    resolvedProxyKey = resolveAndValidateIdentityPath(proxyKeyPath, baseHomeDir);
+  }
+
+  let resolvedDirectiveKey: string | undefined;
+  if (identityFile !== undefined) {
+    resolvedDirectiveKey = resolveAndValidateIdentityPath(identityFile, baseHomeDir);
+  }
+
+  const candidateIdentity = resolvedDirectiveKey ?? resolvedProxyKey;
   let verifiedIdentity: string | undefined;
-  if (candidateIdentity !== undefined) {
-    if (!path.isAbsolute(candidateIdentity) || /[\s\r\n\0"']/.test(candidateIdentity)) {
-      throw new Error('Rejected unsafe IdentityFile path in gh codespace ssh --config output');
-    }
-    if (await pathExists(candidateIdentity)) {
-      verifiedIdentity = candidateIdentity;
-    }
+  if (candidateIdentity !== undefined && (await pathExists(candidateIdentity))) {
+    verifiedIdentity = candidateIdentity;
   }
 
   const sanitizedProxyCommand = verifiedIdentity
@@ -139,36 +169,41 @@ export async function prepareIsolatedCodespaceSshConfig(
   const baseTemp = options.parentTempDir ?? tmpdir();
   await mkdir(baseTemp, { recursive: true, mode: 0o700 });
   const workDir = await mkdtemp(path.join(baseTemp, 'codespace-ssh-'));
-  await chmod(workDir, 0o700);
+  try {
+    await chmod(workDir, 0o700);
 
-  const configFile = path.join(workDir, 'ssh_config');
-  const knownHostsFile = path.join(workDir, 'known_hosts');
+    const configFile = path.join(workDir, 'ssh_config');
+    const knownHostsFile = path.join(workDir, 'known_hosts');
 
-  const sanitizedLines = [
-    `Host ${hostAlias}`,
-    `  User ${sshUser}`,
-    `  ProxyCommand ${sanitizedProxyCommand}`,
-    '  ControlMaster no',
-    '  LogLevel ERROR',
-    ...(verifiedIdentity ? ['  IdentitiesOnly yes', `  IdentityFile ${verifiedIdentity}`] : []),
-    '',
-  ];
+    const sanitizedLines = [
+      `Host ${hostAlias}`,
+      `  User ${sshUser}`,
+      `  ProxyCommand ${sanitizedProxyCommand}`,
+      '  ControlMaster no',
+      '  LogLevel ERROR',
+      ...(verifiedIdentity ? ['  IdentitiesOnly yes', `  IdentityFile ${verifiedIdentity}`] : []),
+      '',
+    ];
 
-  await writeFile(configFile, sanitizedLines.join('\n'), { mode: 0o600 });
-  await chmod(configFile, 0o600);
-  await writeFile(knownHostsFile, '', { mode: 0o600 });
-  await chmod(knownHostsFile, 0o600);
+    await writeFile(configFile, sanitizedLines.join('\n'), { mode: 0o600, flag: 'wx' });
+    await chmod(configFile, 0o600);
+    await writeFile(knownHostsFile, '', { mode: 0o600, flag: 'wx' });
+    await chmod(knownHostsFile, 0o600);
 
-  return {
-    codespaceName,
-    hostAlias,
-    sshUser,
-    sshTarget,
-    configFile,
-    knownHostsFile,
-    strictHostKeyChecking: 'accept-new',
-    cleanup: async () => {
-      await rm(workDir, { recursive: true, force: true });
-    },
-  };
+    return {
+      codespaceName,
+      hostAlias,
+      sshUser,
+      sshTarget,
+      configFile,
+      knownHostsFile,
+      strictHostKeyChecking: 'accept-new',
+      cleanup: async () => {
+        await rm(workDir, { recursive: true, force: true });
+      },
+    };
+  } catch (err) {
+    await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+    throw err;
+  }
 }

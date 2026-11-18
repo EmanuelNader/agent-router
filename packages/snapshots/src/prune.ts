@@ -1,4 +1,4 @@
-import { readdir, stat, unlink } from 'node:fs/promises';
+import { lstat, readdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { checkpointIdSchema } from './store.js';
 
@@ -52,8 +52,8 @@ export async function pruneLocalCheckpoints(
     if (!parsed.success) continue;
 
     const filePath = path.join(resolvedDir, name);
-    const st = await stat(filePath);
-    if (!st.isFile()) continue;
+    const st = await lstat(filePath);
+    if (!st.isFile() || st.isSymbolicLink()) continue;
     entries.push({
       id: parsed.data,
       filePath,
@@ -62,8 +62,10 @@ export async function pruneLocalCheckpoints(
     });
   }
 
-  // Sort newest-first; tie-break descending by ID for deterministic ordering
-  entries.sort((a, b) => (b.mtimeMs !== a.mtimeMs ? b.mtimeMs - a.mtimeMs : b.id.localeCompare(a.id)));
+  // Sort newest-first; tie-break descending by ASCII code units for locale-independent determinism
+  entries.sort((a, b) =>
+    b.mtimeMs !== a.mtimeMs ? b.mtimeMs - a.mtimeMs : a.id < b.id ? 1 : a.id > b.id ? -1 : 0,
+  );
 
   const keptIds: string[] = [];
   const deletedIds: string[] = [];
