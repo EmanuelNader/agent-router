@@ -223,6 +223,14 @@ test('router CLI supports peers --status-file, polymorphic --agent checkpoints, 
   );
   const peersIo = captureIo();
   expect(await runRouterCli(['peers', '--status-file', statusFile], peersIo.io)).toBe(0);
+
+  const gcpDemoIo = captureIo();
+  expect(await runRouterCli(['gcp:guard', '--demo'], gcpDemoIo.io)).toBe(0);
+  expect(JSON.parse(gcpDemoIo.out.join('\n'))).toMatchObject({ status: 'GUARDED_FREE_ELIGIBLE' });
+
+  const csDemoIo = captureIo();
+  expect(await runRouterCli(['codespaces:allowance', '--demo'], csDemoIo.io)).toBe(0);
+  expect(JSON.parse(csDemoIo.out.join('\n'))).toMatchObject({ decision: 'HEALTHY', shouldMigrate: false });
   expect(JSON.parse(peersIo.out.join('\n'))).toEqual({
     peerCount: 1,
     peers: [

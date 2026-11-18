@@ -15,6 +15,14 @@ import {
   awsAllowanceSnapshotSchema,
   evaluateAwsFreePlanAllowance,
 } from '../../cloud-readiness/src/aws-allowance.js';
+import {
+  codespacesAllowanceSnapshotSchema,
+  evaluateCodespacesAllowance,
+} from '../../cloud-readiness/src/codespaces-allowance.js';
+import {
+  evaluateGcpAlwaysFreeGuardrails,
+  gcpFreeTierSnapshotSchema,
+} from '../../cloud-readiness/src/gcp-free-tier.js';
 import { inspectOciGuardrails, type OciGuardrailReport } from '../../cloud-readiness/src/oci-guardrails.js';
 import { inspectOci } from '../../cloud-readiness/src/oci-inspect.js';
 import type { OciInspection } from '../../cloud-readiness/src/oci-report.js';
@@ -62,6 +70,8 @@ Local journal, Tailscale peers, pairing, checkpoints & handoffs:
 
 Cloud allowance & worker lifecycle commands:
   aws:allowance           (--demo | --report <path>) [--min-credit-usd 5] [--min-days 7]
+  gcp:guard               (--demo | --report <path>)
+  codespaces:allowance    (--demo | --report <path>)
   oci:simulate-lifecycle  [--workspace-key ws-sim]
   oci:up                  --workspace-key <name> --config <path> --compartment-id <OCID> --compartment-name <name> --subnet-id <OCID> --image-id <OCID> --ssh-pubkey-file <path> [--ocpus 1] [--memory-gb 4] [--boot-gb 50]
   oci:status              --workspace-key <name> --config <path> --compartment-id <OCID> --region <region>
@@ -428,6 +438,52 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         minDaysRemaining: Number(values['min-days']),
         now,
       });
+      io.stdout(JSON.stringify(evaluation, null, 2));
+      return evaluation.decision === 'HEALTHY' ? 0 : 2;
+    }
+
+    if (subcommand === 'gcp:guard') {
+      const now = new Date();
+      const snapshot = values.demo
+        ? gcpFreeTierSnapshotSchema.parse({
+            observedAt: now.toISOString(),
+            region: 'us-west1',
+            machineType: 'e2-micro',
+            provisioningModel: 'STANDARD',
+            bootDiskType: 'pd-standard',
+            totalStandardDiskGb: 30,
+            gpuCount: 0,
+            monthlyNorthAmericaEgressGb: 0.2,
+            allowPremiumOrChinaAustraliaEgress: false,
+            hasBudgetAlertUpTo5Usd: true,
+          })
+        : values.report
+          ? gcpFreeTierSnapshotSchema.parse(JSON.parse(await readFile(path.resolve(values.report), 'utf8')))
+          : null;
+
+      if (!snapshot) throw new Error('gcp:guard requires --demo or --report <path>');
+      const evaluation = evaluateGcpAlwaysFreeGuardrails(snapshot, { now });
+      io.stdout(JSON.stringify(evaluation, null, 2));
+      return evaluation.status === 'GUARDED_FREE_ELIGIBLE' ? 0 : 2;
+    }
+
+    if (subcommand === 'codespaces:allowance') {
+      const now = new Date();
+      const snapshot = values.demo
+        ? codespacesAllowanceSnapshotSchema.parse({
+            observedAt: now.toISOString(),
+            usedCoreHours: 36,
+            usedStorageGbMonth: 4.5,
+            activeMachineCores: 2,
+          })
+        : values.report
+          ? codespacesAllowanceSnapshotSchema.parse(
+              JSON.parse(await readFile(path.resolve(values.report), 'utf8')),
+            )
+          : null;
+
+      if (!snapshot) throw new Error('codespaces:allowance requires --demo or --report <path>');
+      const evaluation = evaluateCodespacesAllowance(snapshot, { now });
       io.stdout(JSON.stringify(evaluation, null, 2));
       return evaluation.decision === 'HEALTHY' ? 0 : 2;
     }
