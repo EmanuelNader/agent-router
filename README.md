@@ -15,6 +15,7 @@ pnpm check
 pnpm agent:probe
 pnpm agent:roundtrip
 pnpm checkpoint:roundtrip
+pnpm handoff:roundtrip
 ```
 
 The probe starts a password-protected OpenCode 2.2.7 server on loopback and checks authenticated access, rejection without credentials, and exclusion of ancestor project configuration. The round trip creates a fixture with unfinished Git changes, records a completed shell turn in a real session, stops the source, copies the workspace, and imports the session into fresh agent state. It verifies successful shell output, target-directory binding, file hashes, executable flags, Git HEAD/index/status, session ID, and settled messages.
@@ -57,9 +58,10 @@ Try without credentials or cloud calls:
 ```sh
 pnpm plan:oci --demo
 pnpm plan:oci --demo --additional-instances 2
+pnpm guard:oci --demo
 ```
 
-The synthetic demo shows one A1 VM with 1 OCPU, 4 GB memory, and a 50 GB boot disk fitting quota. Two additional VMs fail its storage check. Demo results are labelled `DEMO` and do not reflect your account. `QUOTA_FITS` means only that the requested resources fit the recorded quotas. Every preview keeps provisioning disabled and lists the remaining entitlement, compartment-quota, capacity, image, and cost checks.
+The synthetic demo shows one A1 VM with 1 OCPU, 4 GB memory, and a 50 GB boot disk fitting quota, while `guard:oci --demo` additionally verifies the checked-in [PAYG compartment quota caps](infra/oci/payg-compartment-quota.txt) and an active `<= $5` monthly budget alert tripwire ([guardrail inspection policy](infra/oci/guardrail-inspection-policy.txt), [observed evidence](docs/evidence/00-oci-guardrails.md)). Two additional VMs fail the storage/compartment check. Demo results are labelled `DEMO` and do not reflect your account. `QUOTA_FITS` / `GUARDED_QUOTA_FITS` means only that the requested resources fit the recorded quotas and guardrails. Every preview keeps provisioning disabled and lists the remaining entitlement, capacity, image, and cost checks.
 
 For a real report after configuring API access:
 

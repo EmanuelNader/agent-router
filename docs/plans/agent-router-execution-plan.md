@@ -26,11 +26,11 @@
 | --- | --- |
 | `packages/workspace/` | Deterministic file-content and executable-bit receipts (*implemented*) |
 | `packages/agent-opencode/` | Pinned OpenCode `2.2.7` isolated server, v2 HTTP client, settled-history checks, quiescing, and export/import (*initial slice implemented*) |
-| `packages/cloud-readiness/` | Read-only OCI/AWS inspection, local OCI key/config setup, pure A1 quota previews, and PAYG-safe guardrail checks (*initial slice implemented*) |
+| `packages/cloud-readiness/` | Read-only OCI/AWS inspection, local OCI key/config setup, pure A1 quota previews, and PAYG-safe guardrail checks (*implemented — Milestone 0*) |
 | `packages/snapshots/` | Versioned checkpoint manifests, quiesced session + workspace capture, AES-256-GCM / `restic` encryption, and verified restore (*implemented — Milestone 1*) |
-| `packages/host-ssh/` | Restricted remote lifecycle commands, fencing, and workspace/checkpoint transfer over SSH/Tailscale (*planned — Milestone 2*) |
+| `packages/host-ssh/` | Hardened OpenSSH/SCP argv builders, fenced cross-host workspace + session handoffs (`handoffWorkspace`), and loopback multi-host spool (*implemented — Milestone 2 core*) |
 | `packages/cloud-oci/` | Idempotent OCI VM/network/volume provisioning, reconciliation, fencing, and leak-free cleanup (*planned — Milestone 3*) |
-| `packages/cli/` | Unified `agent-router` CLI commands wrapping the local operation journal (*planned — Milestones 1–3*) |
+| `packages/cli/` | Atomic local operation journal (`OperationJournal`) and unified `agent-router` CLI commands (*journal implemented; CLI commands planned — Milestone 3*) |
 | `scripts/` | Reproducible verification and inspection entrypoints (*implemented*) |
 | `docs/evidence/` | Sanitized compatibility results and milestone gate receipts |
 
@@ -46,7 +46,7 @@ Detailed in [agent-router-first-milestone.md](./agent-router-first-milestone.md)
 - [x] Prove isolated loopback OpenCode authentication, ancestor config exclusion, and fresh-state session + workspace round-trip without model credentials.
 - [x] Implement read-only OCI home-region/AD/A1/free-storage inspection, local RSA key preparation, and conservative deployment previews.
 - [ ] Complete dedicated read-only `agent-router-inspector` registration in the Oracle Console and record live `pnpm inspect:oci` + `pnpm plan:oci` behavior (including whether Free Tier vs. PAYG capacity applies).
-- [ ] Add PAYG-safe guardrail inspection checks (compartment quota ceiling and budget alert presence) so PAYG tenancies can unlock A1 capacity without silent paid overages.
+- [x] Add PAYG-safe guardrail inspection checks (compartment quota ceiling and budget alert presence) so PAYG tenancies can unlock A1 capacity without silent paid overages ([00-oci-guardrails.md](../evidence/00-oci-guardrails.md)).
 - [ ] Verify supported model authentication and conversational recall across an OpenCode export/import round-trip without copying `$HOME`.
 
 **Gate:** Sanitized live inspection evidence and model-recall compatibility are recorded in `docs/evidence/00-readiness.md`. Unknown or missing cloud evidence continues to block provisioning.
