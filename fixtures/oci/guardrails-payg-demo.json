@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "source": "DEMO",
+  "observedAt": "2026-11-17T00:00:00.000Z",
+  "compartmentName": "agent-router-workers",
+  "compartmentQuota": {
+    "status": "VERIFIED",
+    "zeroedOtherComputeShapes": true,
+    "maxA1Ocpus": 2,
+    "maxA1MemoryGb": 12,
+    "maxStorageGb": 200
+  },
+  "budgetAlert": {
+    "status": "VERIFIED",
+    "lowestTripwireAmount": 1
+  }
+}

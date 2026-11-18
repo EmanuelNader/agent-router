@@ -1,0 +1,4 @@
+Zero compute-core quotas in compartment agent-router-workers
+Set compute-core quota standard-a1-core-count to 2 in compartment agent-router-workers
+Set compute-core quota standard-a1-memory-count to 12 in compartment agent-router-workers
+Set block-storage quota total-storage-gb to 200 in compartment agent-router-workers

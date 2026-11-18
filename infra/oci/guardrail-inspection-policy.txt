@@ -1,0 +1,4 @@
+Allow group 'Default'/'AgentRouterInspectors' to inspect quotas in tenancy
+Allow group 'Default'/'AgentRouterInspectors' to read quotas in tenancy
+Allow group 'Default'/'AgentRouterInspectors' to inspect budgets in tenancy
+Allow group 'Default'/'AgentRouterInspectors' to read budgets in tenancy
