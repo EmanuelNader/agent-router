@@ -8,7 +8,7 @@
 
 **Stack:** TypeScript; Node 24; `pnpm@11.25.0`; `zod`; `vitest`; pinned `@opencode/cli@2.2.7`; official OCI and AWS SDKs; SSH/cloud-init/systemd; `restic`; Tailscale or OpenCode `OpenTunnel`.
 
-**Status on November 17, 2026:** The initial readiness slice ([00-readiness.md](../evidence/00-readiness.md)) and Milestone 1 local encrypted checkpoint/restore ([01-local-restore.md](../evidence/01-local-restore.md)) are implemented and verified locally (`AES-256-GCM` and `restic`). Live cloud API verification, OCI PAYG-safe budget/quota guardrails, `laptop ↔ SSH/VPS` handoffs, and VM provisioning remain open.
+**Status on November 17, 2026:** Readiness & PAYG guardrails ([00-readiness.md](../evidence/00-readiness.md), [00-oci-guardrails.md](../evidence/00-oci-guardrails.md)), Milestone 1 encrypted local + remote-backend checkpoint/restore ([01-local-restore.md](../evidence/01-local-restore.md)), Milestone 2 fenced SSH handoff + `SshCliTransport` ([02-ssh-handoff.md](../evidence/02-ssh-handoff.md)), and Milestone 3 guarded OCI lifecycle adapter + unified `pnpm router` CLI ([03-oci-lifecycle.md](../evidence/03-oci-lifecycle.md)) are implemented and verified locally. Opt-in live OCI Console / remote VPS runs and Milestone 4 cross-host `migrate` orchestration remain next.
 
 ## Global constraints across every milestone
 
@@ -27,10 +27,10 @@
 | `packages/workspace/` | Deterministic file-content and executable-bit receipts (*implemented*) |
 | `packages/agent-opencode/` | Pinned OpenCode `2.2.7` isolated server, v2 HTTP client, settled-history checks, quiescing, and export/import (*initial slice implemented*) |
 | `packages/cloud-readiness/` | Read-only OCI/AWS inspection, local OCI key/config setup, pure A1 quota previews, and PAYG-safe guardrail checks (*implemented — Milestone 0*) |
-| `packages/snapshots/` | Versioned checkpoint manifests, quiesced session + workspace capture, AES-256-GCM / `restic` encryption, and verified restore (*implemented — Milestone 1*) |
-| `packages/host-ssh/` | Hardened OpenSSH/SCP argv builders, fenced cross-host workspace + session handoffs (`handoffWorkspace`), and loopback multi-host spool (*implemented — Milestone 2 core*) |
-| `packages/cloud-oci/` | Idempotent OCI VM/network/volume provisioning, reconciliation, fencing, and leak-free cleanup (*planned — Milestone 3*) |
-| `packages/cli/` | Atomic local operation journal (`OperationJournal`) and unified `agent-router` CLI commands (*journal implemented; CLI commands planned — Milestone 3*) |
+| `packages/snapshots/` | Versioned checkpoint manifests, quiesced session + workspace capture, AES-256-GCM / `restic` encryption, and remote SFTP/OCI-S3/R2/AWS-S3 backend builders (*implemented — Milestones 1–2*) |
+| `packages/host-ssh/` | Hardened OpenSSH/SCP argv builders, live `SshCliTransport`, loopback spool, and fenced cross-host workspace + session handoffs (`handoffWorkspace`) (*implemented — Milestone 2*) |
+| `packages/cloud-oci/` | Locked-down `#cloud-config` renderer, PAYG-guarded `VM.Standard.A1.Flex` provisioner, crash reconciliation, fencing, and zero-remnant teardown (*implemented locally — Milestone 3*) |
+| `packages/cli/` | Atomic local operation journal (`OperationJournal`) and unified `pnpm router` CLI commands (*implemented — Milestone 3*) |
 | `scripts/` | Reproducible verification and inspection entrypoints (*implemented*) |
 | `docs/evidence/` | Sanitized compatibility results and milestone gate receipts |
 
@@ -66,25 +66,25 @@ Files: `packages/snapshots/src/manifest.ts`, `packages/snapshots/src/store.ts`, 
 
 **Gate:** Restored workspace hashes, Git working tree, session ID, and settled history match the pre-checkpoint receipt, and tampered archives fail closed.
 
-## Milestone 2: prove `laptop ↔ SSH/VPS` handoff with native connectivity
+## Milestone 2: prove `laptop ↔ SSH/VPS` handoff with native connectivity *(core & transports implemented locally)*
 
-Files: `packages/host-ssh/src/`, `packages/cli/src/`, `tests/scenarios/ssh-handoff.test.ts`, `docs/evidence/02-ssh-handoff.md`.
+Files: `packages/host-ssh/src/`, `packages/snapshots/src/restic.ts`, `packages/cli/src/`, `scripts/ssh-handoff-roundtrip.ts`, `docs/evidence/02-ssh-handoff.md`.
 
-- [ ] Bootstrap or verify an isolated non-root agent user and pinned OpenCode `2.2.7` runtime on any SSH target (local Linux VM/container in CI, Hetzner/OCI/VPS in live tests).
-- [ ] Fence/stop the source OpenCode instance before activating the destination so two generations never act concurrently.
-- [ ] Push a verified Milestone 1 checkpoint via encrypted object storage or direct SSH `restic` repo, restore on the remote host, and pull work back (`laptop → VPS → laptop`).
-- [ ] Verify private remote client access via Tailscale (`--hostname` bound to tailnet IP or `ssh -L`) and OpenCode's native `opencode pair --remote` (`OpenTunnel`), without opening unauthenticated public ports.
+- [x] Define non-root locked-down worker bootstrap (`renderWorkerCloudInit`) and hardened `SshCliTransport` / OpenSSH argv builders (`BatchMode=yes`, `StrictHostKeyChecking=yes`, `ConnectTimeout=15`, `--`).
+- [x] Fence/stop the source OpenCode instance before activating the destination so two generations never act concurrently (`maxConcurrentAgents: 1` verified in `handoff:roundtrip`).
+- [x] Implement encrypted remote `restic` backend builders (SFTP, OCI S3-compatible Object Storage, Cloudflare R2, AWS S3) with `0600` credential files, plus two-hop `laptop → VPS → laptop` checkpoint handoff.
+- [ ] Run opt-in live network SSH host verification over Tailscale and OpenCode's native `opencode pair --remote` (`OpenTunnel`).
 
 **Gate:** Uncommitted work and OpenCode session history move cleanly `laptop → SSH host → laptop` with a single active writer and zero leaked credentials.
 
-## Milestone 3: prove guarded BYOC provisioning, crash reconciliation, and cleanup
+## Milestone 3: prove guarded BYOC provisioning, crash reconciliation, and cleanup *(implemented & fault-injection verified locally)*
 
-Files: `packages/cloud-oci/src/`, local operation journal in `packages/cli/src/journal.ts`, `infra/bootstrap/`, `docs/evidence/03-oci-lifecycle.md`.
+Files: `packages/cloud-oci/src/`, `packages/cli/src/journal.ts`, `packages/cli/src/cli.ts`, `scripts/router.ts`, `docs/evidence/03-oci-lifecycle.md`.
 
-- [ ] Persist an atomic local operation journal entry and `opcRetryToken` before every cloud mutation; test process kill/restart mid-create with a fake provider to prove zero duplicate VMs.
-- [ ] Enforce fail-closed pre-flight gates: home-region match, fresh (<15m) quota/storage report, retained boot-volume accounting, and (on PAYG accounts) verified compartment quota + active budget alert tripwire.
-- [ ] Provision one `VM.Standard.A1.Flex` host in a dedicated compartment using cloud-init without embedding long-lived cloud keys on the VM.
-- [ ] Fence/stop the instance and perform complete teardown; verify zero orphaned boot volumes, block volumes, VNICs, or public IPs remain.
+- [x] Persist an atomic local operation journal entry and `opcRetryToken` before every cloud mutation; test post-create crash + expired retry token with fault injection to prove zero duplicate VMs (`launchCount: 1`).
+- [x] Enforce fail-closed pre-flight gates: `OCI_API` provenance, home-region match, fresh (<15m) quota/storage report, zero-inbound subnet security rules (`ingressRuleCount === 0`), and verified compartment quota + active `<= $5` budget alert tripwire.
+- [x] Implement `VM.Standard.A1.Flex` provisioner (`bootVolumeVpusPerGB: 10`, `assignPublicIp: false`) using locked-down `#cloud-config` without embedding cloud keys on the VM, plus `OutOfHostCapacity` clean fallback.
+- [x] Implement `fence` (`SOFTSTOP` → `STOPPED`) and leak-checked `teardown` (`preserveBootVolume: false`, `preserveDataVolumesCreatedAtLaunch: false`, plus compartment remnant audit); run opt-in live compartment smoke test once Console credentials are registered.
 
 **Gate:** Interrupted operations reconcile cleanly without duplicate resources, and teardown leaves zero billable or quota-consuming remnants in `inspect:oci`.
 
