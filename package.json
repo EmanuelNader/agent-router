@@ -24,7 +24,8 @@
     "inspect:oci": "tsx scripts/inspect-oci.ts",
     "plan:oci": "tsx scripts/plan-oci.ts",
     "guard:oci": "tsx scripts/guard-oci.ts",
-    "router": "tsx scripts/router.ts"
+    "router": "tsx scripts/router.ts",
+    "e2e": "tsx scripts/e2e.ts"
   },
   "devDependencies": {
     "@opencode/cli": "2.2.7",

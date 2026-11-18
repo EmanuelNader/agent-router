@@ -10,7 +10,8 @@ Recorded 2026-11-17 on local macOS `arm64` (`Node 24.18.1`, `pnpm 11.25.0`, `@op
 | Single-writer source fencing | PASS | `maxConcurrentAgents: 1` across `laptop → VPS → laptop`; target OpenCode starts only after source stops and restored workspace/Git hashes pass |
 | Multi-hop OpenCode session + dirty Git continuity | PASS | Settled shell turns from both `laptop-a` and `remote-vps` plus uncommitted edits, renames, hidden files, and new remote untracked files survive return to `laptop-b` |
 | Pre-fence vs. post-fence failure handling | PASS | Pre-fence failure leaves source untouched and clears `PENDING`; post-fence transfer failure records `NEEDS_RECONCILE` and blocks unsafe retries |
-| Live network SSH host & Tailscale/`OpenTunnel` | UNTESTED | Loopback multi-host spool exercised locally; no external SSH server accessed in automated tests |
+| Live local OpenSSH daemon (`/usr/sbin/sshd` + `ssh` + `scp` + `restic sftp://`) | PASS | Ephemeral non-root `OpenSSH_10.3p1` daemon proves real `SshCliTransport`, `[127.0.0.1]:port` `StrictHostKeyChecking=yes`, `EEXIST` duplicate protection, and `restic sftp://` `check --read-data` |
+| External remote VPS & Tailscale/`OpenTunnel` | UNTESTED LIVE | Local real `sshd` exercised in automated tests; external WAN/tailnet host remains opt-in |
 
 ## Reproduce
 

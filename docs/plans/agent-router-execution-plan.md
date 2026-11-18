@@ -8,7 +8,7 @@
 
 **Stack:** TypeScript; Node 24; `pnpm@11.25.0`; `zod`; `vitest`; pinned `@opencode/cli@2.2.7`; official OCI and AWS SDKs; SSH/cloud-init/systemd; `restic`; Tailscale or OpenCode `OpenTunnel`.
 
-**Status on November 17, 2026:** Readiness & PAYG guardrails ([00-readiness.md](../evidence/00-readiness.md), [00-oci-guardrails.md](../evidence/00-oci-guardrails.md)), Milestone 1 encrypted local + remote-backend checkpoint/restore ([01-local-restore.md](../evidence/01-local-restore.md)), Milestone 2 fenced SSH handoff + `SshCliTransport` ([02-ssh-handoff.md](../evidence/02-ssh-handoff.md)), and Milestone 3 guarded OCI lifecycle adapter + unified `pnpm router` CLI ([03-oci-lifecycle.md](../evidence/03-oci-lifecycle.md)) are implemented and verified locally. Opt-in live OCI Console / remote VPS runs and Milestone 4 cross-host `migrate` orchestration remain next.
+**Status on November 17, 2026:** All local engineering slices across **Milestones 0–4** are implemented and verified end-to-end against real local daemons (`pnpm check` + `pnpm e2e`): readiness & PAYG guardrails ([00-readiness.md](../evidence/00-readiness.md), [00-oci-guardrails.md](../evidence/00-oci-guardrails.md)), Milestone 1 encrypted local + remote-backend checkpoint/restore ([01-local-restore.md](../evidence/01-local-restore.md)), Milestone 2 fenced SSH handoff over real `OpenSSH` `sshd` / `ssh` / `scp` + `restic sftp://` ([02-ssh-handoff.md](../evidence/02-ssh-handoff.md)), Milestone 3 guarded OCI `VM.Standard.A1.Flex` + Hetzner `CAX11` ARM64 lifecycle adapters & unified `pnpm router` CLI ([03-oci-lifecycle.md](../evidence/03-oci-lifecycle.md)), and Milestone 4 AWS Free Plan credit/expiry-triggered cross-host `migrateWorkspace` ([04-cross-host-migration.md](../evidence/04-cross-host-migration.md)). Opt-in live external cloud account runs remain gated on user-owned credentials.
 
 ## Global constraints across every milestone
 
@@ -29,8 +29,9 @@
 | `packages/cloud-readiness/` | Read-only OCI/AWS inspection, local OCI key/config setup, pure A1 quota previews, and PAYG-safe guardrail checks (*implemented — Milestone 0*) |
 | `packages/snapshots/` | Versioned checkpoint manifests, quiesced session + workspace capture, AES-256-GCM / `restic` encryption, and remote SFTP/OCI-S3/R2/AWS-S3 backend builders (*implemented — Milestones 1–2*) |
 | `packages/host-ssh/` | Hardened OpenSSH/SCP argv builders, live `SshCliTransport`, loopback spool, and fenced cross-host workspace + session handoffs (`handoffWorkspace`) (*implemented — Milestone 2*) |
-| `packages/cloud-oci/` | Locked-down `#cloud-config` renderer, PAYG-guarded `VM.Standard.A1.Flex` provisioner, crash reconciliation, fencing, and zero-remnant teardown (*implemented locally — Milestone 3*) |
-| `packages/cli/` | Atomic local operation journal (`OperationJournal`) and unified `pnpm router` CLI commands (*implemented — Milestone 3*) |
+| `packages/cloud-oci/` | Locked-down `#cloud-config` renderer (SHA-256 verified Node 24), PAYG-guarded `VM.Standard.A1.Flex` provisioner, crash reconciliation, fencing, and zero-remnant teardown (*implemented — Milestone 3*) |
+| `packages/cloud-hetzner/` | Zero-inbound firewall-checked Hetzner Cloud `CAX11` ARM64 fallback provisioner (`location`, IPv6-only default, label crash reconciliation, zero-remnant teardown) (*implemented — Milestone 4*) |
+| `packages/cli/` | Atomic local operation journal (`OperationJournal`), allowance-aware `migrateWorkspace`, and unified `pnpm router` CLI (*implemented — Milestones 3–4*) |
 | `scripts/` | Reproducible verification and inspection entrypoints (*implemented*) |
 | `docs/evidence/` | Sanitized compatibility results and milestone gate receipts |
 
@@ -88,13 +89,13 @@ Files: `packages/cloud-oci/src/`, `packages/cli/src/journal.ts`, `packages/cli/s
 
 **Gate:** Interrupted operations reconcile cleanly without duplicate resources, and teardown leaves zero billable or quota-consuming remnants in `inspect:oci`.
 
-## Milestone 4: prove cross-host exit and allowance-aware migration
+## Milestone 4: prove cross-host exit and allowance-aware migration *(implemented & verified via `pnpm e2e`)*
 
-Files: `packages/cli/src/migrate.ts`, optional secondary provider adapter (`Hetzner` or `AWS Free Plan`), `docs/evidence/04-cross-host-migration.md`.
+Files: `packages/cli/src/migrate.ts`, `packages/cloud-readiness/src/aws-allowance.ts`, `packages/cloud-hetzner/src/provider.ts`, `scripts/e2e.ts`, `docs/evidence/04-cross-host-migration.md`.
 
-- [ ] Combine Milestone 1 checkpoints, Milestone 2 SSH lifecycle, and Milestone 3 cloud provisioning into an end-to-end `agent-router migrate <source> <target>` command.
-- [ ] Trigger a migration from an expiring or capacity-constrained host (simulated threshold + live two-host handoff) to an SSH/Hetzner or OCI target, fencing source compute before enabling the target and verifying source cleanup.
-- [ ] Test failure modes: interrupted transfer, corrupt snapshot, target out-of-capacity (`Out of host capacity` keeps source intact rather than destroying it), and revoked credentials.
+- [x] Combine Milestone 1 checkpoints, Milestone 2 live `SshCliTransport` / `restic sftp://`, and Milestone 3 cloud provisioners into `migrateWorkspace` + `pnpm e2e`.
+- [x] Trigger automatic migration from an expiring or low-credit AWS Free Plan host (`evaluateAwsFreePlanAllowance`) across ordered targets (`OCI A1` → `Hetzner CAX11 ARM64` → `SSH / laptop`), fencing source compute before enabling the target and verifying source cleanup.
+- [x] Verify failure modes via TDD: interrupted transfer (`NEEDS_RECONCILE`), corrupt snapshot (aborts before tearing down source compute), target `OUT_OF_CAPACITY` (`Out of host capacity` skips to fallback or keeps source intact), and stale allowance telemetry.
 
 **Gate:** Cross-host migration preserves all acknowledged saved work and settled sessions, never leaves two active agents running, and safely aborts without data loss when destination capacity or free headroom is unavailable.
 
