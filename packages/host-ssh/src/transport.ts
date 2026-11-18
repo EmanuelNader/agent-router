@@ -8,12 +8,17 @@ import { checkpointIdSchema } from '../../snapshots/src/store.js';
 
 const execFileAsync = promisify(execFile);
 
-const sshBaseOptions = ['-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=15'] as const;
-
 export interface SshConnectionOptions {
   port?: number;
   identityFile?: string;
   knownHostsFile?: string;
+  configFile?: string;
+  strictHostKeyChecking?: 'yes' | 'accept-new';
+}
+
+function buildSshBaseOptions(opts: SshConnectionOptions): string[] {
+  const hostKeyMode = opts.strictHostKeyChecking ?? 'yes';
+  return ['-o', 'BatchMode=yes', '-o', `StrictHostKeyChecking=${hostKeyMode}`, '-o', 'ConnectTimeout=15'];
 }
 
 function validateSafeLocalAuthFile(filePath: string, label: string): string {
@@ -30,6 +35,16 @@ function normalizeConnectionOptions(portOrOptions?: number | SshConnectionOption
   }
   const opts = portOrOptions ?? {};
   validatePort(opts.port);
+  if (opts.strictHostKeyChecking === 'accept-new' && opts.knownHostsFile === undefined) {
+    throw new Error('StrictHostKeyChecking=accept-new requires an explicit isolated knownHostsFile');
+  }
+  if (
+    opts.strictHostKeyChecking !== undefined &&
+    opts.strictHostKeyChecking !== 'yes' &&
+    opts.strictHostKeyChecking !== 'accept-new'
+  ) {
+    throw new Error('Invalid StrictHostKeyChecking mode');
+  }
   return {
     ...(opts.port !== undefined ? { port: opts.port } : {}),
     ...(opts.identityFile !== undefined
@@ -38,11 +53,18 @@ function normalizeConnectionOptions(portOrOptions?: number | SshConnectionOption
     ...(opts.knownHostsFile !== undefined
       ? { knownHostsFile: validateSafeLocalAuthFile(opts.knownHostsFile, 'knownHostsFile') }
       : {}),
+    ...(opts.configFile !== undefined
+      ? { configFile: validateSafeLocalAuthFile(opts.configFile, 'configFile') }
+      : {}),
+    ...(opts.strictHostKeyChecking !== undefined ? { strictHostKeyChecking: opts.strictHostKeyChecking } : {}),
   };
 }
 
 function buildAuthOptionFlags(opts: SshConnectionOptions): string[] {
   const flags: string[] = [];
+  if (opts.configFile !== undefined) {
+    flags.push('-F', opts.configFile);
+  }
   if (opts.identityFile !== undefined) {
     flags.push('-o', 'IdentitiesOnly=yes', '-i', opts.identityFile);
   }
@@ -97,7 +119,7 @@ export function buildSshArgs(
     throw new Error('Invalid remote SSH command vector');
   }
   return [
-    ...sshBaseOptions,
+    ...buildSshBaseOptions(conn),
     ...buildAuthOptionFlags(conn),
     ...(conn.port !== undefined ? ['-p', String(conn.port)] : []),
     '--',
@@ -121,7 +143,7 @@ export function buildScpUploadArgs(
     throw new Error('Remote archive path must be a safe POSIX absolute path without colons or whitespace');
   }
   return [
-    ...sshBaseOptions,
+    ...buildSshBaseOptions(conn),
     ...buildAuthOptionFlags(conn),
     ...(conn.port !== undefined ? ['-P', String(conn.port)] : []),
     '--',
@@ -145,7 +167,7 @@ export function buildScpDownloadArgs(
     throw new Error('Local archive path must be an absolute path');
   }
   return [
-    ...sshBaseOptions,
+    ...buildSshBaseOptions(conn),
     ...buildAuthOptionFlags(conn),
     ...(conn.port !== undefined ? ['-P', String(conn.port)] : []),
     '--',
@@ -184,6 +206,8 @@ export interface SshCliTransportOptions {
   port?: number;
   identityFile?: string;
   knownHostsFile?: string;
+  configFile?: string;
+  strictHostKeyChecking?: 'yes' | 'accept-new';
   sshBinary?: string;
   scpBinary?: string;
   timeoutMs?: number;
@@ -204,6 +228,10 @@ export class SshCliTransport implements HostTransport {
       ...(options.port !== undefined ? { port: options.port } : {}),
       ...(options.identityFile !== undefined ? { identityFile: options.identityFile } : {}),
       ...(options.knownHostsFile !== undefined ? { knownHostsFile: options.knownHostsFile } : {}),
+      ...(options.configFile !== undefined ? { configFile: options.configFile } : {}),
+      ...(options.strictHostKeyChecking !== undefined
+        ? { strictHostKeyChecking: options.strictHostKeyChecking }
+        : {}),
     });
     this.sshBinary = options.sshBinary ?? 'ssh';
     this.scpBinary = options.scpBinary ?? 'scp';
