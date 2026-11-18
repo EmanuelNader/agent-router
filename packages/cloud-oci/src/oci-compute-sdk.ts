@@ -216,9 +216,24 @@ export function createOciComputeSdkGateway(
     },
 
     async listWorkspaceRemnants(workspaceKey: string): Promise<WorkspaceRemnantCounts> {
-      const activeInstances = (await gateway.listInstances({ workspaceKey })).filter(
+      const workspaceInstances = await gateway.listInstances({ workspaceKey });
+      const activeInstances = workspaceInstances.filter(
         inst => inst.lifecycleState !== 'TERMINATED',
       ).length;
+
+      // Also track boot volumes via BootVolumeAttachment records (including recently terminated instances)
+      // because OCI auto-created boot volumes do not always inherit LaunchInstanceDetails.freeformTags.
+      const attachedBootVolumeIds = new Set<string>();
+      for (const inst of workspaceInstances) {
+        const attachResponse = await compute.listBootVolumeAttachments({
+          availabilityDomain: inst.availabilityDomain,
+          compartmentId: targetCompartmentId,
+          instanceId: inst.instanceId,
+        });
+        for (const att of attachResponse.items) {
+          if (att.bootVolumeId) attachedBootVolumeIds.add(att.bootVolumeId);
+        }
+      }
 
       const domainsResponse = await identities.listAvailabilityDomains({ compartmentId: tenancyId });
       let bootVolumes = 0;
@@ -230,8 +245,9 @@ export function createOciComputeSdkGateway(
         });
         bootVolumes += bvResponse.items.filter(
           bv =>
-            (bv.freeformTags ?? {})['agent-router-workspace'] === workspaceKey &&
-            String(bv.lifecycleState) !== 'TERMINATED',
+            String(bv.lifecycleState) !== 'TERMINATED' &&
+            ((bv.freeformTags ?? {})['agent-router-workspace'] === workspaceKey ||
+              attachedBootVolumeIds.has(bv.id)),
         ).length;
       }
 

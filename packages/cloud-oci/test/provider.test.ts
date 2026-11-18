@@ -1,11 +1,12 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { OperationJournal } from '../../cli/src/journal.js';
 import type { OciGuardrailReport } from '../../cloud-readiness/src/oci-guardrails.js';
 import type { DeploymentRequest, OciInspection } from '../../cloud-readiness/src/oci-report.js';
-import { renderWorkerCloudInit } from '../src/cloud-init.js';
+import { buildWorkerBootstrapScript, renderWorkerCloudInit } from '../src/cloud-init.js';
 import {
   InMemoryOciComputeGateway,
   OciWorkerProvisioner,
@@ -66,7 +67,16 @@ const defaultRequest: DeploymentRequest = {
   additionalInstances: 1,
 };
 
-test('renders locked-down cloud-init bound to 127.0.0.1 without cloud credentials and rejects bad SSH keys', () => {
+test('renders locked-down cloud-init with SHA-256 verified Node 24, systemd enable, and valid shell syntax', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'router-cloud-init-'));
+  tempDirs.push(root);
+
+  const script = buildWorkerBootstrapScript('2.2.7');
+  const scriptPath = join(root, 'bootstrap.sh');
+  await writeFile(scriptPath, script, { mode: 0o700 });
+  // Validate real POSIX/bash syntax using the OS shell parser
+  execFileSync('/bin/sh', ['-n', scriptPath]);
+
   const cloudConfig = renderWorkerCloudInit({
     sshAuthorizedKey: sampleSshPubKey,
     opencodeVersion: '2.2.7',
@@ -76,10 +86,14 @@ test('renders locked-down cloud-init bound to 127.0.0.1 without cloud credential
   expect(cloudConfig.startsWith('#cloud-config\n')).toBe(true);
   expect(cloudConfig).toContain('disable_root: true');
   expect(cloudConfig).toContain('ssh_pwauth: false');
+  expect(cloudConfig).toContain('node-v24.18.1-linux-arm64.tar.xz');
+  expect(cloudConfig).toContain('7201e3a09dc825bac57867c81913e2b8f0ef87d04cb9082af4cda82f6ff3d88c');
   expect(cloudConfig).toContain('127.0.0.1 --port 4096');
   expect(cloudConfig).toContain('@opencode/cli@2.2.7');
+  expect(cloudConfig).toContain('systemctl enable --now agent-router-opencode.service');
   expect(cloudConfig).not.toContain('0.0.0.0');
   expect(cloudConfig).not.toContain('ocid1.');
+  expect(Buffer.byteLength(cloudConfig, 'utf8')).toBeLessThan(32 * 1024);
 
   expect(() =>
     renderWorkerCloudInit({ sshAuthorizedKey: 'ssh-ed25519 bad\nwrite_files: []' }),
