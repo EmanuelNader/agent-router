@@ -1,10 +1,23 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { requireCompletedShellOutput } from '../packages/agent-opencode/src/history.js';
 import { startIsolatedServer } from '../packages/agent-opencode/src/server.js';
+import {
+  encodeClaudeProjectSlug,
+  exportClaudeProjectBundle,
+  importClaudeProjectBundle,
+  isClaudeCodeAvailable,
+  verifyClaudeProjectRecognition,
+} from '../packages/agent-claude-code/src/adapter.js';
+import {
+  exportCodexRolloutBundle,
+  importCodexRolloutBundle,
+  isCodexCliAvailable,
+  startIsolatedCodexAppServer,
+} from '../packages/agent-codex/src/adapter.js';
 import { OperationJournal } from '../packages/cli/src/journal.js';
 import { migrateWorkspace } from '../packages/cli/src/migrate.js';
 import {
@@ -280,10 +293,79 @@ try {
   const hetznerTeardown = await hetznerProvisioner.teardown('ws-e2e');
   assert.deepEqual(hetznerTeardown.remnants, { servers: 0, volumes: 0, primaryIps: 0 });
 
+  // Phase 6: Verify additional coding-agent CLI adapters (Codex CLI & Claude Code) when installed locally
+  const verifiedAgentAdapters = ['opencode@2.2.7'];
+  const realRunRoot = await realpath(run);
+
+  if (isCodexCliAvailable()) {
+    const codexSrc = join(realRunRoot, 'codex-ws-src');
+    const codexDst = join(realRunRoot, 'codex-ws-dst');
+    await mkdir(codexSrc, { recursive: true, mode: 0o700 });
+    await mkdir(codexDst, { recursive: true, mode: 0o700 });
+
+    const codexSrvA = await startIsolatedCodexAppServer({
+      isolatedHome: join(realRunRoot, 'codex-home-user-a'),
+      codexHome: join(realRunRoot, 'codex-state-a'),
+    });
+    let codexThreadId: string;
+    try {
+      codexThreadId = await codexSrvA.startThread(codexSrc);
+      await codexSrvA.runShellCommand(codexThreadId, "printf 'e2e-codex-ok\\n'");
+    } finally {
+      await codexSrvA.stop();
+    }
+
+    const codexBundle = await exportCodexRolloutBundle(join(realRunRoot, 'codex-state-a'), codexSrc);
+    await importCodexRolloutBundle(codexBundle, join(realRunRoot, 'codex-state-b'), codexDst);
+
+    const codexSrvB = await startIsolatedCodexAppServer({
+      isolatedHome: join(realRunRoot, 'codex-home-user-b'),
+      codexHome: join(realRunRoot, 'codex-state-b'),
+    });
+    try {
+      const resumed = await codexSrvB.resumeThread(codexThreadId, codexDst);
+      assert.equal(resumed.cwd, codexDst);
+      const readThread = await codexSrvB.readThread(codexThreadId);
+      assert.ok(JSON.stringify(readThread.turns).includes('e2e-codex-ok'));
+    } finally {
+      await codexSrvB.stop();
+    }
+    verifiedAgentAdapters.push('codex-cli');
+  }
+
+  if (isClaudeCodeAvailable()) {
+    const claudeSrc = join(realRunRoot, 'claude.ws_src');
+    const claudeDst = join(realRunRoot, 'claude.ws_dst');
+    await mkdir(claudeSrc, { recursive: true, mode: 0o700 });
+    await mkdir(claudeDst, { recursive: true, mode: 0o700 });
+
+    const claudeCfgA = join(realRunRoot, 'claude-cfg-a');
+    const claudeCfgB = join(realRunRoot, 'claude-cfg-b');
+    const slugDirA = join(claudeCfgA, 'projects', encodeClaudeProjectSlug(claudeSrc));
+    await mkdir(slugDirA, { recursive: true, mode: 0o700 });
+    const claudeSessionId = '12345678-1234-4234-8234-123456789abc';
+    await writeFile(
+      join(slugDirA, `${claudeSessionId}.jsonl`),
+      `${JSON.stringify({ type: 'user', uuid: 'u1', sessionId: claudeSessionId, cwd: claudeSrc, message: { role: 'user', content: 'e2e' } })}\n`,
+      { mode: 0o600 },
+    );
+
+    const claudeBundle = await exportClaudeProjectBundle(claudeCfgA, claudeSrc);
+    await importClaudeProjectBundle(claudeBundle, claudeCfgB, claudeDst);
+    const recognition = await verifyClaudeProjectRecognition({
+      isolatedHome: join(realRunRoot, 'claude-home-b'),
+      claudeConfigDir: claudeCfgB,
+      workspace: claudeDst,
+    });
+    assert.equal(recognition.recognized, true);
+    verifiedAgentAdapters.push('claude-code');
+  }
+
   console.log(
     JSON.stringify(
       {
         status: 'E2E_VERIFIED',
+        verifiedAgentAdapters,
         daemonsExercised: ['opencode@2.2.7', 'git', 'openssh-sshd', 'ssh', 'scp', 'restic-sftp'],
         allowanceTrigger: migrationResult.triggerReasons,
         skippedCapacityTargets: migrationResult.skippedTargets,
