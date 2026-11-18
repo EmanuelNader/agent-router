@@ -51,8 +51,10 @@ function normalizeSpec(spec: ServiceUnitSpec) {
   if (workingDirectory === path.posix.normalize(homedir()).replace(/\/+$/, '')) {
     throw new Error('Invalid workingDirectory: must be an isolated directory, not personal $HOME');
   }
-  if (spec.routerArgs.length === 0 || spec.routerArgs.some(arg => !arg || /[\r\n\0"']/.test(arg))) {
-    throw new Error('Invalid routerArgs: expected non-empty argument list without quotes or control characters');
+  if (spec.routerArgs.length === 0 || spec.routerArgs.some(arg => !arg || /[\r\n\0"'%$\\]/.test(arg))) {
+    throw new Error(
+      'Invalid routerArgs: expected non-empty argument list without quotes, %, $, backslashes, or control characters',
+    );
   }
   const intervalSec = spec.intervalSec ?? 300;
   if (!Number.isInteger(intervalSec) || intervalSec < 15 || intervalSec > 86_400) {
@@ -155,6 +157,8 @@ export function renderLaunchdPlist(spec: ServiceUnitSpec): RenderedLaunchdPlist 
     '    </dict>',
     '    <key>ProcessType</key>',
     '    <string>Background</string>',
+    '    <key>Umask</key>',
+    '    <integer>63</integer>',
     '    <key>StartInterval</key>',
     `    <integer>${n.intervalSec}</integer>`,
     '    <key>StandardOutPath</key>',

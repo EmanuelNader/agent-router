@@ -152,4 +152,32 @@ test('autonomous watch loop fails closed on blocking journal entries or stale al
     expect(blockedByStale.reasons).toContain('STALE_CODESPACES_EVIDENCE');
   }
   expect(migrateCalled).toBe(false);
+
+  // Mid-poll AbortSignal cancellation must short-circuit defaultSleep immediately and return STOPPED
+  const abortController = new AbortController();
+  const stoppedRes = await runAllowanceWatchLoop({
+    workspaceKey: 'ws-fenced',
+    journal,
+    maxTicks: 3,
+    pollIntervalMs: 60_000,
+    signal: abortController.signal,
+    pollAllowance: async () => {
+      abortController.abort();
+      return {
+        kind: 'CODESPACES',
+        now: new Date('2026-11-18T00:00:00.000Z'),
+        snapshot: {
+          observedAt: '2026-11-17T23:59:00.000Z',
+          usedCoreHours: 10,
+          usedStorageGbMonth: 2,
+          activeMachineCores: 2,
+        },
+      };
+    },
+    executeMigration: async () => {
+      throw new Error('should not migrate');
+    },
+  });
+  expect(stoppedRes.outcome).toBe('STOPPED');
+  expect(stoppedRes.ticksRun).toBe(1);
 });

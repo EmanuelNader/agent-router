@@ -91,18 +91,19 @@ export interface RunAllowanceWatchLoopOptions {
 }
 
 function defaultSleep(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.resolve();
+  }
   return new Promise(resolve => {
-    const timer = setTimeout(resolve, ms);
-    if (signal) {
-      signal.addEventListener(
-        'abort',
-        () => {
-          clearTimeout(timer);
-          resolve();
-        },
-        { once: true },
-      );
-    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
   });
 }
 
@@ -111,11 +112,12 @@ function evaluateSample(sample: AllowancePollSample): {
   reasons: string[];
   trigger: MigrationTrigger;
 } {
+  const effectiveNow = sample.now ?? new Date();
   if (sample.kind === 'AWS_FREE_PLAN') {
     const res = evaluateAwsFreePlanAllowance(sample.snapshot, {
       ...(sample.minCreditFloorUsd !== undefined ? { minCreditFloorUsd: sample.minCreditFloorUsd } : {}),
       ...(sample.minDaysRemaining !== undefined ? { minDaysRemaining: sample.minDaysRemaining } : {}),
-      ...(sample.now !== undefined ? { now: sample.now } : {}),
+      now: effectiveNow,
     });
     return {
       decision: res.decision,
@@ -125,7 +127,7 @@ function evaluateSample(sample: AllowancePollSample): {
         snapshot: sample.snapshot,
         ...(sample.minCreditFloorUsd !== undefined ? { minCreditFloorUsd: sample.minCreditFloorUsd } : {}),
         ...(sample.minDaysRemaining !== undefined ? { minDaysRemaining: sample.minDaysRemaining } : {}),
-        ...(sample.now !== undefined ? { now: sample.now } : {}),
+        now: effectiveNow,
       },
     };
   }
@@ -143,7 +145,7 @@ function evaluateSample(sample: AllowancePollSample): {
     ...(sample.maxStorageGbMonthBuffer !== undefined
       ? { maxStorageGbMonthBuffer: sample.maxStorageGbMonthBuffer }
       : {}),
-    ...(sample.now !== undefined ? { now: sample.now } : {}),
+    now: effectiveNow,
   });
 
   return {
@@ -156,7 +158,7 @@ function evaluateSample(sample: AllowancePollSample): {
       ...(sample.maxStorageGbMonthBuffer !== undefined
         ? { maxStorageGbMonthBuffer: sample.maxStorageGbMonthBuffer }
         : {}),
-      ...(sample.now !== undefined ? { now: sample.now } : {}),
+      now: effectiveNow,
     },
   };
 }
@@ -246,6 +248,7 @@ export async function runAllowanceWatchLoop(
           history,
         };
       }
+      throw new Error('Unexpected SKIPPED_HEALTHY migration status after MIGRATE_NOW allowance evaluation');
     }
 
     if (tick < options.maxTicks && pollIntervalMs > 0) {

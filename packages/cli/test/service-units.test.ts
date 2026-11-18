@@ -1,3 +1,4 @@
+import { homedir } from 'node:os';
 import { expect, test } from 'vitest';
 import { renderLaunchdPlist, renderSystemdUserUnits } from '../src/service-units.js';
 
@@ -30,6 +31,7 @@ test('renders hardened systemd --user service + timer and macOS launchd plist wi
 
   expect(launchd.label).toBe('dev.agentrouter.agent-router-watch');
   expect(launchd.plistContent).toContain('<string>ws-prod&amp;1</string>');
+  expect(launchd.plistContent).toContain('<integer>63</integer>');
   expect(launchd.plistContent).toContain('<integer>300</integer>');
   expect(launchd.plistContent).toContain('<string>/var/lib/agent-router/isolated-home</string>');
 
@@ -41,4 +43,22 @@ test('renders hardened systemd --user service + timer and macOS launchd plist wi
       routerArgs: ['status'],
     }),
   ).toThrow(/absolute/i);
+
+  expect(() =>
+    renderSystemdUserUnits({
+      nodeExecutable: '/usr/local/bin/node',
+      cliEntrypoint: '/opt/agent-router/bin/agent-router.mjs',
+      workingDirectory: homedir(),
+      routerArgs: ['status'],
+    }),
+  ).toThrow(/\$HOME/i);
+
+  expect(() =>
+    renderSystemdUserUnits({
+      nodeExecutable: '/usr/local/bin/node',
+      cliEntrypoint: '/opt/agent-router/bin/agent-router.mjs',
+      workingDirectory: '/var/lib/agent-router',
+      routerArgs: ['--workspace-key', '%h/$HOME'],
+    }),
+  ).toThrow(/routerArgs/i);
 });
