@@ -1,6 +1,6 @@
 # v1 benchmark evidence
 
-Observed 2026-11-18. v1.0.0 engineering candidate; native read-only review fixes are being verified before local landing.
+Observed 2026-11-18. v1.0.0 engineering candidate; native read-only reviews and correction rechecks completed, and verified task commits were fast-forward merged into local main. GitHub publication remains pending; no push was performed.
 
 ## Current observed state
 
