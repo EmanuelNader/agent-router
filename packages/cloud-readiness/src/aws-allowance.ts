@@ -37,6 +37,14 @@ export function evaluateAwsFreePlanAllowance(
   const minCreditFloorUsd = options.minCreditFloorUsd ?? 5;
   const minDaysRemaining = options.minDaysRemaining ?? 7;
 
+  if (!Number.isFinite(now.getTime()) || !Number.isFinite(minCreditFloorUsd)
+    || !Number.isFinite(minDaysRemaining) || minCreditFloorUsd < 0 || minDaysRemaining < 0) {
+    return {
+      decision: 'BLOCKED', shouldMigrate: false, remainingCreditUsd: null,
+      daysRemaining: null, reasons: ['INVALID_AWS_EVALUATION_OPTIONS'],
+    };
+  }
+
   const ageMs = now.getTime() - Date.parse(snapshot.observedAt);
   if (ageMs > 15 * 60_000) {
     return {

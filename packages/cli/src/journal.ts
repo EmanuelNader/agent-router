@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { chmod, lstat, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, open, readdir, readFile, rename, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
 
@@ -37,11 +37,11 @@ export class OperationJournal {
 
   private async ensureDirectory(): Promise<void> {
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
-    await chmod(this.directory, 0o700);
     const stat = await lstat(this.directory);
-    if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) {
+    if (!stat.isDirectory() || stat.isSymbolicLink()) {
       throw new Error('Operation journal must be an owner-only real directory');
     }
+    await chmod(this.directory, 0o700);
   }
 
   private async writeAtomic(record: OperationRecord): Promise<OperationRecord> {
@@ -50,8 +50,14 @@ export class OperationJournal {
     const tempPath = join(this.directory, `.${validated.operationId}.${randomBytes(8).toString('hex')}.tmp`);
     const finalPath = join(this.directory, `${validated.operationId}.json`);
     try {
-      await writeFile(tempPath, `${JSON.stringify(validated, null, 2)}\n`, { mode: 0o600, flag: 'wx' });
+      const file = await open(tempPath, 'wx', 0o600);
+      try {
+        await file.writeFile(`${JSON.stringify(validated, null, 2)}\n`);
+        await file.sync();
+      } finally { await file.close(); }
       await rename(tempPath, finalPath);
+      const directory = await open(this.directory, 'r');
+      try { await directory.sync(); } finally { await directory.close(); }
     } catch (error) {
       await rm(tempPath, { force: true });
       throw error;
@@ -61,21 +67,27 @@ export class OperationJournal {
 
   async read(operationId: string): Promise<OperationRecord> {
     if (!/^op_[a-f0-9]{16,64}$/.test(operationId)) throw new Error('Invalid operation ID');
-    const raw = await readFile(join(this.directory, `${operationId}.json`), 'utf8');
-    return operationRecordSchema.parse(JSON.parse(raw));
+    await this.ensureDirectory();
+    const file = join(this.directory, `${operationId}.json`);
+    const stat = await lstat(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error('JOURNAL_UNSAFE_RECORD');
+    const raw = await readFile(file, 'utf8');
+    const record = operationRecordSchema.parse(JSON.parse(raw));
+    if (record.operationId !== operationId) throw new Error('JOURNAL_RECORD_ID_MISMATCH');
+    return record;
   }
 
   async list(): Promise<OperationRecord[]> {
-    try {
-      await this.ensureDirectory();
-    } catch {
-      return [];
+    await this.ensureDirectory();
+    const names = await readdir(this.directory);
+    for (const name of names) {
+      const temp = /^\.(op_[a-f0-9]{16,64})\.[a-f0-9]{16}\.tmp$/.exec(name);
+      if (temp && !names.includes(`${temp[1]}.json`)) throw new Error('JOURNAL_INCOMPLETE_WRITE');
     }
-    const entries = (await readdir(this.directory)).filter(name => /^op_[a-f0-9]{16,64}\.json$/.test(name)).sort();
+    const entries = names.filter(name => /^op_[a-f0-9]{16,64}\.json$/.test(name)).sort();
     const records: OperationRecord[] = [];
     for (const entry of entries) {
-      const raw = await readFile(join(this.directory, entry), 'utf8');
-      records.push(operationRecordSchema.parse(JSON.parse(raw)));
+      records.push(await this.read(entry.slice(0, -5)));
     }
     return records;
   }
