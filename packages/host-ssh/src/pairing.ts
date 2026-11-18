@@ -12,7 +12,9 @@ export const codexPairingPayloadSchema = z
     environmentId: z.string().min(1).optional(),
     expiresAt: z.string().min(1).optional(),
   })
-  .passthrough();
+  .refine(value => Boolean(value.pairingCode || value.manualPairingCode), {
+    message: 'Codex pairing response missing pairingCode or manualPairingCode',
+  });
 export type CodexPairingPayload = z.infer<typeof codexPairingPayloadSchema>;
 
 export function buildRemotePairingCommands(
@@ -67,7 +69,7 @@ export async function runRemotePairingOverSsh(
     const parsed = codexPairingPayloadSchema.parse(JSON.parse(lastOutput));
     return {
       agent,
-      rawOutput: lastOutput,
+      rawOutput: JSON.stringify(parsed),
       codexPairing: parsed,
     };
   }

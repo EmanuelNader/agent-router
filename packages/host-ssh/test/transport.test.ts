@@ -49,10 +49,15 @@ test('builds hardened OpenSSH and SCP argument vectors with option termination',
   ]);
 });
 
-test('rejects SSH option injection, whitespace, colons, and invalid ports', () => {
+test('rejects SSH option injection, whitespace, colons, and invalid ports, while supporting bracketed IPv6', () => {
   expect(() => validateSshTarget('-oProxyCommand=evil')).toThrow(/target/i);
   expect(() => validateSshTarget('user@host name')).toThrow(/target/i);
   expect(() => validateSshTarget('user@host:path')).toThrow(/target/i);
+  expect(validateSshTarget('agent@[fd7a:115c:a1e0::99]')).toBe('agent@[fd7a:115c:a1e0::99]');
+  expect(buildSshArgs('agent@[fd7a:115c:a1e0::99]', ['true'])).toContain('agent@fd7a:115c:a1e0::99');
+  expect(buildScpUploadArgs('/tmp/chk.enc', 'agent@[fd7a:115c:a1e0::99]', '/var/lib/chk.enc')).toContain(
+    'agent@[fd7a:115c:a1e0::99]:/var/lib/chk.enc',
+  );
   expect(() => buildSshArgs('agent@host', [], 22)).toThrow(/command/i);
   expect(() => buildSshArgs('agent@host', ['true'], 70000)).toThrow(/port/i);
   expect(() => buildScpUploadArgs('relative.enc', 'agent@host', '/remote/chk.enc')).toThrow(/absolute/i);

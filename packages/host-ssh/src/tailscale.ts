@@ -52,9 +52,16 @@ export function parseTailscaleStatusJson(
   for (const peer of Object.values(parsed.Peer ?? {})) {
     if (!includeOffline && !peer.Online) continue;
     const dnsName = peer.DNSName.replace(/\.+$/, '');
-    const hostAddress = dnsName || peer.TailscaleIPs[0] || peer.HostName;
+    const ipv4 = peer.TailscaleIPs.find(ip => !ip.includes(':'));
+    const ipv6 = peer.TailscaleIPs.find(ip => ip.includes(':'));
+    const hostAddress = dnsName || ipv4 || (ipv6 ? `[${ipv6}]` : peer.HostName);
     if (!hostAddress) continue;
-    const recommendedSshTarget = validateSshTarget(`${sshUser}@${hostAddress}`);
+    let recommendedSshTarget: string;
+    try {
+      recommendedSshTarget = validateSshTarget(`${sshUser}@${hostAddress}`);
+    } catch {
+      continue;
+    }
     summaries.push({
       hostName: peer.HostName,
       dnsName,

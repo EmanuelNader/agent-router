@@ -1,5 +1,10 @@
 import { expect, test } from 'vitest';
-import { assertSafeRelativePath, checkpointManifestSchema } from '../src/manifest.js';
+import {
+  anyCheckpointManifestSchema,
+  assertSafeRelativePath,
+  checkpointManifestSchema,
+  checkpointManifestV2Schema,
+} from '../src/manifest.js';
 
 const validManifest = {
   schemaVersion: 1 as const,
@@ -51,4 +56,21 @@ test('assertSafeRelativePath rejects traversal, absolute, backslash, empty, and 
   expect(() => assertSafeRelativePath('a/../b')).toThrow(/relative path/i);
   expect(() => assertSafeRelativePath('a\\b')).toThrow(/relative path/i);
   expect(() => assertSafeRelativePath('a\0b')).toThrow(/relative path/i);
+});
+
+test('accepts v2 polymorphic manifests and parses both v1 and v2 via anyCheckpointManifestSchema', () => {
+  const validV2 = {
+    schemaVersion: 2 as const,
+    checkpointId: 'chk_0123456789abcdef0123456789abcdef',
+    createdAt: '2026-11-17T22:00:00.000Z',
+    architecture: 'arm64',
+    agentKind: 'codex-cli' as const,
+    sessionIds: ['019a0000-1111-7222-8333-444444444444'],
+    git: validManifest.git,
+    workspaceFiles: validManifest.workspaceFiles,
+  };
+  expect(checkpointManifestV2Schema.parse(validV2)).toEqual(validV2);
+  expect(anyCheckpointManifestSchema.parse(validManifest).schemaVersion).toBe(1);
+  expect(anyCheckpointManifestSchema.parse(validV2).schemaVersion).toBe(2);
+  expect(() => checkpointManifestV2Schema.parse({ ...validV2, agentKind: 'unknown-cli' })).toThrow();
 });

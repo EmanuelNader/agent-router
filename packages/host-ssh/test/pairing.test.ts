@@ -24,7 +24,7 @@ test('executes multi-step Codex remote-control pairing over SSH runner and parse
         }
         return {
           stdout:
-            '{"pairingCode":"ABCD-1234","manualPairingCode":"ABCD-1234","environmentId":"env_99","expiresAt":"2026-11-18T05:00:00Z"}\n',
+            '{"pairingCode":"ABCD-1234","manualPairingCode":"ABCD-1234","environmentId":"env_99","expiresAt":"2026-11-18T05:00:00Z","internalSecretToken":"never-leak"}\n',
         };
       },
     },
@@ -38,4 +38,16 @@ test('executes multi-step Codex remote-control pairing over SSH runner and parse
     environmentId: 'env_99',
     expiresAt: '2026-11-18T05:00:00Z',
   });
+  expect(res.rawOutput).not.toContain('never-leak');
+
+  await expect(
+    runRemotePairingOverSsh(
+      {
+        async runRemoteCommand() {
+          return { stdout: '{}\n' };
+        },
+      },
+      'codex-cli',
+    ),
+  ).rejects.toThrow(/pairingCode/i);
 });

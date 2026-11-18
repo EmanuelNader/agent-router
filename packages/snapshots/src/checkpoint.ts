@@ -292,15 +292,23 @@ export async function restoreAgentCheckpoint(options: {
   if (manifest.checkpointId !== options.checkpointId) throw new Error('Checkpoint ID mismatch');
 
   if (manifest.schemaVersion === 1) {
-    if (options.agent.kind !== 'opencode') {
-      throw new Error('v1 checkpoint requires agent kind "opencode"');
+    if (options.agent.kind === 'opencode') {
+      return await restoreCheckpoint({
+        checkpointId: options.checkpointId,
+        targetWorkspace: target,
+        store: options.store,
+        importSession: options.agent.importSession,
+      });
     }
-    return await restoreCheckpoint({
-      checkpointId: options.checkpointId,
-      targetWorkspace: target,
-      store: options.store,
-      importSession: options.agent.importSession,
-    });
+    if (options.agent.kind === 'none' && manifest.sessionIds.length === 0) {
+      return await restoreCheckpoint({
+        checkpointId: options.checkpointId,
+        targetWorkspace: target,
+        store: options.store,
+        importSession: async transfer => transfer.info.id,
+      });
+    }
+    throw new Error('v1 checkpoint with OpenCode sessions requires agent kind "opencode"');
   }
 
   if (options.agent.kind !== manifest.agentKind) {

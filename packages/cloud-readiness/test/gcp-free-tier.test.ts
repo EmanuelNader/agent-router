@@ -53,4 +53,22 @@ test('blocks GCP bill traps: pd-balanced disk, non-eligible region, >0.85 GB egr
     'PAID_EGRESS_DESTINATION_OR_TIER',
     'MISSING_GCP_BUDGET_ALERT',
   ]);
+
+  const stale = evaluateGcpAlwaysFreeGuardrails(
+    {
+      observedAt: '2026-11-17T23:30:00.000Z',
+      region: 'us-west1',
+      machineType: 'e2-micro',
+      provisioningModel: 'STANDARD',
+      bootDiskType: 'pd-standard',
+      totalStandardDiskGb: 30,
+      gpuCount: 0,
+      monthlyNorthAmericaEgressGb: 0.2,
+      allowPremiumOrChinaAustraliaEgress: false,
+      hasBudgetAlertUpTo5Usd: true,
+    },
+    { now: fixedNow },
+  );
+  expect(stale.status).toBe('BLOCKED');
+  expect(stale.blockers).toContain('STALE_GCP_EVIDENCE');
 });

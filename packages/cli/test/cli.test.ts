@@ -308,8 +308,67 @@ test('router CLI supports peers --status-file, polymorphic --agent checkpoints, 
         'utf8',
       );
       expect((JSON.parse(relocatedJsonl.trim()) as { cwd: string }).cwd).toBe(dstWs);
+
+      // Pre-flight handoff rejection (target already exists) must abortUnfenced (0 blocking records)
+      const preflightJournalDir = join(root, 'preflight-journal');
+      const dupIo = captureIo();
+      expect(
+        await runRouterCli(
+          [
+            'handoff',
+            '--workspace',
+            srcWs,
+            '--target-workspace',
+            dstWs,
+            '--ssh-target',
+            `${sshd.username}@127.0.0.1`,
+            '--remote-spool',
+            join(root, 'remote-spool'),
+            '--key-file',
+            keyFile,
+            '--journal-dir',
+            preflightJournalDir,
+          ],
+          dupIo.io,
+        ),
+      ).toBe(1);
+      expect(dupIo.err.join('\n')).toMatch(/already exists/i);
+      const pfStatusIo = captureIo();
+      expect(await runRouterCli(['status', '--journal-dir', preflightJournalDir], pfStatusIo.io)).toBe(0);
+      expect((JSON.parse(pfStatusIo.out.join('\n')) as { blockingCount: number }).blockingCount).toBe(0);
     } finally {
       await sshd.close();
     }
   }
+
+  // Friendly error when pair omits --agent or --agent opencode omits required flags
+  const badPairIo = captureIo();
+  expect(await runRouterCli(['pair', '--ssh-target', 'agentrouter@worker.ts.net'], badPairIo.io)).toBe(1);
+  expect(badPairIo.err.join('\n')).toMatch(/--agent <opencode\|codex-cli\|claude-code>/);
+
+  const keyFile2 = join(root, 'oc.key');
+  await writeFile(keyFile2, randomBytes(32).toString('hex'), { mode: 0o600 });
+  await chmod(keyFile2, 0o600);
+  const wsOc = join(root, 'ws-oc');
+  await mkdir(wsOc, { recursive: true, mode: 0o700 });
+  const badOcIo = captureIo();
+  expect(
+    await runRouterCli(
+      [
+        'checkpoint',
+        '--workspace',
+        wsOc,
+        '--store',
+        join(root, 'store-oc'),
+        '--key-file',
+        keyFile2,
+        '--agent',
+        'opencode',
+        '--journal-dir',
+        join(root, 'journal-oc'),
+      ],
+      badOcIo.io,
+    ),
+  ).toBe(1);
+  expect(badOcIo.err.join('\n')).toMatch(/--opencode-url/);
 }, 20_000);

@@ -35,4 +35,17 @@ test('tracks GitHub Codespaces 120 core-hours / 15 GB-month quota and triggers M
   expect(lowHours.shouldMigrate).toBe(true);
   expect(lowHours.estimatedHoursLeftOnActiveMachine).toBe(2);
   expect(lowHours.reasons).toEqual(['LOW_CODESPACES_CORE_HOURS', 'HIGH_CODESPACES_STORAGE_USAGE']);
+
+  const stale = evaluateCodespacesAllowance(
+    {
+      observedAt: '2026-11-17T23:30:00.000Z',
+      usedCoreHours: 10,
+      usedStorageGbMonth: 2.0,
+      activeMachineCores: 2,
+    },
+    { now: fixedNow },
+  );
+  expect(stale.decision).toBe('BLOCKED');
+  expect(stale.shouldMigrate).toBe(false);
+  expect(stale.reasons).toContain('STALE_CODESPACES_EVIDENCE');
 });

@@ -56,7 +56,7 @@ export function validateSshTarget(target: string): string {
   if (
     !target ||
     target.startsWith('-') ||
-    /[\s\r\n\0:\\/]/.test(target) ||
+    /[\s\r\n\0\\/]/.test(target) ||
     !/^(?:[A-Za-z0-9._-]+@)?(?:[A-Za-z0-9.-]+|\[[0-9a-fA-F:]+\])$/.test(target)
   ) {
     throw new Error('Invalid SSH target: expected safe host or user@host without option flags or delimiters');
@@ -91,6 +91,7 @@ export function buildSshArgs(
   portOrOptions?: number | SshConnectionOptions,
 ): string[] {
   const checkedTarget = validateSshTarget(target);
+  const sshDestination = checkedTarget.replace(/\[([0-9a-fA-F:]+)\]$/, '$1');
   const conn = normalizeConnectionOptions(portOrOptions);
   if (remoteCommand.length === 0 || remoteCommand.some(arg => !arg || arg.includes('\0'))) {
     throw new Error('Invalid remote SSH command vector');
@@ -100,7 +101,7 @@ export function buildSshArgs(
     ...buildAuthOptionFlags(conn),
     ...(conn.port !== undefined ? ['-p', String(conn.port)] : []),
     '--',
-    checkedTarget,
+    sshDestination,
     ...remoteCommand,
   ];
 }

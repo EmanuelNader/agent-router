@@ -64,6 +64,7 @@ describe.runIf(isDockerImageAvailable('ubuntu:24.04'))('Live Ubuntu 24.04 aarch6
       });
 
       expect(guestResult.dashSyntaxValid).toBe(true);
+      expect(guestResult.sha256VerifiedInGuest).toBe(true);
       expect(guestResult.spoolStat).toBe('700:agentrouter:agentrouter');
       expect(guestResult.workspacesStat).toBe('700:agentrouter:agentrouter');
       expect(guestResult.probeOutput).toMatch(/^Linux\/(aarch64|x86_64)$/);

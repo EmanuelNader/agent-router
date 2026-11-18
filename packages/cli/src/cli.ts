@@ -1,8 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { OpenCodeClient } from '../../agent-opencode/src/client.js';
 import {
   HetznerWorkerProvisioner,
   hetznerLocationSchema,
@@ -63,9 +64,9 @@ Local journal, Tailscale peers, pairing, checkpoints & handoffs:
   reconcile               --operation op_<hex> --summary "<reason>" [--journal-dir .work/router-journal]
   peers                   [--status-file <json>] [--include-offline] [--ssh-user agentrouter]
   pair                    --ssh-target <user@host> --agent <opencode|codex-cli|claude-code> [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--session-name <name>]
-  checkpoint              --workspace <dir> --store <dir> --key-file <0600-path> [--agent <none|codex-cli|claude-code>] [--codex-home <dir>] [--claude-config-dir <dir>]
-  restore                 --checkpoint chk_<hex> --target <dir> --store <dir> --key-file <0600-path> [--agent <none|codex-cli|claude-code>] [--codex-home <dir>] [--claude-config-dir <dir>]
-  handoff                 --workspace <dir> --target-workspace <dir> --ssh-target <user@host> --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|codex-cli|claude-code>]
+  checkpoint              --workspace <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path> --session-id <id>] [--codex-home <dir>] [--claude-config-dir <dir>]
+  restore                 --checkpoint chk_<hex> --target <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path>] [--codex-home <dir>] [--claude-config-dir <dir>]
+  handoff                 --workspace <dir> --target-workspace <dir> --ssh-target <user@host> --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>]
   migrate:simulate        [--workspace-key ws-sim]
 
 Cloud allowance & worker lifecycle commands:
@@ -144,6 +145,11 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         checkpoint: { type: 'string' },
         'workspace-key': { type: 'string' },
         agent: { type: 'string', default: 'none' },
+        'opencode-url': { type: 'string' },
+        'opencode-password-file': { type: 'string' },
+        'target-opencode-url': { type: 'string' },
+        'target-opencode-password-file': { type: 'string' },
+        'session-id': { type: 'string' },
         'codex-home': { type: 'string' },
         'target-codex-home': { type: 'string' },
         'claude-config-dir': { type: 'string' },
@@ -209,8 +215,22 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       return 0;
     }
 
-    const resolveCaptureAgent = (agentFlag: string): CaptureAgentSpec => {
+    const resolveCaptureAgent = async (agentFlag: string): Promise<CaptureAgentSpec> => {
       if (agentFlag === 'none') return { kind: 'none' };
+      if (agentFlag === 'opencode') {
+        if (!values['opencode-url'] || !values['opencode-password-file'] || !values['session-id']) {
+          throw new Error(
+            '--agent opencode capture requires --opencode-url, --opencode-password-file, and --session-id',
+          );
+        }
+        const password = await loadOwnerOnlyApiToken(values['opencode-password-file']);
+        const client = new OpenCodeClient(values['opencode-url'], password);
+        const sessionId = values['session-id'];
+        return {
+          kind: 'opencode',
+          exportSessions: async () => [await client.exportSession(sessionId)],
+        };
+      }
       if (agentFlag === 'codex-cli') {
         if (!values['codex-home']) throw new Error('--agent codex-cli requires --codex-home');
         return { kind: 'codex-cli', codexHome: values['codex-home'] };
@@ -219,11 +239,30 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         if (!values['claude-config-dir']) throw new Error('--agent claude-code requires --claude-config-dir');
         return { kind: 'claude-code', claudeConfigDir: values['claude-config-dir'] };
       }
-      throw new Error(`Unsupported CLI checkpoint agent "${agentFlag}" (expected none, codex-cli, or claude-code)`);
+      throw new Error(
+        `Unsupported CLI checkpoint agent "${agentFlag}" (expected none, opencode, codex-cli, or claude-code)`,
+      );
     };
 
-    const resolveRestoreAgent = (agentFlag: string, forHandoff = false): RestoreAgentSpec => {
+    const resolveRestoreAgent = async (agentFlag: string, forHandoff = false): Promise<RestoreAgentSpec> => {
       if (agentFlag === 'none') return { kind: 'none' };
+      if (agentFlag === 'opencode') {
+        const url = forHandoff ? values['target-opencode-url'] : values['opencode-url'];
+        const pwFile = forHandoff ? values['target-opencode-password-file'] : values['opencode-password-file'];
+        if (!url || !pwFile) {
+          throw new Error(
+            forHandoff
+              ? '--agent opencode handoff requires --target-opencode-url and --target-opencode-password-file'
+              : '--agent opencode restore requires --opencode-url and --opencode-password-file',
+          );
+        }
+        const password = await loadOwnerOnlyApiToken(pwFile);
+        const client = new OpenCodeClient(url, password);
+        return {
+          kind: 'opencode',
+          importSession: async (transfer, directory) => await client.importSession(transfer, directory),
+        };
+      }
       if (agentFlag === 'codex-cli') {
         const dstHome = forHandoff ? values['target-codex-home'] : values['codex-home'];
         if (!dstHome) {
@@ -246,7 +285,9 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         }
         return { kind: 'claude-code', targetClaudeConfigDir: dstCfg };
       }
-      throw new Error(`Unsupported CLI restore agent "${agentFlag}" (expected none, codex-cli, or claude-code)`);
+      throw new Error(
+        `Unsupported CLI restore agent "${agentFlag}" (expected none, opencode, codex-cli, or claude-code)`,
+      );
     };
 
     if (subcommand === 'peers') {
@@ -262,10 +303,11 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
     }
 
     if (subcommand === 'pair') {
-      if (!values['ssh-target']) {
+      const parsedAgent = pairingAgentKindSchema.safeParse(values.agent);
+      if (!values['ssh-target'] || !parsedAgent.success) {
         throw new Error('pair requires --ssh-target and --agent <opencode|codex-cli|claude-code>');
       }
-      const pairingAgent = pairingAgentKindSchema.parse(values.agent);
+      const pairingAgent = parsedAgent.data;
       const transport = new SshCliTransport({
         target: values['ssh-target'],
         remoteSpoolDirectory: values['remote-spool'] ?? '/var/lib/agent-router/spool',
@@ -287,7 +329,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         throw new Error('checkpoint requires --workspace, --store, and --key-file');
       }
       const key = await loadOwnerOnlyMasterKey(values['key-file']);
-      const captureAgent = resolveCaptureAgent(values.agent);
+      const captureAgent = await resolveCaptureAgent(values.agent);
       const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.workspace));
       const op = await journal.begin({
         kind: 'CHECKPOINT',
@@ -315,7 +357,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         throw new Error('restore requires --checkpoint, --target, --store, and --key-file');
       }
       const key = await loadOwnerOnlyMasterKey(values['key-file']);
-      const restoreAgent = resolveRestoreAgent(values.agent, false);
+      const restoreAgent = await resolveRestoreAgent(values.agent, false);
       const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.target));
       const op = await journal.begin({
         kind: 'RESTORE',
@@ -352,8 +394,16 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         );
       }
       const key = await loadOwnerOnlyMasterKey(values['key-file']);
-      const captureAgent = resolveCaptureAgent(values.agent);
-      const restoreAgent = resolveRestoreAgent(values.agent, true);
+      const captureAgent = await resolveCaptureAgent(values.agent);
+      const restoreAgent = await resolveRestoreAgent(values.agent, true);
+      const resolvedTargetWs = path.resolve(values['target-workspace']);
+      try {
+        await access(resolvedTargetWs);
+        throw new Error(`Target workspace already exists: ${resolvedTargetWs}`);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+      }
+
       const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.workspace));
 
       const transport = new SshCliTransport({
@@ -372,6 +422,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         summary: `Handoff (${captureAgent.kind}) for ${wsKey}`,
       });
       const scratch = await mkdtemp(path.join(tmpdir(), 'router-cli-handoff-'));
+      let transferredToRemote = false;
       try {
         const stageStoreDir = path.join(scratch, 'stage-store');
         const recvStoreDir = path.join(scratch, 'recv-store');
@@ -387,6 +438,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
 
         const ciphertext = await readFile(path.join(stageStoreDir, `${manifest.checkpointId}.enc`));
         await transport.transferEncryptedCheckpoint(manifest.checkpointId, ciphertext);
+        transferredToRemote = true;
 
         const downloaded = await transport.readTransferredCheckpoint(manifest.checkpointId);
         await writeFile(path.join(recvStoreDir, `${manifest.checkpointId}.enc`), downloaded, {
@@ -397,7 +449,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         const recvStore = new LocalEncryptedStore(recvStoreDir, key);
         await restoreAgentCheckpoint({
           checkpointId: manifest.checkpointId,
-          targetWorkspace: values['target-workspace'],
+          targetWorkspace: resolvedTargetWs,
           store: recvStore,
           agent: restoreAgent,
         });
@@ -406,9 +458,13 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         io.stdout(JSON.stringify({ operation: completed, manifest }, null, 2));
         return 0;
       } catch (err) {
-        await journal
-          .markNeedsReconcile(op.operationId, 'CLI handoff failed during transfer or restore; reconcile before retry')
-          .catch(() => undefined);
+        if (transferredToRemote) {
+          await journal
+            .markNeedsReconcile(op.operationId, 'CLI handoff failed after remote spool transfer; reconcile before retry')
+            .catch(() => undefined);
+        } else {
+          await journal.abortUnfenced(op.operationId).catch(() => undefined);
+        }
         throw err;
       } finally {
         await rm(scratch, { recursive: true, force: true });

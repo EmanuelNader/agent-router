@@ -59,4 +59,38 @@ test('parses online Tailscale peers, strips trailing DNS dot, and scrubs node ke
   expect(() => parseTailscaleStatusJson(JSON.stringify({ BackendState: 'Stopped', Peer: {} }))).toThrow(
     /not running/i,
   );
+
+  const ipv6AndInvalidPeers = parseTailscaleStatusJson(
+    JSON.stringify({
+      BackendState: 'Running',
+      Peer: {
+        'nodekey:ipv6-only': {
+          HostName: 'v6-worker',
+          DNSName: '',
+          OS: 'linux',
+          TailscaleIPs: ['fd7a:115c:a1e0::99'],
+          Online: true,
+        },
+        'nodekey:bad-host': {
+          HostName: 'bad host with spaces',
+          DNSName: '',
+          OS: 'linux',
+          TailscaleIPs: [],
+          Online: true,
+        },
+      },
+    }),
+    { sshUser: 'agentrouter' },
+  );
+  expect(ipv6AndInvalidPeers).toEqual([
+    {
+      hostName: 'v6-worker',
+      dnsName: '',
+      tailscaleIps: ['fd7a:115c:a1e0::99'],
+      os: 'linux',
+      online: true,
+      relay: '',
+      recommendedSshTarget: 'agentrouter@[fd7a:115c:a1e0::99]',
+    },
+  ]);
 });
