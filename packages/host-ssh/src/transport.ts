@@ -1,6 +1,12 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { checkpointIdSchema } from '../../snapshots/src/store.js';
+
+const execFileAsync = promisify(execFile);
 
 const sshBaseOptions = ['-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=15'] as const;
 
@@ -20,6 +26,21 @@ function validatePort(port?: number): void {
   if (port !== undefined && (!Number.isInteger(port) || port < 1 || port > 65_535)) {
     throw new Error('Invalid SSH port: expected integer between 1 and 65535');
   }
+}
+
+export function validateRemotePosixDirectory(remoteDirectory: string): string {
+  if (
+    !path.posix.isAbsolute(remoteDirectory) ||
+    !/^\/[A-Za-z0-9._/-]+$/.test(remoteDirectory) ||
+    remoteDirectory.split('/').includes('..')
+  ) {
+    throw new Error('Remote directory must be a safe POSIX absolute path without traversal, colons, or metacharacters');
+  }
+  const normalized = path.posix.normalize(remoteDirectory).replace(/\/+$/, '');
+  if (!normalized || normalized === '/') {
+    throw new Error('Remote directory must not be filesystem root');
+  }
+  return normalized;
 }
 
 export function buildSshArgs(target: string, remoteCommand: string[], port?: number): string[] {
@@ -60,6 +81,29 @@ export function buildScpUploadArgs(
   ];
 }
 
+export function buildScpDownloadArgs(
+  target: string,
+  remoteArchivePath: string,
+  localArchivePath: string,
+  port?: number,
+): string[] {
+  const checkedTarget = validateSshTarget(target);
+  validatePort(port);
+  if (!path.posix.isAbsolute(remoteArchivePath) || /[\s\r\n\0:]/.test(remoteArchivePath)) {
+    throw new Error('Remote archive path must be a safe POSIX absolute path without colons or whitespace');
+  }
+  if (!path.isAbsolute(localArchivePath) || /[\r\n\0]/.test(localArchivePath)) {
+    throw new Error('Local archive path must be an absolute path');
+  }
+  return [
+    ...sshBaseOptions,
+    ...(port !== undefined ? ['-P', String(port)] : []),
+    '--',
+    `${checkedTarget}:${remoteArchivePath}`,
+    localArchivePath,
+  ];
+}
+
 export interface HostTransport {
   transferEncryptedCheckpoint(checkpointId: string, encryptedBytes: Buffer): Promise<void>;
   readTransferredCheckpoint(checkpointId: string): Promise<Buffer>;
@@ -81,5 +125,128 @@ export class LoopbackHostTransport implements HostTransport {
   async readTransferredCheckpoint(checkpointId: string): Promise<Buffer> {
     const id = checkpointIdSchema.parse(checkpointId);
     return await readFile(path.join(this.spoolDirectory, `${id}.enc`));
+  }
+}
+
+export interface SshCliTransportOptions {
+  target: string;
+  remoteSpoolDirectory: string;
+  port?: number;
+  sshBinary?: string;
+  scpBinary?: string;
+  timeoutMs?: number;
+}
+
+export class SshCliTransport implements HostTransport {
+  private readonly target: string;
+  private readonly remoteSpoolDirectory: string;
+  private readonly port: number | undefined;
+  private readonly sshBinary: string;
+  private readonly scpBinary: string;
+  private readonly timeoutMs: number;
+
+  constructor(options: SshCliTransportOptions) {
+    this.target = validateSshTarget(options.target);
+    this.remoteSpoolDirectory = validateRemotePosixDirectory(options.remoteSpoolDirectory);
+    validatePort(options.port);
+    this.port = options.port;
+    this.sshBinary = options.sshBinary ?? 'ssh';
+    this.scpBinary = options.scpBinary ?? 'scp';
+    this.timeoutMs = options.timeoutMs ?? 60_000;
+  }
+
+  async runRemoteCommand(remoteCommand: string[]): Promise<{ stdout: string }> {
+    const args = buildSshArgs(this.target, remoteCommand, this.port);
+    try {
+      const { stdout } = await execFileAsync(this.sshBinary, args, {
+        timeout: this.timeoutMs,
+        maxBuffer: 8 * 1024 * 1024,
+      });
+      return { stdout };
+    } catch (err) {
+      const code = typeof (err as { code?: unknown })?.code === 'number' ? (err as { code: number }).code : undefined;
+      const sanitized = new Error(`SSH remote command "${remoteCommand[0] ?? 'unknown'}" failed`) as NodeJS.ErrnoException & {
+        exitCode?: number;
+      };
+      if (code !== undefined) sanitized.exitCode = code;
+      throw sanitized;
+    }
+  }
+
+  async transferEncryptedCheckpoint(checkpointId: string, encryptedBytes: Buffer): Promise<void> {
+    const id = checkpointIdSchema.parse(checkpointId);
+    const remoteFinalPath = path.posix.join(this.remoteSpoolDirectory, `${id}.enc`);
+    const remoteTempPath = path.posix.join(this.remoteSpoolDirectory, `.${id}.${randomBytes(8).toString('hex')}.tmp`);
+
+    await this.runRemoteCommand(['mkdir', '-m', '0700', '-p', this.remoteSpoolDirectory]);
+    try {
+      await this.runRemoteCommand(['test', '!', '-e', remoteFinalPath]);
+    } catch (err) {
+      if ((err as { exitCode?: number }).exitCode === 1) {
+        const exists = new Error(`Checkpoint already exists on remote host: ${id}`) as NodeJS.ErrnoException;
+        exists.code = 'EEXIST';
+        throw exists;
+      }
+      throw err;
+    }
+
+    const scratch = await mkdtemp(path.join(tmpdir(), 'router-scp-up-'));
+    let uploadedTemp = false;
+    try {
+      await chmod(scratch, 0o700);
+      const localStagingPath = path.join(scratch, `${id}.enc`);
+      await writeFile(localStagingPath, encryptedBytes, { mode: 0o600, flag: 'wx' });
+
+      const scpArgs = buildScpUploadArgs(localStagingPath, this.target, remoteTempPath, this.port);
+      try {
+        await execFileAsync(this.scpBinary, scpArgs, {
+          timeout: this.timeoutMs,
+          maxBuffer: 8 * 1024 * 1024,
+        });
+        uploadedTemp = true;
+      } catch {
+        throw new Error('SCP checkpoint upload failed');
+      }
+
+      await this.runRemoteCommand(['chmod', '0600', remoteTempPath]);
+      try {
+        await this.runRemoteCommand(['ln', remoteTempPath, remoteFinalPath]);
+      } catch (err) {
+        if ((err as { exitCode?: number }).exitCode === 1) {
+          const exists = new Error(`Checkpoint already exists on remote host: ${id}`) as NodeJS.ErrnoException;
+          exists.code = 'EEXIST';
+          throw exists;
+        }
+        throw err;
+      }
+    } finally {
+      if (uploadedTemp) {
+        await this.runRemoteCommand(['rm', '-f', remoteTempPath]).catch(() => undefined);
+      }
+      await rm(scratch, { recursive: true, force: true });
+    }
+  }
+
+  async readTransferredCheckpoint(checkpointId: string): Promise<Buffer> {
+    const id = checkpointIdSchema.parse(checkpointId);
+    const remoteFinalPath = path.posix.join(this.remoteSpoolDirectory, `${id}.enc`);
+    const scratch = await mkdtemp(path.join(tmpdir(), 'router-scp-down-'));
+    try {
+      await chmod(scratch, 0o700);
+      const localPath = path.join(scratch, `${id}.enc`);
+      const scpArgs = buildScpDownloadArgs(this.target, remoteFinalPath, localPath, this.port);
+      try {
+        await execFileAsync(this.scpBinary, scpArgs, {
+          timeout: this.timeoutMs,
+          maxBuffer: 8 * 1024 * 1024,
+        });
+      } catch {
+        throw new Error('SCP checkpoint download failed');
+      }
+      await chmod(localPath, 0o600);
+      return await readFile(localPath);
+    } finally {
+      await rm(scratch, { recursive: true, force: true });
+    }
   }
 }
