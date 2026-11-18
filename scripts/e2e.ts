@@ -28,6 +28,8 @@ import {
   InMemoryOciComputeGateway,
   OciWorkerProvisioner,
 } from '../packages/cloud-oci/src/provider.js';
+import { buildWorkerBootstrapScript } from '../packages/cloud-oci/src/cloud-init.js';
+import { isDockerImageAvailable, runLinuxWorkerContainerCheck } from '../packages/cloud-oci/src/linux-guest.js';
 import { evaluateOciPaygGuardrails, guardrailReportSchema } from '../packages/cloud-readiness/src/oci-guardrails.js';
 import { inspectionSchema } from '../packages/cloud-readiness/src/oci-report.js';
 import { startEphemeralSshd } from '../packages/host-ssh/src/ephemeral-sshd.js';
@@ -361,11 +363,30 @@ try {
     verifiedAgentAdapters.push('claude-code');
   }
 
+  let linuxGuestVerified: string | null = null;
+  if (isDockerImageAvailable('ubuntu:24.04')) {
+    const linuxCheckWs = join(realRunRoot, 'linux-guest-ws');
+    await mkdir(join(linuxCheckWs, 'scripts'), { recursive: true, mode: 0o700 });
+    await writeFile(
+      join(linuxCheckWs, 'scripts/probe.sh'),
+      '#!/bin/sh\nset -eu\nprintf "%s/%s\\n" "$(uname -s)" "$(uname -m)" > linux-output.txt\n',
+      { mode: 0o755 },
+    );
+    const linuxRes = await runLinuxWorkerContainerCheck({
+      image: 'ubuntu:24.04',
+      bootstrapScript: buildWorkerBootstrapScript('2.2.7'),
+      hostWorkspaceDir: linuxCheckWs,
+    });
+    assert.equal(linuxRes.spoolStat, '700:agentrouter:agentrouter');
+    linuxGuestVerified = linuxRes.probeOutput;
+  }
+
   console.log(
     JSON.stringify(
       {
         status: 'E2E_VERIFIED',
         verifiedAgentAdapters,
+        linuxGuestVerified,
         daemonsExercised: ['opencode@2.2.7', 'git', 'openssh-sshd', 'ssh', 'scp', 'restic-sftp'],
         allowanceTrigger: migrationResult.triggerReasons,
         skippedCapacityTargets: migrationResult.skippedTargets,

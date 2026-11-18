@@ -28,12 +28,12 @@
 | `packages/agent-opencode/` | Pinned OpenCode `2.2.7` isolated server, v2 HTTP client, settled-history checks, quiescing, and export/import (*implemented*) |
 | `packages/agent-codex/` | Isolated `CODEX_HOME` `codex app-server --stdio` client, settled `rollout-*.jsonl` export, and cross-host `cwd` cold-resume relocation (*implemented — [05-multi-agent-adapters.md](../evidence/05-multi-agent-adapters.md)*) |
 | `packages/agent-claude-code/` | Isolated `CLAUDE_CONFIG_DIR` project-slug encoder, `.jsonl` `cwd` relocation, and live `claude` project-store verification (*implemented — [05-multi-agent-adapters.md](../evidence/05-multi-agent-adapters.md)*) |
-| `packages/cloud-readiness/` | Read-only OCI/AWS inspection, local OCI key/config setup, pure A1 quota previews, and PAYG-safe guardrail checks (*implemented — Milestone 0*) |
-| `packages/snapshots/` | Versioned checkpoint manifests, quiesced session + workspace capture, AES-256-GCM / `restic` encryption, and remote SFTP/OCI-S3/R2/AWS-S3 backend builders (*implemented — Milestones 1–2*) |
-| `packages/host-ssh/` | Hardened OpenSSH/SCP argv builders, live `SshCliTransport`, loopback spool, and fenced cross-host workspace + session handoffs (`handoffWorkspace`) (*implemented — Milestone 2*) |
-| `packages/cloud-oci/` | Locked-down `#cloud-config` renderer (SHA-256 verified Node 24), PAYG-guarded `VM.Standard.A1.Flex` provisioner, crash reconciliation, fencing, and zero-remnant teardown (*implemented — Milestone 3*) |
+| `packages/cloud-readiness/` | Read-only OCI/AWS inspection, local OCI key/config setup, OCI PAYG-safe guardrails, GCP `e2-micro` Always Free guardrails, and AWS Free Plan + GitHub Codespaces quota monitors (*implemented — Milestones 0 & v0.2*) |
+| `packages/snapshots/` | Versioned `v1`/`v2` polymorphic checkpoint manifests (`none`, `opencode`, `codex-cli`, `claude-code`), AES-256-GCM / `restic` encryption, and remote SFTP/OCI-S3/R2/AWS-S3 backend builders (*implemented — Milestones 1–2 & v0.2*) |
+| `packages/host-ssh/` | Hardened OpenSSH/SCP argv builders, live `SshCliTransport`, Tailscale peer discovery (`tailscale.ts`), remote pairing (`pairing.ts`), and fenced cross-host handoffs (*implemented — Milestone 2 & v0.2*) |
+| `packages/cloud-oci/` | Locked-down `#cloud-config` renderer (SHA-256 verified Node 24, verified on `ubuntu:24.04` `linux/aarch64`), PAYG-guarded `VM.Standard.A1.Flex` provisioner, crash reconciliation, fencing, and zero-remnant teardown (*implemented — Milestone 3 & v0.2*) |
 | `packages/cloud-hetzner/` | Zero-inbound firewall-checked Hetzner Cloud `CAX11` ARM64 fallback provisioner (`location`, IPv6-only default, label crash reconciliation, zero-remnant teardown) (*implemented — Milestone 4*) |
-| `packages/cli/` | Atomic local operation journal (`OperationJournal`), allowance-aware `migrateWorkspace`, and standalone `v0.1.0` `bin/agent-router.mjs` CLI (*implemented — Milestones 3–4*) |
+| `packages/cli/` | Atomic local operation journal (`OperationJournal`), allowance-aware `migrateWorkspace`, and standalone `v0.2.0` `bin/agent-router.mjs` CLI (*implemented — Milestones 3–4 & v0.2*) |
 | `scripts/` | Reproducible verification and inspection entrypoints (*implemented*) |
 | `docs/evidence/` | Sanitized compatibility results and milestone gate receipts |
 
