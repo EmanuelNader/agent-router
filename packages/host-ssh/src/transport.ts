@@ -10,6 +10,48 @@ const execFileAsync = promisify(execFile);
 
 const sshBaseOptions = ['-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=15'] as const;
 
+export interface SshConnectionOptions {
+  port?: number;
+  identityFile?: string;
+  knownHostsFile?: string;
+}
+
+function validateSafeLocalAuthFile(filePath: string, label: string): string {
+  if (!path.isAbsolute(filePath) || /[\s\r\n\0"']/.test(filePath)) {
+    throw new Error(`Invalid SSH ${label}: expected absolute path without whitespace or quotes`);
+  }
+  return filePath;
+}
+
+function normalizeConnectionOptions(portOrOptions?: number | SshConnectionOptions): SshConnectionOptions {
+  if (typeof portOrOptions === 'number') {
+    validatePort(portOrOptions);
+    return { port: portOrOptions };
+  }
+  const opts = portOrOptions ?? {};
+  validatePort(opts.port);
+  return {
+    ...(opts.port !== undefined ? { port: opts.port } : {}),
+    ...(opts.identityFile !== undefined
+      ? { identityFile: validateSafeLocalAuthFile(opts.identityFile, 'identityFile') }
+      : {}),
+    ...(opts.knownHostsFile !== undefined
+      ? { knownHostsFile: validateSafeLocalAuthFile(opts.knownHostsFile, 'knownHostsFile') }
+      : {}),
+  };
+}
+
+function buildAuthOptionFlags(opts: SshConnectionOptions): string[] {
+  const flags: string[] = [];
+  if (opts.identityFile !== undefined) {
+    flags.push('-o', 'IdentitiesOnly=yes', '-i', opts.identityFile);
+  }
+  if (opts.knownHostsFile !== undefined) {
+    flags.push('-o', `UserKnownHostsFile=${opts.knownHostsFile}`);
+  }
+  return flags;
+}
+
 export function validateSshTarget(target: string): string {
   if (
     !target ||
@@ -43,15 +85,20 @@ export function validateRemotePosixDirectory(remoteDirectory: string): string {
   return normalized;
 }
 
-export function buildSshArgs(target: string, remoteCommand: string[], port?: number): string[] {
+export function buildSshArgs(
+  target: string,
+  remoteCommand: string[],
+  portOrOptions?: number | SshConnectionOptions,
+): string[] {
   const checkedTarget = validateSshTarget(target);
-  validatePort(port);
+  const conn = normalizeConnectionOptions(portOrOptions);
   if (remoteCommand.length === 0 || remoteCommand.some(arg => !arg || arg.includes('\0'))) {
     throw new Error('Invalid remote SSH command vector');
   }
   return [
     ...sshBaseOptions,
-    ...(port !== undefined ? ['-p', String(port)] : []),
+    ...buildAuthOptionFlags(conn),
+    ...(conn.port !== undefined ? ['-p', String(conn.port)] : []),
     '--',
     checkedTarget,
     ...remoteCommand,
@@ -62,10 +109,10 @@ export function buildScpUploadArgs(
   localArchivePath: string,
   target: string,
   remoteArchivePath: string,
-  port?: number,
+  portOrOptions?: number | SshConnectionOptions,
 ): string[] {
   const checkedTarget = validateSshTarget(target);
-  validatePort(port);
+  const conn = normalizeConnectionOptions(portOrOptions);
   if (!path.isAbsolute(localArchivePath) || /[\r\n\0]/.test(localArchivePath)) {
     throw new Error('Local archive path must be an absolute path');
   }
@@ -74,7 +121,8 @@ export function buildScpUploadArgs(
   }
   return [
     ...sshBaseOptions,
-    ...(port !== undefined ? ['-P', String(port)] : []),
+    ...buildAuthOptionFlags(conn),
+    ...(conn.port !== undefined ? ['-P', String(conn.port)] : []),
     '--',
     localArchivePath,
     `${checkedTarget}:${remoteArchivePath}`,
@@ -85,10 +133,10 @@ export function buildScpDownloadArgs(
   target: string,
   remoteArchivePath: string,
   localArchivePath: string,
-  port?: number,
+  portOrOptions?: number | SshConnectionOptions,
 ): string[] {
   const checkedTarget = validateSshTarget(target);
-  validatePort(port);
+  const conn = normalizeConnectionOptions(portOrOptions);
   if (!path.posix.isAbsolute(remoteArchivePath) || /[\s\r\n\0:]/.test(remoteArchivePath)) {
     throw new Error('Remote archive path must be a safe POSIX absolute path without colons or whitespace');
   }
@@ -97,7 +145,8 @@ export function buildScpDownloadArgs(
   }
   return [
     ...sshBaseOptions,
-    ...(port !== undefined ? ['-P', String(port)] : []),
+    ...buildAuthOptionFlags(conn),
+    ...(conn.port !== undefined ? ['-P', String(conn.port)] : []),
     '--',
     `${checkedTarget}:${remoteArchivePath}`,
     localArchivePath,
@@ -132,6 +181,8 @@ export interface SshCliTransportOptions {
   target: string;
   remoteSpoolDirectory: string;
   port?: number;
+  identityFile?: string;
+  knownHostsFile?: string;
   sshBinary?: string;
   scpBinary?: string;
   timeoutMs?: number;
@@ -140,7 +191,7 @@ export interface SshCliTransportOptions {
 export class SshCliTransport implements HostTransport {
   private readonly target: string;
   private readonly remoteSpoolDirectory: string;
-  private readonly port: number | undefined;
+  private readonly connOptions: SshConnectionOptions;
   private readonly sshBinary: string;
   private readonly scpBinary: string;
   private readonly timeoutMs: number;
@@ -148,17 +199,28 @@ export class SshCliTransport implements HostTransport {
   constructor(options: SshCliTransportOptions) {
     this.target = validateSshTarget(options.target);
     this.remoteSpoolDirectory = validateRemotePosixDirectory(options.remoteSpoolDirectory);
-    validatePort(options.port);
-    this.port = options.port;
+    this.connOptions = normalizeConnectionOptions({
+      ...(options.port !== undefined ? { port: options.port } : {}),
+      ...(options.identityFile !== undefined ? { identityFile: options.identityFile } : {}),
+      ...(options.knownHostsFile !== undefined ? { knownHostsFile: options.knownHostsFile } : {}),
+    });
     this.sshBinary = options.sshBinary ?? 'ssh';
     this.scpBinary = options.scpBinary ?? 'scp';
     this.timeoutMs = options.timeoutMs ?? 60_000;
   }
 
+  private subprocessEnv(): NodeJS.ProcessEnv {
+    if (this.connOptions.identityFile !== undefined) {
+      return { ...process.env, SSH_AUTH_SOCK: '' };
+    }
+    return process.env;
+  }
+
   async runRemoteCommand(remoteCommand: string[]): Promise<{ stdout: string }> {
-    const args = buildSshArgs(this.target, remoteCommand, this.port);
+    const args = buildSshArgs(this.target, remoteCommand, this.connOptions);
     try {
       const { stdout } = await execFileAsync(this.sshBinary, args, {
+        env: this.subprocessEnv(),
         timeout: this.timeoutMs,
         maxBuffer: 8 * 1024 * 1024,
       });
@@ -197,9 +259,10 @@ export class SshCliTransport implements HostTransport {
       const localStagingPath = path.join(scratch, `${id}.enc`);
       await writeFile(localStagingPath, encryptedBytes, { mode: 0o600, flag: 'wx' });
 
-      const scpArgs = buildScpUploadArgs(localStagingPath, this.target, remoteTempPath, this.port);
+      const scpArgs = buildScpUploadArgs(localStagingPath, this.target, remoteTempPath, this.connOptions);
       try {
         await execFileAsync(this.scpBinary, scpArgs, {
+          env: this.subprocessEnv(),
           timeout: this.timeoutMs,
           maxBuffer: 8 * 1024 * 1024,
         });
@@ -234,9 +297,10 @@ export class SshCliTransport implements HostTransport {
     try {
       await chmod(scratch, 0o700);
       const localPath = path.join(scratch, `${id}.enc`);
-      const scpArgs = buildScpDownloadArgs(this.target, remoteFinalPath, localPath, this.port);
+      const scpArgs = buildScpDownloadArgs(this.target, remoteFinalPath, localPath, this.connOptions);
       try {
         await execFileAsync(this.scpBinary, scpArgs, {
+          env: this.subprocessEnv(),
           timeout: this.timeoutMs,
           maxBuffer: 8 * 1024 * 1024,
         });

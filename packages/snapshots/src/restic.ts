@@ -17,6 +17,8 @@ export type ResticRemoteInput =
       target: string;
       path: string;
       port?: number;
+      identityFile?: string;
+      knownHostsFile?: string;
     }
   | {
       kind: 'oci-s3';
@@ -114,6 +116,13 @@ function validateResticOption(option: string): string {
   return option;
 }
 
+function validateSftpLocalAuthFile(filePath: string, label: string): string {
+  if (!path.isAbsolute(filePath) || !/^[A-Za-z0-9._/-]+$/.test(filePath)) {
+    throw new Error(`Invalid SFTP ${label}: expected safe absolute path without spaces or quotes`);
+  }
+  return filePath;
+}
+
 export function buildResticRemoteConfig(input: ResticRemoteInput): ResticRemoteConfig {
   if (input.kind === 'sftp') {
     const target = validateSftpTarget(input.target);
@@ -128,9 +137,18 @@ export function buildResticRemoteConfig(input: ResticRemoteInput): ResticRemoteC
           : `sftp://${target}:${input.port}/${checkedPath.normalized}`
         : `sftp:${target}:${checkedPath.normalized}`;
 
+    const extraArgs: string[] = [];
+    if (input.identityFile !== undefined) {
+      extraArgs.push('-o', 'IdentitiesOnly=yes', '-i', validateSftpLocalAuthFile(input.identityFile, 'identityFile'));
+    }
+    if (input.knownHostsFile !== undefined) {
+      extraArgs.push('-o', `UserKnownHostsFile=${validateSftpLocalAuthFile(input.knownHostsFile, 'knownHostsFile')}`);
+    }
+    const sftpOption = extraArgs.length > 0 ? `${sftpDefaultOption} ${extraArgs.join(' ')}` : sftpDefaultOption;
+
     return {
       repository,
-      options: [sftpDefaultOption],
+      options: [sftpOption],
     };
   }
 
