@@ -11,7 +11,7 @@ test('compiles standalone dist/ build and executes bin/agent-router.mjs natively
     cwd: repoRoot,
     encoding: 'utf8',
   });
-  expect(versionOut.trim()).toBe('0.1.0');
+  expect(versionOut.trim()).toBe('0.2.0');
 
   const simOut = execFileSync(process.execPath, [binPath, 'migrate:simulate', '--workspace-key', 'ws-bin-check'], {
     cwd: repoRoot,

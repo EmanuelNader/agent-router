@@ -19,13 +19,20 @@ import { inspectOciGuardrails, type OciGuardrailReport } from '../../cloud-readi
 import { inspectOci } from '../../cloud-readiness/src/oci-inspect.js';
 import type { OciInspection } from '../../cloud-readiness/src/oci-report.js';
 import { createOciGuardrailSdkReader, createOciSdkReader } from '../../cloud-readiness/src/oci-sdk.js';
-import { LoopbackHostTransport } from '../../host-ssh/src/transport.js';
-import { captureCheckpoint, restoreCheckpoint } from '../../snapshots/src/checkpoint.js';
+import { pairingAgentKindSchema, runRemotePairingOverSsh } from '../../host-ssh/src/pairing.js';
+import { discoverTailscalePeers } from '../../host-ssh/src/tailscale.js';
+import { LoopbackHostTransport, SshCliTransport } from '../../host-ssh/src/transport.js';
+import {
+  captureAgentCheckpoint,
+  restoreAgentCheckpoint,
+  type CaptureAgentSpec,
+  type RestoreAgentSpec,
+} from '../../snapshots/src/checkpoint.js';
 import { LocalEncryptedStore } from '../../snapshots/src/store.js';
 import { OperationJournal } from './journal.js';
 import { migrateWorkspace } from './migrate.js';
 
-export const ROUTER_CLI_VERSION = '0.1.0';
+export const ROUTER_CLI_VERSION = '0.2.0';
 
 export interface RouterCliIo {
   stdout: (line: string) => void;
@@ -43,11 +50,14 @@ General:
   --version | version     Print Agent Router CLI version (${ROUTER_CLI_VERSION})
   --help | help           Show this command reference
 
-Local journal, portable checkpoints & cross-host migration:
+Local journal, Tailscale peers, pairing, checkpoints & handoffs:
   status                  [--journal-dir .work/router-journal]
   reconcile               --operation op_<hex> --summary "<reason>" [--journal-dir .work/router-journal]
-  checkpoint              --workspace <dir> --store <dir> --key-file <0600-path> [--workspace-key <name>]
-  restore                 --checkpoint chk_<hex> --target <dir> --store <dir> --key-file <0600-path>
+  peers                   [--status-file <json>] [--include-offline] [--ssh-user agentrouter]
+  pair                    --ssh-target <user@host> --agent <opencode|codex-cli|claude-code> [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--session-name <name>]
+  checkpoint              --workspace <dir> --store <dir> --key-file <0600-path> [--agent <none|codex-cli|claude-code>] [--codex-home <dir>] [--claude-config-dir <dir>]
+  restore                 --checkpoint chk_<hex> --target <dir> --store <dir> --key-file <0600-path> [--agent <none|codex-cli|claude-code>] [--codex-home <dir>] [--claude-config-dir <dir>]
+  handoff                 --workspace <dir> --target-workspace <dir> --ssh-target <user@host> --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|codex-cli|claude-code>]
   migrate:simulate        [--workspace-key ws-sim]
 
 Cloud allowance & worker lifecycle commands:
@@ -117,11 +127,26 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         summary: { type: 'string' },
         workspace: { type: 'string' },
         target: { type: 'string' },
+        'target-workspace': { type: 'string' },
         store: { type: 'string' },
         'key-file': { type: 'string' },
         'token-file': { type: 'string' },
         checkpoint: { type: 'string' },
         'workspace-key': { type: 'string' },
+        agent: { type: 'string', default: 'none' },
+        'codex-home': { type: 'string' },
+        'target-codex-home': { type: 'string' },
+        'claude-config-dir': { type: 'string' },
+        'target-claude-config-dir': { type: 'string' },
+        'status-file': { type: 'string' },
+        'include-offline': { type: 'boolean' },
+        'ssh-user': { type: 'string' },
+        'ssh-target': { type: 'string' },
+        'ssh-port': { type: 'string' },
+        'identity-file': { type: 'string' },
+        'known-hosts-file': { type: 'string' },
+        'remote-spool': { type: 'string' },
+        'session-name': { type: 'string' },
         report: { type: 'string' },
         demo: { type: 'boolean' },
         'min-credit-usd': { type: 'string', default: '5' },
@@ -174,24 +199,97 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       return 0;
     }
 
+    const resolveCaptureAgent = (agentFlag: string): CaptureAgentSpec => {
+      if (agentFlag === 'none') return { kind: 'none' };
+      if (agentFlag === 'codex-cli') {
+        if (!values['codex-home']) throw new Error('--agent codex-cli requires --codex-home');
+        return { kind: 'codex-cli', codexHome: values['codex-home'] };
+      }
+      if (agentFlag === 'claude-code') {
+        if (!values['claude-config-dir']) throw new Error('--agent claude-code requires --claude-config-dir');
+        return { kind: 'claude-code', claudeConfigDir: values['claude-config-dir'] };
+      }
+      throw new Error(`Unsupported CLI checkpoint agent "${agentFlag}" (expected none, codex-cli, or claude-code)`);
+    };
+
+    const resolveRestoreAgent = (agentFlag: string, forHandoff = false): RestoreAgentSpec => {
+      if (agentFlag === 'none') return { kind: 'none' };
+      if (agentFlag === 'codex-cli') {
+        const dstHome = forHandoff ? values['target-codex-home'] : values['codex-home'];
+        if (!dstHome) {
+          throw new Error(
+            forHandoff
+              ? '--agent codex-cli handoff requires --target-codex-home'
+              : '--agent codex-cli restore requires --codex-home',
+          );
+        }
+        return { kind: 'codex-cli', targetCodexHome: dstHome };
+      }
+      if (agentFlag === 'claude-code') {
+        const dstCfg = forHandoff ? values['target-claude-config-dir'] : values['claude-config-dir'];
+        if (!dstCfg) {
+          throw new Error(
+            forHandoff
+              ? '--agent claude-code handoff requires --target-claude-config-dir'
+              : '--agent claude-code restore requires --claude-config-dir',
+          );
+        }
+        return { kind: 'claude-code', targetClaudeConfigDir: dstCfg };
+      }
+      throw new Error(`Unsupported CLI restore agent "${agentFlag}" (expected none, codex-cli, or claude-code)`);
+    };
+
+    if (subcommand === 'peers') {
+      const peers = await discoverTailscalePeers({
+        ...(values['include-offline'] !== undefined ? { includeOffline: values['include-offline'] } : {}),
+        ...(values['ssh-user'] !== undefined ? { sshUser: values['ssh-user'] } : {}),
+        ...(values['status-file'] !== undefined
+          ? { runStatusJson: async () => await readFile(path.resolve(values['status-file']!), 'utf8') }
+          : {}),
+      });
+      io.stdout(JSON.stringify({ peerCount: peers.length, peers }, null, 2));
+      return 0;
+    }
+
+    if (subcommand === 'pair') {
+      if (!values['ssh-target']) {
+        throw new Error('pair requires --ssh-target and --agent <opencode|codex-cli|claude-code>');
+      }
+      const pairingAgent = pairingAgentKindSchema.parse(values.agent);
+      const transport = new SshCliTransport({
+        target: values['ssh-target'],
+        remoteSpoolDirectory: values['remote-spool'] ?? '/var/lib/agent-router/spool',
+        ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),
+        ...(values['identity-file'] !== undefined ? { identityFile: path.resolve(values['identity-file']) } : {}),
+        ...(values['known-hosts-file'] !== undefined
+          ? { knownHostsFile: path.resolve(values['known-hosts-file']) }
+          : {}),
+      });
+      const paired = await runRemotePairingOverSsh(transport, pairingAgent, {
+        ...(values['session-name'] !== undefined ? { sessionName: values['session-name'] } : {}),
+      });
+      io.stdout(JSON.stringify(paired, null, 2));
+      return 0;
+    }
+
     if (subcommand === 'checkpoint') {
       if (!values.workspace || !values.store || !values['key-file']) {
         throw new Error('checkpoint requires --workspace, --store, and --key-file');
       }
       const key = await loadOwnerOnlyMasterKey(values['key-file']);
+      const captureAgent = resolveCaptureAgent(values.agent);
       const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.workspace));
       const op = await journal.begin({
         kind: 'CHECKPOINT',
         workspaceKey: wsKey,
-        summary: `Capturing encrypted checkpoint for ${wsKey}`,
+        summary: `Capturing encrypted checkpoint (${captureAgent.kind}) for ${wsKey}`,
       });
       try {
         const store = new LocalEncryptedStore(values.store, key);
-        const manifest = await captureCheckpoint({
+        const manifest = await captureAgentCheckpoint({
           workspace: values.workspace,
           store,
-          exportSessions: async () => [],
-          quiesceSource: async () => {},
+          agent: captureAgent,
         });
         await journal.complete(op.operationId, `Captured checkpoint ${manifest.checkpointId}`);
         io.stdout(JSON.stringify({ operationId: op.operationId, ...manifest }, null, 2));
@@ -207,6 +305,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         throw new Error('restore requires --checkpoint, --target, --store, and --key-file');
       }
       const key = await loadOwnerOnlyMasterKey(values['key-file']);
+      const restoreAgent = resolveRestoreAgent(values.agent, false);
       const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.target));
       const op = await journal.begin({
         kind: 'RESTORE',
@@ -215,11 +314,11 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       });
       try {
         const store = new LocalEncryptedStore(values.store, key);
-        const manifest = await restoreCheckpoint({
+        const manifest = await restoreAgentCheckpoint({
           checkpointId: values.checkpoint,
           targetWorkspace: values.target,
           store,
-          importSession: async transfer => transfer.info.id,
+          agent: restoreAgent,
         });
         await journal.complete(op.operationId, `Restored checkpoint ${manifest.checkpointId}`);
         io.stdout(JSON.stringify({ operationId: op.operationId, ...manifest }, null, 2));
@@ -227,6 +326,82 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       } catch (err) {
         await journal.abortUnfenced(op.operationId).catch(() => undefined);
         throw err;
+      }
+    }
+
+    if (subcommand === 'handoff') {
+      if (
+        !values.workspace ||
+        !values['target-workspace'] ||
+        !values['ssh-target'] ||
+        !values['remote-spool'] ||
+        !values['key-file']
+      ) {
+        throw new Error(
+          'handoff requires --workspace, --target-workspace, --ssh-target, --remote-spool, and --key-file',
+        );
+      }
+      const key = await loadOwnerOnlyMasterKey(values['key-file']);
+      const captureAgent = resolveCaptureAgent(values.agent);
+      const restoreAgent = resolveRestoreAgent(values.agent, true);
+      const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.workspace));
+
+      const transport = new SshCliTransport({
+        target: values['ssh-target'],
+        remoteSpoolDirectory: values['remote-spool'],
+        ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),
+        ...(values['identity-file'] !== undefined ? { identityFile: path.resolve(values['identity-file']) } : {}),
+        ...(values['known-hosts-file'] !== undefined
+          ? { knownHostsFile: path.resolve(values['known-hosts-file']) }
+          : {}),
+      });
+
+      const op = await journal.begin({
+        kind: 'HANDOFF',
+        workspaceKey: wsKey,
+        summary: `Handoff (${captureAgent.kind}) for ${wsKey}`,
+      });
+      const scratch = await mkdtemp(path.join(tmpdir(), 'router-cli-handoff-'));
+      try {
+        const stageStoreDir = path.join(scratch, 'stage-store');
+        const recvStoreDir = path.join(scratch, 'recv-store');
+        await mkdir(stageStoreDir, { recursive: true, mode: 0o700 });
+        await mkdir(recvStoreDir, { recursive: true, mode: 0o700 });
+
+        const stageStore = new LocalEncryptedStore(stageStoreDir, key);
+        const manifest = await captureAgentCheckpoint({
+          workspace: values.workspace,
+          store: stageStore,
+          agent: captureAgent,
+        });
+
+        const ciphertext = await readFile(path.join(stageStoreDir, `${manifest.checkpointId}.enc`));
+        await transport.transferEncryptedCheckpoint(manifest.checkpointId, ciphertext);
+
+        const downloaded = await transport.readTransferredCheckpoint(manifest.checkpointId);
+        await writeFile(path.join(recvStoreDir, `${manifest.checkpointId}.enc`), downloaded, {
+          mode: 0o600,
+          flag: 'wx',
+        });
+
+        const recvStore = new LocalEncryptedStore(recvStoreDir, key);
+        await restoreAgentCheckpoint({
+          checkpointId: manifest.checkpointId,
+          targetWorkspace: values['target-workspace'],
+          store: recvStore,
+          agent: restoreAgent,
+        });
+
+        const completed = await journal.complete(op.operationId, `Completed handoff ${manifest.checkpointId}`);
+        io.stdout(JSON.stringify({ operation: completed, manifest }, null, 2));
+        return 0;
+      } catch (err) {
+        await journal
+          .markNeedsReconcile(op.operationId, 'CLI handoff failed during transfer or restore; reconcile before retry')
+          .catch(() => undefined);
+        throw err;
+      } finally {
+        await rm(scratch, { recursive: true, force: true });
       }
     }
 

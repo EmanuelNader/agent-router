@@ -1,6 +1,6 @@
 {
   "name": "agent-router",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Portable coding-agent workspaces with allowance-aware cloud provisioning and recovery.",

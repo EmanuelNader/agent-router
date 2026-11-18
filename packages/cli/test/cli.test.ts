@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { runRouterCli } from '../src/cli.js';
 import { OperationJournal } from '../src/journal.js';
+import { encodeClaudeProjectSlug } from '../../agent-claude-code/src/adapter.js';
+import { isLocalSshdAvailable, startEphemeralSshd } from '../../host-ssh/src/ephemeral-sshd.js';
 
 const tempDirs: string[] = [];
 afterEach(async () => {
@@ -141,7 +143,7 @@ test('router CLI supports --version, aws:allowance, hetzner:simulate-lifecycle, 
 
   const verIo = captureIo();
   expect(await runRouterCli(['--version'], verIo.io)).toBe(0);
-  expect(verIo.out.join('\n').trim()).toBe('0.1.0');
+  expect(verIo.out.join('\n').trim()).toBe('0.2.0');
 
   const awsReportPath = join(root, 'aws-low.json');
   await writeFile(
@@ -196,3 +198,110 @@ test('router CLI supports --version, aws:allowance, hetzner:simulate-lifecycle, 
   expect(badHetznerIo.err.join('\n')).toMatch(/owner-only|0600/i);
   expect(badHetznerIo.err.join('\n')).not.toContain('dummy-token-value');
 });
+
+test('router CLI supports peers --status-file, polymorphic --agent checkpoints, and live SSH handoff', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'router-cli-v02-'));
+  tempDirs.push(root);
+
+  const statusFile = join(root, 'tailscale-status.json');
+  await writeFile(
+    statusFile,
+    JSON.stringify({
+      BackendState: 'Running',
+      Peer: {
+        'nodekey:abc': {
+          HostName: 'worker-arm64',
+          DNSName: 'worker-arm64.tail01.ts.net.',
+          OS: 'linux',
+          TailscaleIPs: ['100.64.1.8'],
+          Online: true,
+          Relay: 'fra',
+        },
+      },
+    }),
+    { mode: 0o600 },
+  );
+  const peersIo = captureIo();
+  expect(await runRouterCli(['peers', '--status-file', statusFile], peersIo.io)).toBe(0);
+  expect(JSON.parse(peersIo.out.join('\n'))).toEqual({
+    peerCount: 1,
+    peers: [
+      {
+        hostName: 'worker-arm64',
+        dnsName: 'worker-arm64.tail01.ts.net',
+        tailscaleIps: ['100.64.1.8'],
+        os: 'linux',
+        online: true,
+        relay: 'fra',
+        recommendedSshTarget: 'agentrouter@worker-arm64.tail01.ts.net',
+      },
+    ],
+  });
+
+  // Live SSH handoff with Claude Code relocation when sshd is available
+  if (isLocalSshdAvailable()) {
+    const sshd = await startEphemeralSshd(join(root, 'sshd'));
+    try {
+      const srcWs = join(root, 'src.claude_ws');
+      const dstWs = join(root, 'dst.claude_ws');
+      await mkdir(srcWs, { recursive: true, mode: 0o700 });
+      await writeFile(join(srcWs, 'app.ts'), 'export const ok = true;\n', { mode: 0o600 });
+
+      const claudeA = join(root, 'claude-a');
+      const claudeB = join(root, 'claude-b');
+      const slugDirA = join(claudeA, 'projects', encodeClaudeProjectSlug(srcWs));
+      await mkdir(slugDirA, { recursive: true, mode: 0o700 });
+      const uuid = '44444444-5555-4666-8777-888888888888';
+      await writeFile(
+        join(slugDirA, `${uuid}.jsonl`),
+        `${JSON.stringify({ type: 'user', uuid: 'u1', sessionId: uuid, cwd: srcWs, message: { role: 'user', content: 'handoff' } })}\n`,
+        { mode: 0o600 },
+      );
+
+      const keyFile = join(root, 'handoff.key');
+      await writeFile(keyFile, randomBytes(32).toString('hex'), { mode: 0o600 });
+      await chmod(keyFile, 0o600);
+
+      const handoffIo = captureIo();
+      const code = await runRouterCli(
+        [
+          'handoff',
+          '--workspace',
+          srcWs,
+          '--target-workspace',
+          dstWs,
+          '--ssh-target',
+          `${sshd.username}@127.0.0.1`,
+          '--ssh-port',
+          String(sshd.port),
+          '--identity-file',
+          sshd.clientPrivateKeyPath,
+          '--known-hosts-file',
+          sshd.knownHostsPath,
+          '--remote-spool',
+          join(root, 'remote-spool'),
+          '--key-file',
+          keyFile,
+          '--agent',
+          'claude-code',
+          '--claude-config-dir',
+          claudeA,
+          '--target-claude-config-dir',
+          claudeB,
+          '--journal-dir',
+          join(root, 'journal'),
+        ],
+        handoffIo.io,
+      );
+      expect(code).toBe(0);
+      expect(await readFile(join(dstWs, 'app.ts'), 'utf8')).toBe('export const ok = true;\n');
+      const relocatedJsonl = await readFile(
+        join(claudeB, 'projects', encodeClaudeProjectSlug(dstWs), `${uuid}.jsonl`),
+        'utf8',
+      );
+      expect((JSON.parse(relocatedJsonl.trim()) as { cwd: string }).cwd).toBe(dstWs);
+    } finally {
+      await sshd.close();
+    }
+  }
+}, 20_000);
