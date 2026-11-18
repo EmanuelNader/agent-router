@@ -80,7 +80,7 @@ export function parseGitHubCodespacesBillingUsage(
       continue;
     }
 
-    const qty = item.grossQuantity ?? item.quantity ?? 0;
+    const qty = Math.max(item.grossQuantity ?? 0, item.quantity ?? 0);
     const normalizedSku = item.sku.trim().toLowerCase();
     const normalizedUnit = item.unitType.trim().toLowerCase();
 
@@ -90,7 +90,7 @@ export function parseGitHubCodespacesBillingUsage(
         usedCoreHours += qty * cores;
       } else if (normalizedUnit === 'minutes' || normalizedUnit === 'minute') {
         usedCoreHours += (qty / 60) * cores;
-      } else if (normalizedUnit === 'core-hours' || normalizedUnit === 'core_hours') {
+      } else if (normalizedUnit === 'core-hours' || normalizedUnit === 'core_hours' || normalizedUnit === 'corehours') {
         usedCoreHours += qty;
       } else {
         throw new Error(
@@ -104,14 +104,19 @@ export function parseGitHubCodespacesBillingUsage(
       if (
         normalizedUnit === 'gb-month' ||
         normalizedUnit === 'gb_month' ||
+        normalizedUnit === 'gbmonth' ||
+        normalizedUnit === 'gigabyte-month' ||
         normalizedUnit === 'gigabyte-months' ||
+        normalizedUnit === 'gigabytemonths' ||
         normalizedUnit === 'gigabytes'
       ) {
         usedStorageGbMonth += qty;
       } else if (
         normalizedUnit === 'gigabyte-hours' ||
+        normalizedUnit === 'gigabytehours' ||
         normalizedUnit === 'gb-hours' ||
-        normalizedUnit === 'gb_hours'
+        normalizedUnit === 'gb_hours' ||
+        normalizedUnit === 'gbhours'
       ) {
         usedStorageGbMonth += qty / hoursInBillingMonth;
       } else {

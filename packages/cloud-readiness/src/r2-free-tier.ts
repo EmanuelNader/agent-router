@@ -6,9 +6,9 @@ export const r2FreeTierSnapshotSchema = z.object({
   storedGbMonth: z.number().nonnegative(),
   monthlyClassAOps: z.number().int().nonnegative(),
   monthlyClassBOps: z.number().int().nonnegative(),
-  publicDevelopmentUrlEnabled: z.boolean().default(false),
+  publicDevelopmentUrlEnabled: z.boolean(),
 });
-export type R2FreeTierSnapshot = z.input<typeof r2FreeTierSnapshotSchema>;
+export type R2FreeTierSnapshot = z.infer<typeof r2FreeTierSnapshotSchema>;
 
 export interface EvaluateR2FreeTierOptions {
   maxStoredGbMonth?: number;
@@ -42,9 +42,19 @@ export function evaluateR2FreeTierGuardrails(
   const maxClassAOps = options.maxClassAOps ?? 850_000;
   const maxClassBOps = options.maxClassBOps ?? 8_500_000;
 
+  if (!Number.isFinite(maxStoredGbMonth) || maxStoredGbMonth < 0 || maxStoredGbMonth > 10) {
+    throw new Error('Invalid maxStoredGbMonth: must be between 0 and 10 GB');
+  }
+  if (!Number.isFinite(maxClassAOps) || maxClassAOps < 0 || maxClassAOps > 1_000_000) {
+    throw new Error('Invalid maxClassAOps: must be between 0 and 1,000,000');
+  }
+  if (!Number.isFinite(maxClassBOps) || maxClassBOps < 0 || maxClassBOps > 10_000_000) {
+    throw new Error('Invalid maxClassBOps: must be between 0 and 10,000,000');
+  }
+
   const blockers: string[] = [];
   const ageMs = now.getTime() - Date.parse(snapshot.observedAt);
-  if (ageMs > 15 * 60_000) blockers.push('STALE_R2_EVIDENCE');
+  if (!Number.isFinite(ageMs) || ageMs > 15 * 60_000) blockers.push('STALE_R2_EVIDENCE');
   if (ageMs < 0) blockers.push('FUTURE_R2_EVIDENCE');
 
   if (snapshot.storageClass !== 'STANDARD') {

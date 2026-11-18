@@ -62,6 +62,22 @@ test('parses GitHub 2026 Billing Usage Summary SKUs into Codespaces core-hours a
   const evaluation = evaluateCodespacesAllowance(snapshot, { now: fixedNow });
   expect(evaluation.decision).toBe('MIGRATE_NOW');
   expect(evaluation.reasons).toEqual(['LOW_CODESPACES_CORE_HOURS', 'HIGH_CODESPACES_STORAGE_USAGE']);
+
+  // Also verify d8, d16, d32 SKUs, PascalCase GigabyteHours, and Math.max(grossQuantity, quantity)
+  const highCoreSnapshot = parseGitHubCodespacesBillingUsage(
+    {
+      usageItems: [
+        { product: 'codespaces', sku: 'codespaces_compute_d8', unitType: 'hours', grossQuantity: 1 },
+        { product: 'codespaces', sku: 'codespaces_compute_d16', unitType: 'hours', grossQuantity: 0, quantity: 0.5 },
+        { product: 'codespaces', sku: 'codespaces_compute_d32', unitType: 'minutes', grossQuantity: 30 },
+        { product: 'codespaces', sku: 'codespaces_storage', unitType: 'GigabyteHours', grossQuantity: 720 },
+      ],
+    },
+    { observedAt: '2026-11-17T23:58:00.000Z', activeMachineCores: 8 },
+  );
+  // 1*8 + 0.5*16 + 0.5*32 = 8 + 8 + 16 = 32 core-hours; 720 / 720 = 1 GB-month
+  expect(highCoreSnapshot.usedCoreHours).toBe(32);
+  expect(highCoreSnapshot.usedStorageGbMonth).toBe(1);
 });
 
 test('fails closed on unrecognized Codespaces SKU or unknown unitType so billable usage is never under-counted', () => {
@@ -89,6 +105,22 @@ test('fails closed on unrecognized Codespaces SKU or unknown unitType so billabl
             product: 'codespaces',
             sku: 'codespaces_compute_d2',
             unitType: 'credits',
+            grossQuantity: 10,
+          },
+        ],
+      },
+      { observedAt: '2026-11-17T23:58:00.000Z', activeMachineCores: 2 },
+    ),
+  ).toThrow(/Unsupported unitType/i);
+
+  expect(() =>
+    parseGitHubCodespacesBillingUsage(
+      {
+        usageItems: [
+          {
+            product: 'codespaces',
+            sku: 'codespaces_storage',
+            unitType: 'hours',
             grossQuantity: 10,
           },
         ],

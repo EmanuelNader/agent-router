@@ -60,4 +60,32 @@ test('blocks Cloudflare R2 bill traps: Infrequent Access, >8.5 GB storage, Class
   );
   expect(stale.status).toBe('BLOCKED');
   expect(stale.blockers).toContain('STALE_R2_EVIDENCE');
+
+  const future = evaluateR2FreeTierGuardrails(
+    {
+      observedAt: '2026-11-18T00:05:00.000Z',
+      storageClass: 'STANDARD',
+      storedGbMonth: 1.0,
+      monthlyClassAOps: 100,
+      monthlyClassBOps: 200,
+      publicDevelopmentUrlEnabled: false,
+    },
+    { now: fixedNow },
+  );
+  expect(future.status).toBe('BLOCKED');
+  expect(future.blockers).toContain('FUTURE_R2_EVIDENCE');
+
+  // Omitting publicDevelopmentUrlEnabled must fail closed rather than defaulting to false
+  expect(() =>
+    evaluateR2FreeTierGuardrails(
+      {
+        observedAt: '2026-11-17T23:55:00.000Z',
+        storageClass: 'STANDARD',
+        storedGbMonth: 1.0,
+        monthlyClassAOps: 100,
+        monthlyClassBOps: 200,
+      } as unknown as Parameters<typeof evaluateR2FreeTierGuardrails>[0],
+      { now: fixedNow },
+    ),
+  ).toThrow();
 });
