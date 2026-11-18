@@ -50,3 +50,24 @@ export const checkpointManifestSchema = z.object({
 });
 
 export type CheckpointManifest = z.infer<typeof checkpointManifestSchema>;
+
+export const checkpointAgentKindSchema = z.enum(['none', 'opencode', 'codex-cli', 'claude-code']);
+export type CheckpointAgentKind = z.infer<typeof checkpointAgentKindSchema>;
+
+export const checkpointManifestV2Schema = z.object({
+  schemaVersion: z.literal(2),
+  checkpointId: z.string().regex(/^chk_[a-f0-9]{16,64}$/),
+  createdAt: z.iso.datetime(),
+  architecture: z.string().min(1),
+  agentKind: checkpointAgentKindSchema,
+  sessionIds: z.array(z.string().min(1)),
+  git: gitStateSchema,
+  workspaceFiles: z.array(fileReceiptSchema),
+});
+export type CheckpointManifestV2 = z.infer<typeof checkpointManifestV2Schema>;
+
+export const anyCheckpointManifestSchema = z.discriminatedUnion('schemaVersion', [
+  checkpointManifestSchema,
+  checkpointManifestV2Schema,
+]);
+export type AnyCheckpointManifest = z.infer<typeof anyCheckpointManifestSchema>;

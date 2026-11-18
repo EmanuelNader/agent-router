@@ -5,7 +5,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { hashWorkspace } from '../../workspace/src/manifest.js';
-import { captureCheckpoint, restoreCheckpoint } from '../src/checkpoint.js';
+import { encodeClaudeProjectSlug } from '../../agent-claude-code/src/adapter.js';
+import {
+  captureAgentCheckpoint,
+  captureCheckpoint,
+  restoreAgentCheckpoint,
+  restoreCheckpoint,
+} from '../src/checkpoint.js';
 import { LocalEncryptedStore, type SnapshotEntry, type SnapshotStore } from '../src/store.js';
 
 const tempDirs: string[] = [];
@@ -144,4 +150,90 @@ test('cleans up target and skips session import when restored file bytes violate
   ).rejects.toThrow(/manifest|hash/i);
   expect(importCalled).toBe(false);
   await expect(access(target)).rejects.toMatchObject({ code: 'ENOENT' });
+});
+
+test('captures and restores v2 polymorphic checkpoints for codex-cli and claude-code and rejects mismatched agent restore', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'router-checkpoint-v2-'));
+  tempDirs.push(root);
+  const srcWs = join(root, 'src.ws');
+  const dstCodexWs = join(root, 'dst.codex');
+  const dstClaudeWs = join(root, 'dst.claude');
+  await mkdir(srcWs, { recursive: true, mode: 0o700 });
+  await writeFile(join(srcWs, 'index.ts'), 'export const v = 2;\n', { mode: 0o600 });
+
+  const store = new LocalEncryptedStore(join(root, 'store'), randomBytes(32));
+
+  // 1. Codex CLI checkpoint + relocation
+  const codexHomeA = join(root, 'codex-a');
+  const rolloutDir = join(codexHomeA, 'sessions', '2026', '11', '17');
+  await mkdir(rolloutDir, { recursive: true, mode: 0o700 });
+  await writeFile(
+    join(rolloutDir, 'rollout-2026-11-17T20-00-00-01a1ec9c-1111-7111-8111-111111111111.jsonl'),
+    `${JSON.stringify({
+      timestamp: '2026-11-17T20:00:00Z',
+      type: 'session_meta',
+      payload: { id: '01a1ec9c-1111-7111-8111-111111111111', cwd: srcWs },
+    })}\n`,
+    { mode: 0o600 },
+  );
+
+  const codexManifest = await captureAgentCheckpoint({
+    workspace: srcWs,
+    store,
+    agent: { kind: 'codex-cli', codexHome: codexHomeA },
+  });
+  expect(codexManifest.schemaVersion).toBe(2);
+  expect(codexManifest.agentKind).toBe('codex-cli');
+  expect(codexManifest.sessionIds).toEqual(['01a1ec9c-1111-7111-8111-111111111111']);
+
+  await expect(
+    restoreAgentCheckpoint({
+      checkpointId: codexManifest.checkpointId,
+      targetWorkspace: dstCodexWs,
+      store,
+      agent: { kind: 'none' },
+    }),
+  ).rejects.toThrow(/agent/i);
+
+  const codexHomeB = join(root, 'codex-b');
+  await restoreAgentCheckpoint({
+    checkpointId: codexManifest.checkpointId,
+    targetWorkspace: dstCodexWs,
+    store,
+    agent: { kind: 'codex-cli', targetCodexHome: codexHomeB },
+  });
+  expect(await hashWorkspace(dstCodexWs)).toEqual(await hashWorkspace(srcWs));
+  const reboundCodex = await captureAgentCheckpoint({
+    workspace: dstCodexWs,
+    store,
+    agent: { kind: 'codex-cli', codexHome: codexHomeB },
+  });
+  expect(reboundCodex.sessionIds).toEqual(['01a1ec9c-1111-7111-8111-111111111111']);
+
+  // 2. Claude Code checkpoint + relocation
+  const claudeCfgA = join(root, 'claude-a');
+  const slugDirA = join(claudeCfgA, 'projects', encodeClaudeProjectSlug(srcWs));
+  await mkdir(slugDirA, { recursive: true, mode: 0o700 });
+  const claudeUuid = '22222222-3333-4444-8555-666666666666';
+  await writeFile(
+    join(slugDirA, `${claudeUuid}.jsonl`),
+    `${JSON.stringify({ type: 'user', uuid: 'u1', sessionId: claudeUuid, cwd: srcWs, message: { role: 'user', content: 'hi' } })}\n`,
+    { mode: 0o600 },
+  );
+
+  const claudeManifest = await captureAgentCheckpoint({
+    workspace: srcWs,
+    store,
+    agent: { kind: 'claude-code', claudeConfigDir: claudeCfgA },
+  });
+  expect(claudeManifest.agentKind).toBe('claude-code');
+
+  const claudeCfgB = join(root, 'claude-b');
+  await restoreAgentCheckpoint({
+    checkpointId: claudeManifest.checkpointId,
+    targetWorkspace: dstClaudeWs,
+    store,
+    agent: { kind: 'claude-code', targetClaudeConfigDir: claudeCfgB },
+  });
+  expect(await hashWorkspace(dstClaudeWs)).toEqual(await hashWorkspace(srcWs));
 });

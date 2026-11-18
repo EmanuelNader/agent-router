@@ -5,8 +5,25 @@ import path from 'node:path';
 import { z } from 'zod';
 import type { SessionTransfer } from '../../agent-opencode/src/client.js';
 import { OPENCODE_VERSION } from '../../agent-opencode/src/server.js';
+import {
+  claudeProjectBundleSchema,
+  exportClaudeProjectBundle,
+  importClaudeProjectBundle,
+} from '../../agent-claude-code/src/adapter.js';
+import {
+  codexRolloutBundleSchema,
+  exportCodexRolloutBundle,
+  importCodexRolloutBundle,
+} from '../../agent-codex/src/adapter.js';
 import { hashWorkspace } from '../../workspace/src/manifest.js';
-import { assertSafeRelativePath, checkpointManifestSchema, type CheckpointManifest } from './manifest.js';
+import {
+  anyCheckpointManifestSchema,
+  assertSafeRelativePath,
+  checkpointManifestSchema,
+  checkpointManifestV2Schema,
+  type CheckpointManifest,
+  type CheckpointManifestV2,
+} from './manifest.js';
 import type { SnapshotEntry, SnapshotStore } from './store.js';
 
 function runGit(cwd: string, args: string[]): string {
@@ -166,6 +183,165 @@ export async function restoreCheckpoint(options: {
       const importedId = await options.importSession(session, target);
       if (importedId !== session.info.id) throw new Error('Imported session ID did not match checkpoint');
     }
+    return manifest;
+  } catch (error) {
+    await rm(target, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+export type CaptureAgentSpec =
+  | { kind: 'none' }
+  | { kind: 'opencode'; exportSessions: () => Promise<SessionTransfer[]> }
+  | { kind: 'codex-cli'; codexHome: string }
+  | { kind: 'claude-code'; claudeConfigDir: string };
+
+export type RestoreAgentSpec =
+  | { kind: 'none' }
+  | { kind: 'opencode'; importSession: (transfer: SessionTransfer, directory: string) => Promise<string> }
+  | { kind: 'codex-cli'; targetCodexHome: string }
+  | { kind: 'claude-code'; targetClaudeConfigDir: string };
+
+const agentBundleEnvelopeSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('none') }),
+  z.object({ kind: z.literal('opencode'), sessions: sessionsArraySchema }),
+  z.object({ kind: z.literal('codex-cli'), bundle: codexRolloutBundleSchema }),
+  z.object({ kind: z.literal('claude-code'), bundle: claudeProjectBundleSchema }),
+]);
+
+export async function captureAgentCheckpoint(options: {
+  workspace: string;
+  store: SnapshotStore;
+  agent: CaptureAgentSpec;
+  quiesceSource?: () => Promise<void>;
+}): Promise<CheckpointManifestV2> {
+  const root = path.resolve(options.workspace);
+  let sessionIds: string[] = [];
+  let agentEnvelope: z.infer<typeof agentBundleEnvelopeSchema>;
+
+  if (options.agent.kind === 'none') {
+    agentEnvelope = { kind: 'none' };
+  } else if (options.agent.kind === 'opencode') {
+    const sessions = await options.agent.exportSessions();
+    assertSettledSessions(sessions);
+    sessionIds = sessions.map(s => s.info.id);
+    agentEnvelope = { kind: 'opencode', sessions };
+  } else if (options.agent.kind === 'codex-cli') {
+    const bundle = await exportCodexRolloutBundle(options.agent.codexHome, root);
+    sessionIds = bundle.rollouts.map(r => r.threadId);
+    agentEnvelope = { kind: 'codex-cli', bundle };
+  } else {
+    const bundle = await exportClaudeProjectBundle(options.agent.claudeConfigDir, root);
+    sessionIds = bundle.sessions.map(s => s.sessionId);
+    agentEnvelope = { kind: 'claude-code', bundle };
+  }
+
+  if (options.quiesceSource) {
+    await options.quiesceSource();
+  }
+
+  const workspaceFiles = await hashWorkspace(root);
+  const git = await inspectGit(root);
+  const checkpointId = `chk_${randomBytes(16).toString('hex')}`;
+  const manifest: CheckpointManifestV2 = checkpointManifestV2Schema.parse({
+    schemaVersion: 2,
+    checkpointId,
+    createdAt: new Date().toISOString(),
+    architecture: process.arch,
+    agentKind: options.agent.kind,
+    sessionIds,
+    git,
+    workspaceFiles,
+  });
+
+  const files = await collectAllFiles(root);
+  files.push(
+    { path: 'meta/manifest.json', executable: false, data: Buffer.from(JSON.stringify(manifest), 'utf8') },
+    { path: 'meta/agent.json', executable: false, data: Buffer.from(JSON.stringify(agentEnvelope), 'utf8') },
+  );
+  await options.store.put(checkpointId, files);
+  return manifest;
+}
+
+export async function restoreAgentCheckpoint(options: {
+  checkpointId: string;
+  targetWorkspace: string;
+  store: SnapshotStore;
+  agent: RestoreAgentSpec;
+}): Promise<CheckpointManifest | CheckpointManifestV2> {
+  const target = path.resolve(options.targetWorkspace);
+  try {
+    await access(target);
+    throw new Error(`Target workspace already exists: ${target}`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+
+  const entries = await options.store.get(options.checkpointId);
+  const manifestEntry = entries.find(entry => entry.path === 'meta/manifest.json');
+  if (!manifestEntry) throw new Error('Checkpoint bundle is missing manifest');
+
+  const manifest = anyCheckpointManifestSchema.parse(JSON.parse(manifestEntry.data.toString('utf8')));
+  if (manifest.checkpointId !== options.checkpointId) throw new Error('Checkpoint ID mismatch');
+
+  if (manifest.schemaVersion === 1) {
+    if (options.agent.kind !== 'opencode') {
+      throw new Error('v1 checkpoint requires agent kind "opencode"');
+    }
+    return await restoreCheckpoint({
+      checkpointId: options.checkpointId,
+      targetWorkspace: target,
+      store: options.store,
+      importSession: options.agent.importSession,
+    });
+  }
+
+  if (options.agent.kind !== manifest.agentKind) {
+    throw new Error(`Checkpoint agent mismatch: archive holds "${manifest.agentKind}", restore requested "${options.agent.kind}"`);
+  }
+
+  const agentEntry = entries.find(entry => entry.path === 'meta/agent.json');
+  if (!agentEntry) throw new Error('v2 checkpoint bundle is missing meta/agent.json');
+  const envelope = agentBundleEnvelopeSchema.parse(JSON.parse(agentEntry.data.toString('utf8')));
+  if (envelope.kind !== manifest.agentKind) {
+    throw new Error('Checkpoint meta/agent.json kind mismatch');
+  }
+  if (envelope.kind === 'opencode') {
+    assertSettledSessions(envelope.sessions);
+  }
+
+  await mkdir(target, { recursive: true, mode: 0o700 });
+  try {
+    for (const entry of entries) {
+      if (entry.path === 'meta/manifest.json' || entry.path === 'meta/agent.json') continue;
+      if (!entry.path.startsWith('workspace/')) throw new Error(`Unexpected entry in checkpoint: ${entry.path}`);
+      const rel = assertSafeRelativePath(entry.path.slice('workspace/'.length));
+      const destination = path.join(target, rel);
+      await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
+      await writeFile(destination, entry.data, { mode: entry.executable ? 0o755 : 0o600, flag: 'wx' });
+      if (entry.executable) await chmod(destination, 0o755);
+    }
+
+    const actualHashes = await hashWorkspace(target);
+    if (JSON.stringify(actualHashes) !== JSON.stringify(manifest.workspaceFiles)) {
+      throw new Error('Restored workspace file hashes do not match checkpoint manifest');
+    }
+    const actualGit = await inspectGit(target);
+    if (JSON.stringify(actualGit) !== JSON.stringify(manifest.git)) {
+      throw new Error('Restored Git working tree does not match checkpoint manifest');
+    }
+
+    if (envelope.kind === 'opencode' && options.agent.kind === 'opencode') {
+      for (const session of envelope.sessions) {
+        const importedId = await options.agent.importSession(session, target);
+        if (importedId !== session.info.id) throw new Error('Imported OpenCode session ID mismatch');
+      }
+    } else if (envelope.kind === 'codex-cli' && options.agent.kind === 'codex-cli') {
+      await importCodexRolloutBundle(envelope.bundle, options.agent.targetCodexHome, target);
+    } else if (envelope.kind === 'claude-code' && options.agent.kind === 'claude-code') {
+      await importClaudeProjectBundle(envelope.bundle, options.agent.targetClaudeConfigDir, target);
+    }
+
     return manifest;
   } catch (error) {
     await rm(target, { recursive: true, force: true });
