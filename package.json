@@ -1,6 +1,6 @@
 {
   "name": "agent-router",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Portable coding-agent workspaces with allowance-aware cloud provisioning and recovery.",
@@ -12,16 +12,19 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "node scripts/clean-build.mjs && tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm test",
+    "benchmark": "tsx scripts/benchmark.ts",
     "fixture:create": "node scripts/create-fixture.mjs",
     "fixture:hash": "tsx scripts/hash-fixture.ts",
     "readiness": "tsx scripts/readiness.ts",
     "agent:probe": "tsx scripts/probe-agent.ts",
     "agent:roundtrip": "tsx scripts/agent-roundtrip.ts",
+    "agent:acp-roundtrip": "tsx scripts/acp-roundtrip.ts",
     "checkpoint:roundtrip": "tsx scripts/checkpoint-roundtrip.ts",
+    "checkpoint:linux-roundtrip": "tsx scripts/linux-checkpoint-roundtrip.ts",
     "handoff:roundtrip": "tsx scripts/ssh-handoff-roundtrip.ts",
     "inspect:aws": "tsx scripts/inspect-aws.ts",
     "connect:oci": "tsx scripts/connect-oci.ts",
@@ -41,7 +44,9 @@
   "dependencies": {
     "@aws-sdk/client-freetier": "3.1167.0",
     "@aws-sdk/client-sts": "3.1167.0",
+    "jsonc-parser": "3.3.1",
     "oci-sdk": "2.146.0",
+    "smol-toml": "1.9.0",
     "zod": "4.6.7"
   }
 }

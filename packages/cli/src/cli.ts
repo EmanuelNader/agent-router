@@ -48,12 +48,15 @@ import {
 } from '../../snapshots/src/checkpoint.js';
 import { pruneLocalCheckpoints } from '../../snapshots/src/prune.js';
 import { LocalEncryptedStore } from '../../snapshots/src/store.js';
+import { inspectWorkspaceMcp } from '../../workspace/src/mcp-portability.js';
+import { evaluateFlyGuardrails, flyDemoEvidence } from '../../cloud-fly/src/guard.js';
+import { FlyMachineLifecycle, InMemoryFlyGateway } from '../../cloud-fly/src/provider.js';
 import { OperationJournal } from './journal.js';
 import { migrateWorkspace } from './migrate.js';
 import { renderLaunchdPlist, renderSystemdUserUnits } from './service-units.js';
 import { runAllowanceWatchLoop } from './watch.js';
 
-export const ROUTER_CLI_VERSION = '0.3.0';
+export const ROUTER_CLI_VERSION = '1.0.0';
 
 export interface RouterCliIo {
   stdout: (line: string) => void;
@@ -80,11 +83,14 @@ Local journal, Tailscale peers, pairing, checkpoints & handoffs:
   restore                 --checkpoint chk_<hex> --target <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path>] [--codex-home <dir>] [--claude-config-dir <dir>]
   handoff                 --workspace <dir> --target-workspace <dir> (--ssh-target <user@host> | --codespace <name>) --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>]
   prune                   --store <dir> --keep-last <int> [--journal-dir .work/router-journal]
+  mcp:doctor              --workspace <dir>
   migrate:simulate        [--workspace-key ws-sim]
   watch:simulate          [--workspace-key ws-watch-sim] [--max-ticks 3]
   service:emit            --platform <systemd|launchd> --work-dir <abs-dir> [--interval-sec 300] [--service-name agent-router-watch]
 
 Cloud allowance & worker lifecycle commands:
+  fly:guard               (--demo | --report <path>)
+  fly:simulate-lifecycle  Local simulation only
   aws:allowance           (--demo | --report <path>) [--min-credit-usd 5] [--min-days 7]
   gcp:guard               (--demo | --report <path>)
   r2:guard                (--demo | --report <path>)
@@ -212,6 +218,42 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
     });
 
     const journal = new OperationJournal(values['journal-dir']);
+
+    if (subcommand === 'fly:guard') {
+      if (Boolean(values.demo) === Boolean(values.report)) throw new Error('fly:guard requires exactly one of --demo or --report');
+      let evidence: unknown;
+      try { evidence = values.demo ? flyDemoEvidence() : JSON.parse(await readFile(values.report!, 'utf8')); }
+      catch { throw new Error('FLY_INVALID_REPORT'); }
+      const result = evaluateFlyGuardrails(evidence);
+      io.stdout(JSON.stringify({ ...result, source: values.demo ? 'DEMO' : 'FILE' }));
+      return result.status === 'BLOCKED' ? 2 : 0;
+    }
+    if (subcommand === 'fly:simulate-lifecycle') {
+      const scratch = await mkdtemp(path.join(tmpdir(), 'router-fly-cli-'));
+      try {
+        const isolatedJournal = new OperationJournal(scratch);
+        const gateway = new InMemoryFlyGateway('ws-fly-demo');
+        const lifecycle = new FlyMachineLifecycle({ journal: isolatedJournal, gateway });
+        gateway.failAfterMutation = true;
+        try { await lifecycle.transition('ws-fly-demo', 'abcd1234', 'suspend'); }
+        catch (error) { if (!(error instanceof Error) || error.message !== 'FLY_ACTION_UNCERTAIN') throw error; }
+        const [pending] = await isolatedJournal.listBlocking();
+        if (!pending || await lifecycle.reconcile(pending.operationId) !== 'RECONCILED') throw new Error('FLY_SIMULATION_FAILED');
+        await lifecycle.transition('ws-fly-demo', 'abcd1234', 'start', flyDemoEvidence());
+        await lifecycle.transition('ws-fly-demo', 'abcd1234', 'delete');
+        const blocking = (await isolatedJournal.listBlocking()).length;
+        if (blocking || gateway.remnants()) throw new Error('FLY_SIMULATION_FAILED');
+        io.stdout(JSON.stringify({ status: 'FLY_SIMULATED', crashReconciled: true, mutations: gateway.mutations, remnants: 0, blockingJournalEntries: 0, liveCloudCalls: 0 }));
+        return 0;
+      } finally { await rm(scratch, { recursive: true, force: true }); }
+    }
+
+    if (subcommand === 'mcp:doctor') {
+      if (!values.workspace) throw new Error('mcp:doctor requires --workspace');
+      const receipt = await inspectWorkspaceMcp(path.resolve(values.workspace));
+      io.stdout(JSON.stringify({ status: 'MCP_PORTABLE', ...receipt }));
+      return 0;
+    }
 
     if (subcommand === 'status') {
       const operations = await journal.list();

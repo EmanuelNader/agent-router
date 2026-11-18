@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
@@ -7,8 +7,28 @@ import { runRouterCli } from '../src/cli.js';
 import { OperationJournal } from '../src/journal.js';
 import { encodeClaudeProjectSlug } from '../../agent-claude-code/src/adapter.js';
 import { isLocalSshdAvailable, startEphemeralSshd } from '../../host-ssh/src/ephemeral-sshd.js';
+import { LocalEncryptedStore } from '../../snapshots/src/store.js';
 
 const tempDirs: string[] = [];
+
+test('mcp:doctor reports portable workspace configs and sanitizes secret failures', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'router-doctor-'));
+  tempDirs.push(root);
+  await writeFile(join(root, '.mcp.json'), JSON.stringify({ mcpServers: { fixture: {
+    command: 'node', args: ['server.mjs'], env: { API_TOKEN: '${API_TOKEN}' },
+  } } }));
+  const good = captureIo();
+  expect(await runRouterCli(['mcp:doctor', '--workspace', root], good.io)).toBe(0);
+  expect(JSON.parse(good.out.join(''))).toEqual({ status: 'MCP_PORTABLE', configsChecked: 1, serversChecked: 1 });
+  await writeFile(join(root, '.mcp.json'), JSON.stringify({ mcpServers: { fixture: {
+    command: 'node', env: { API_TOKEN: 'fixture-private-value' },
+  } } }));
+  const bad = captureIo();
+  expect(await runRouterCli(['mcp:doctor', '--workspace', root], bad.io)).toBe(1);
+  expect(bad.err.join('')).toContain('MCP_SECRET_LITERAL');
+  expect([...bad.err, ...bad.out].join('')).not.toContain('fixture-private-value');
+  expect([...bad.err, ...bad.out].join('')).not.toContain(root);
+});
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })));
 });
@@ -143,7 +163,7 @@ test('router CLI supports --version, aws:allowance, hetzner:simulate-lifecycle, 
 
   const verIo = captureIo();
   expect(await runRouterCli(['--version'], verIo.io)).toBe(0);
-  expect(verIo.out.join('\n').trim()).toBe('0.3.0');
+  expect(verIo.out.join('\n').trim()).toBe('1.0.0');
 
   const awsReportPath = join(root, 'aws-low.json');
   await writeFile(
@@ -412,14 +432,42 @@ test('router CLI supports peers --status-file, polymorphic --agent checkpoints, 
   ).toBe(0);
   expect(JSON.parse(svcIo.out.join('\n')).serviceUnitName).toBe('agent-router-watch.service');
 
+  const pruneStoreDir = join(root, 'prune-cli-store');
+  const pruneJournalDir = join(root, 'prune-cli-journal');
+  const pruneStore = new LocalEncryptedStore(pruneStoreDir, randomBytes(32));
+  const cIds = ['chk_0000000000000001', 'chk_0000000000000002', 'chk_0000000000000003'];
+  for (let i = 0; i < cIds.length; i++) {
+    await pruneStore.put(cIds[i]!, [{ path: 'x.txt', executable: false, data: Buffer.from(`v${i}`) }]);
+    const ts = new Date(Date.UTC(2026, 10, 17, 21, i, 0));
+    await utimes(join(pruneStoreDir, `${cIds[i]!}.enc`), ts, ts);
+  }
+  const pruneJournal = new OperationJournal(pruneJournalDir);
+  const blockOp = await pruneJournal.begin({
+    kind: 'HANDOFF',
+    workspaceKey: 'ws-prune-guard',
+    summary: 'Interrupted handoff referencing chk_0000000000000001',
+  });
+  await pruneJournal.markNeedsReconcile(blockOp.operationId, 'Interrupted after transfer (chk_0000000000000001)');
+
   const pruneIo = captureIo();
   expect(
-    await runRouterCli(['prune', '--store', join(root, 'nonexistent-store'), '--keep-last', '2'], pruneIo.io),
+    await runRouterCli(
+      ['prune', '--store', pruneStoreDir, '--keep-last', '1', '--journal-dir', pruneJournalDir],
+      pruneIo.io,
+    ),
   ).toBe(0);
-  expect(JSON.parse(pruneIo.out.join('\n'))).toEqual({
-    keptIds: [],
-    deletedIds: [],
-    skippedProtectedIds: [],
-    reclaimedBytes: 0,
+  expect(JSON.parse(pruneIo.out.join('\n'))).toMatchObject({
+    keptIds: ['chk_0000000000000003'],
+    skippedProtectedIds: ['chk_0000000000000001'],
+    deletedIds: ['chk_0000000000000002'],
   });
+
+  const bothTargetsIo = captureIo();
+  expect(
+    await runRouterCli(
+      ['pair', '--ssh-target', 'agentrouter@host', '--codespace', 'cs-01', '--agent', 'codex-cli'],
+      bothTargetsIo.io,
+    ),
+  ).toBe(1);
+  expect(bothTargetsIo.err.join('\n')).toMatch(/not both/i);
 }, 20_000);

@@ -2,11 +2,26 @@
 
 Local-first CLI and TypeScript toolkit to run isolated coding agents on your own compute (`OCI Always Free / PAYG-safe`, `SSH` / `Hetzner` VPSes, `AWS Free Plan`), guard against surprise cloud bills, and move unfinished workspaces + settled conversations cleanly across `laptop ↔ VPS ↔ cloud`.
 
-**Status: `v0.2.0` standalone CLI, polymorphic multi-agent checkpoints, Tailscale/pairing helpers, multi-cloud free-tier guardrails (`OCI`, `AWS`, `GCP`, `GitHub Codespaces`, `Hetzner`), and live `ubuntu:24.04` `linux/aarch64` cross-OS verification (`pnpm build`, `pnpm check`, `pnpm e2e`).** Supports isolated session portability across **OpenCode `2.2.7`**, **Codex CLI `0.169.x`**, and **Claude Code `2.1.x`** ([multi-agent evidence](docs/evidence/05-multi-agent-adapters.md), [v0.2.0 Linux & free-tier evidence](docs/evidence/06-v02-linux-and-free-tiers.md)), deterministic workspace receipts, AES-256-GCM and `restic 0.19.1` local + remote backends (SFTP verified live against non-root `OpenSSH_10.3p1` `sshd`, plus OCI S3-compatible Object Storage, Cloudflare R2, and AWS S3; [Milestone 1 evidence](docs/evidence/01-local-restore.md)), Tailscale peer discovery + remote pairing (`opencode pair --remote --yes`, `codex remote-control`, `claude remote-control`) + fenced `laptop ↔ SSH/Linux` handoffs ([Milestone 2 evidence](docs/evidence/02-ssh-handoff.md)), OCI PAYG-safe + GCP `e2-micro` + GitHub Codespaces + AWS Free Plan guardrails ([OCI guardrail evidence](docs/evidence/00-oci-guardrails.md)), crash-reconciled OCI `VM.Standard.A1.Flex` and Hetzner `CAX11` ARM64 lifecycle adapters ([Milestone 3 evidence](docs/evidence/03-oci-lifecycle.md)), and allowance-triggered cross-host `migrateWorkspace` ([Milestone 4 evidence](docs/evidence/04-cross-host-migration.md)). Live external cloud account calls remain strictly opt-in—without a hosted multi-tenant SaaS control plane or custom proxy gateway. See the [November 2026 market & architecture reassessment](docs/research/2026-11-17-market-and-architecture-reassessment.md) and [updated execution plan](docs/plans/agent-router-execution-plan.md).
+**Version: `1.0.0` local engineering candidate; verified local engineering release.** The latest full check passes **817 tests with zero skipped files**. Executable benchmark gates cover portable v3 checkpoints, MCP portability, ACP v1 cold resume, Fly lifecycle contracts, **642 adversarial vectors**, real local multi-hop E2E, build checks, and release evidence. See [current evidence](docs/evidence/08-v1-benchmark.md) and [execution plan](docs/plans/agent-router-execution-plan.md).
+
+Compatibility is observed against OpenCode **2.2.7**, Codex CLI **0.169.0**, and Claude Code **2.1.326**. v3 snapshots materialize linked Git worktrees through a temporary Git bundle and reconstruct staged content independently; dirty/untracked files and confined relative symlinks survive restoration after source deletion. Configurable basename exclusions default to `node_modules`, `.pnpm-store`, and `.work`; excluding tracked content blocks capture.
+
+`mcp:doctor` blocks plaintext credentials and nonportable host paths before checkpoints. Translation supports the verified common subset of OpenCode v1/v2, Claude project JSON, and Codex TOML, preserving environment references. Unknown or unrepresentable options fail closed. Native compatibility proves configuration loading only, with no MCP tool execution or OAuth claim. ACP initializes, negotiates capabilities, and creates/loads sessions over JSON-RPC stdio. Cold resume verifies an imported saved user-message fixture; OpenCode shell-history replay through ACP is unsupported and model inference is untested.
+
+Fly is a paid scale-to-zero candidate for an existing owned Machine, with fresh cost/rootfs evidence and full-horizon compute reservation, lease-protected lifecycle operations, and crash reconciliation. Local simulations and injected API contracts pass; no live cloud account was mutated. Existing OCI/Hetzner, allowance watch, SSH/SCP, encrypted restic SFTP, and operation-journal paths remain covered by the master E2E. Saved work and supported settled history migrate after fencing the source; arbitrary running processes and pending side effects do not migrate.
 
 ## Run the local proof
 
-Requires Node 24, pnpm 11.25.0, Git, and macOS or Linux. No cloud account or model API key is needed.
+Requires Node 24, pnpm 11.25.0, Git, native Codex/Claude binaries at the verified versions, OpenSSH (`sshd`, `ssh`, `scp`), restic, and a working local Docker engine supporting Linux ARM64. No cloud account or model API key is needed. The full benchmark requires Linux proofs; missing tools fail the gates.
+
+Prepare both Linux images on your verification engine before running the full suite:
+
+```sh
+docker pull --platform linux/arm64 ubuntu:24.04
+docker build --platform linux/arm64 -t agent-router-verification:ubuntu24-node24 -f infra/verification/Dockerfile .
+```
+
+The checked-in Dockerfile verifies the pinned Node 24 archive checksum. The container proof uses `ubuntu:24.04`, no network, and no host mounts; it verifies Git, staged/dirty bytes, symlinks, and cache exclusion after source deletion. A task-owned engine can be selected without changing the user's Docker context: ignored mode-0600 `.work/verification-docker.json` accepts a `socketPath` pointing to a Unix socket beneath this checkout's `.work/`. Its CLI configuration stays in `.work/verification-docker-cli`. Otherwise the normal Docker environment is used.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -19,12 +34,18 @@ pnpm agent:roundtrip
 pnpm checkpoint:roundtrip
 pnpm handoff:roundtrip
 pnpm router oci:simulate-lifecycle
+pnpm agent:acp-roundtrip
+pnpm checkpoint:linux-roundtrip
+pnpm router mcp:doctor --workspace .
+pnpm router fly:guard --demo
+pnpm router fly:simulate-lifecycle
 pnpm e2e
+pnpm benchmark
 ```
 
 The probe starts a password-protected OpenCode 2.2.7 server on loopback and checks authenticated access, rejection without credentials, and exclusion of ancestor project configuration. The round trip creates a fixture with unfinished Git changes, records a completed shell turn in a real session, stops the source, copies the workspace, and imports the session into fresh agent state. It verifies successful shell output, target-directory binding, file hashes, executable flags, Git HEAD/index/status, session ID, and settled messages.
 
-Each run uses private temporary directories under ignored `.work/`, a generated password, and isolated HOME/XDG directories. Project/Claude configuration discovery is disabled to prevent ancestor configuration from loading. It excludes inherited model/cloud credentials and removes its temporary state after stopping its own processes. The shell command is a fixed fixture; these checks perform no model inference. Docker is reported as an optional local tool; the scripts run native processes.
+Each run uses private temporary directories under ignored `.work/`, a generated password, and isolated HOME/XDG directories. Project/Claude configuration discovery is disabled to prevent ancestor configuration from loading. It excludes inherited model/cloud credentials and removes its temporary state after stopping its own processes. The shell command is a fixed fixture; these checks perform no model inference. Native agent processes and disposable Linux verification containers are both exercised. Docker is mandatory for the full benchmark.
 
 ## Optional cloud inspection
 
@@ -82,8 +103,8 @@ Exit codes for `plan:oci`: 0 = quota fits, 2 = quota comparison blocked, 1 = inv
 ## Boundaries and next steps
 
 - **Settled history vs. pending inbox:** Export/import preserves supported settled history. OpenCode's pending prompt inbox is separate and is not included in transcript export; checkpointing must quiesce the server and drain or reject pending work before cutover.
-- **Workspace receipts vs. encrypted backups:** `hashWorkspace` requires quiesced writers, rejects symlinks and special files, excludes `.git` (verified separately), and records file bytes and executable flags. Milestone 1 wraps workspace + session state into encrypted, verifiable `restic` checkpoints ([Milestone 1 plan](docs/plans/2026-11-17-local-checkpoint-restore.md)).
+- **Workspace receipts vs. encrypted backups:** `hashWorkspace` requires quiesced writers and rejects special files. Its default rejects symlinks; v3 checkpoints explicitly enable validated confined relative symlinks and hash their target text. Git metadata is verified separately from file receipts. Milestone 1 wraps workspace + session state into encrypted, verifiable `restic` checkpoints ([Milestone 1 plan](docs/plans/2026-11-17-local-checkpoint-restore.md)).
 - **Local-first BYOC over hosted SaaS:** Consumer AI subscription policies prohibit third-party hosted credential proxies, OpenCode `2.2.x` already provides `opencode pair --remote` (`OpenTunnel`), and commodity VPSes cost ~$5/month. Agent Router therefore runs locally as a serverless BYOC CLI rather than a hosted control plane.
-- **Next (opt-in live operator checks):** (1) Register a dedicated read-only OCI Console key via `pnpm connect:oci prepare` and record live `inspect:oci` / `guard:oci` output; (2) start Docker / a Linux VM or connect an OCI/Hetzner/Tailscale host to run an opt-in cross-OS smoke handoff with user-owned credentials.
+- **Next (opt-in live operator checks):** (1) Register a dedicated read-only OCI Console key via `pnpm connect:oci prepare` and record live `inspect:oci` / `guard:oci` output; (2) connect a dedicated OCI/Hetzner/Tailscale host for opt-in remote compatibility checks. Local Ubuntu ARM64 container proofs are already verified.
 
 See [observed readiness evidence](docs/evidence/00-readiness.md), [OCI guardrail evidence](docs/evidence/00-oci-guardrails.md), [Milestone 1 local restore evidence](docs/evidence/01-local-restore.md), [Milestone 2 SSH handoff evidence](docs/evidence/02-ssh-handoff.md), [Milestone 3 OCI lifecycle evidence](docs/evidence/03-oci-lifecycle.md), [Milestone 4 cross-host migration evidence](docs/evidence/04-cross-host-migration.md), [Multi-agent CLI evidence](docs/evidence/05-multi-agent-adapters.md), [v0.2.0 Linux & free-tier evidence](docs/evidence/06-v02-linux-and-free-tiers.md), the [updated execution plan](docs/plans/agent-router-execution-plan.md), the [v0.2 plan](docs/plans/2026-11-17-v02-multi-agent-tailscale-and-free-tiers.md), the [Milestone 1 checkpoint/restore plan](docs/plans/2026-11-17-local-checkpoint-restore.md), the [November 2026 market & architecture reassessment](docs/research/2026-11-17-market-and-architecture-reassessment.md), and the earlier [first milestone brief](docs/plans/agent-router-first-milestone.md). Historical feasibility docs in `docs/research/` record earlier design inputs; `docs/evidence/` records current observed status.
