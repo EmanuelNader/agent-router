@@ -1,29 +1,45 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "labels": ["dependencies"],
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": [
+    "dependencies"
+  ],
   "customManagers": [
     {
       "customType": "regex",
       "description": "OpenCode pin used by the adapter and checkpoint manifest",
-      "managerFilePatterns": ["/^packages/agent-opencode/src/server\\.ts$/"],
-      "matchStrings": ["OPENCODE_VERSION = '(?<currentValue>[^']+)'"],
+      "managerFilePatterns": [
+        "/^packages/agent-opencode/src/server\\.ts$/"
+      ],
+      "matchStrings": [
+        "OPENCODE_VERSION = '(?<currentValue>[^']+)'"
+      ],
       "depNameTemplate": "@opencode/cli",
       "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",
       "description": "Codex CLI release line accepted by the Codex adapter",
-      "managerFilePatterns": ["/^packages/agent-codex/src/adapter\\.ts$/"],
-      "matchStrings": ["SUPPORTED_CODEX_MAJOR_MINOR = '(?<currentValue>\\d+\\.\\d+)\\.'"],
+      "managerFilePatterns": [
+        "/^packages/agent-codex/src/adapter\\.ts$/"
+      ],
+      "matchStrings": [
+        "SUPPORTED_CODEX_MAJOR_MINOR = '(?<currentValue>\\d+\\.\\d+)\\.'"
+      ],
       "depNameTemplate": "@openai/codex",
       "datasourceTemplate": "npm"
     },
     {
       "customType": "regex",
       "description": "pnpm installed by CI must match packageManager",
-      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
-      "matchStrings": ["npm install --global pnpm@(?<currentValue>\\S+)"],
+      "managerFilePatterns": [
+        "/^\\.github/workflows/.+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "npm install --global pnpm@(?<currentValue>\\S+)"
+      ],
       "depNameTemplate": "pnpm",
       "datasourceTemplate": "npm"
     }
@@ -31,20 +47,33 @@
   "packageRules": [
     {
       "description": "Agent bumps change adapter and checkpoint compatibility; they need the compatibility proofs from AGENTS.md before merging",
-      "matchDepNames": ["@opencode/cli", "@openai/codex"],
+      "matchDepNames": [
+        "@opencode/cli",
+        "@openai/codex"
+      ],
       "groupName": "{{depName}} compatibility",
-      "addLabels": ["agent-compat"],
+      "addLabels": [
+        "agent-compat"
+      ],
       "automerge": false,
-      "prBodyNotes": ["Agent version bump. Update hard-coded version assertions and run `pnpm check`, `pnpm agent:probe`, `pnpm agent:roundtrip` (and the Codex/Claude proofs where relevant) before merging."]
+      "prBodyNotes": [
+        "Agent version bump. Update hard-coded version assertions and run `pnpm check`, `pnpm agent:probe`, `pnpm agent:roundtrip` (and the Codex/Claude proofs where relevant) before merging."
+      ]
     },
     {
-      "matchDepNames": ["pnpm"],
+      "matchDepNames": [
+        "pnpm"
+      ],
       "groupName": "pnpm"
     },
     {
-      "description": "Stay on the Node 24 line required by engines",
-      "matchDepNames": ["@types/node"],
-      "allowedVersions": "<25"
+      "description": "Stay on the Node 24 and Ubuntu 24.04 lines that the engines field and verification image target",
+      "matchDepNames": [
+        "@types/node",
+        "node",
+        "ubuntu"
+      ],
+      "allowedVersions": "/^24\\./"
     }
   ]
 }
