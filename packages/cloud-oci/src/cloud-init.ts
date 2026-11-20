@@ -20,7 +20,7 @@ export function validateSshPublicKey(key: string): string {
   return trimmed;
 }
 
-export function buildWorkerBootstrapScript(opencodeVersion = '2.2.7'): string {
+export function buildWorkerBootstrapScript(opencodeVersion = '2.3.2'): string {
   if (!semverPattern.test(opencodeVersion)) {
     throw new Error('Invalid OpenCode version: expected exact X.Y.Z semver');
   }
@@ -80,7 +80,7 @@ export function buildWorkerBootstrapScript(opencodeVersion = '2.2.7'): string {
  */
 export function renderWorkerCloudInit(options: WorkerCloudInitOptions): string {
   const sshKey = validateSshPublicKey(options.sshAuthorizedKey);
-  const opencodeVersion = options.opencodeVersion ?? '2.2.7';
+  const opencodeVersion = options.opencodeVersion ?? '2.3.2';
   const bootstrapScript = buildWorkerBootstrapScript(opencodeVersion);
   const loopbackPort = options.loopbackPort ?? 4096;
   if (!Number.isInteger(loopbackPort) || loopbackPort < 1024 || loopbackPort > 65_535) {

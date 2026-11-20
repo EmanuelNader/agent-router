@@ -24,7 +24,8 @@ try {
   await writeFile(join(source, '.workspace-note'), 'hidden and untracked\n');
   await writeFile(join(source, 'notes.txt'), 'untracked work\n');
   await rename(join(source, 'README.md'), join(source, 'PROJECT.md'));
-  server = await startIsolatedServer(source, join(run, 'source-agent'));
+  // Point this at an older opencode binary to prove its exports import into the pinned release.
+  server = await startIsolatedServer(source, join(run, 'source-agent'), process.env.AGENT_ROUTER_SOURCE_OPENCODE);
   const id = await server.client.createSession(source, 'Router portability fixture');
   // A completed shell turn is exportable history; a queued prompt is not.
   // This fixed fixture command needs no API key and performs no model inference.

@@ -7,7 +7,7 @@ const receipt = JSON.parse(execFileSync('pnpm', ['exec', 'tsx', 'scripts/e2e.ts'
 assert.equal(receipt.status, 'E2E_VERIFIED');
 assert.equal(receipt.version, '1.0.0');
 assert.equal(receipt.acp.protocolVersion, 1);
-assert.equal(receipt.acp.agentVersion, '2.2.7');
+assert.equal(receipt.acp.agentVersion, '2.3.2');
 assert.equal(receipt.acp.coldResume, true);
 assert.equal(receipt.mcpLoaders.status, 'MCP_LOADERS_VERIFIED');
 assert.equal(receipt.mcpDoctor, 'MCP_PORTABLE');
@@ -22,6 +22,6 @@ assert.equal(receipt.watchTicksRun, 2);
 assert.equal(receipt.maxConcurrentAgents, 1);
 assert.equal(receipt.blockingJournalEntries, 0);
 for (const count of Object.values(receipt.finalCloudRemnants)) assert.equal(count, 0);
-for (const agent of ['opencode@2.2.7', 'codex-cli', 'claude-code']) assert.ok(receipt.verifiedAgentAdapters.includes(agent));
+for (const agent of ['opencode@2.3.2', 'codex-cli', 'claude-code']) assert.ok(receipt.verifiedAgentAdapters.includes(agent));
 for (const daemon of ['openssh-sshd', 'ssh', 'scp', 'restic-sftp']) assert.ok(receipt.daemonsExercised.includes(daemon));
 console.log('GATE_6_MASTER_E2E_VERIFIED');

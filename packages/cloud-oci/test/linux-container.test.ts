@@ -59,7 +59,7 @@ describe.runIf(isDockerImageAvailable('ubuntu:24.04'))('Live Ubuntu 24.04 aarch6
 
       const guestResult = await runLinuxWorkerContainerCheck({
         image: 'ubuntu:24.04',
-        bootstrapScript: buildWorkerBootstrapScript('2.2.7'),
+        bootstrapScript: buildWorkerBootstrapScript('2.3.2'),
         hostWorkspaceDir: restoredTarget,
       });
 

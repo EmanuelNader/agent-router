@@ -144,7 +144,7 @@ try {
 
   const clientPublicKey = (await readFile(sshd.clientPublicKeyPath, 'utf8')).trim();
 
-  // Phase 2: Start active OpenCode 2.2.7 session + dirty Git workspace on an expiring AWS Free Plan worker
+  // Phase 2: Start active OpenCode 2.3.2 session + dirty Git workspace on an expiring AWS Free Plan worker
   const awsSourceWorkspace = join(run, 'aws-source-ws');
   const awsRepository = join(run, 'aws-repository');
   await cp(resolve('fixtures/workspace'), awsRepository, { recursive: true });
@@ -362,7 +362,7 @@ try {
   assert.deepEqual(hetznerTeardown.remnants, { servers: 0, volumes: 0, primaryIps: 0 });
 
   // Phase 6: Verify additional coding-agent CLI adapters (Codex CLI & Claude Code) when installed locally
-  const verifiedAgentAdapters = ['opencode@2.2.7'];
+  const verifiedAgentAdapters = ['opencode@2.3.2'];
   const realRunRoot = await realpath(run);
 
   assert.ok(isCodexCliAvailable(), 'Codex CLI is mandatory for master E2E');
@@ -456,7 +456,7 @@ try {
     );
     const linuxRes = await runLinuxWorkerContainerCheck({
       image: 'ubuntu:24.04',
-      bootstrapScript: buildWorkerBootstrapScript('2.2.7'),
+      bootstrapScript: buildWorkerBootstrapScript('2.3.2'),
       hostWorkspaceDir: linuxCheckWs,
     });
     assert.equal(linuxRes.spoolStat, '700:agentrouter:agentrouter');
@@ -489,7 +489,7 @@ try {
         linuxGuestVerified,
         linuxCheckpoint: linuxCheckpointReceipt,
         r2FreeTierGuardrail: r2Guard.status,
-        daemonsExercised: ['opencode@2.2.7', 'git', 'openssh-sshd', 'ssh', 'scp', 'restic-sftp'],
+        daemonsExercised: ['opencode@2.3.2', 'git', 'openssh-sshd', 'ssh', 'scp', 'restic-sftp'],
         allowanceTrigger: migrationResult.triggerReasons,
         skippedCapacityTargets: migrationResult.skippedTargets,
         selectedFallbackTarget: migrationResult.selectedTarget,

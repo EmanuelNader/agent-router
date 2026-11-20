@@ -11,7 +11,7 @@ const validManifest = {
   checkpointId: 'chk_0123456789abcdef0123456789abcdef',
   createdAt: '2026-11-17T22:00:00.000Z',
   architecture: 'arm64',
-  opencodeVersion: '2.2.7' as const,
+  opencodeVersion: '2.3.2' as const,
   sessionIds: ['ses_fixture1'],
   git: {
     present: true as const,
@@ -30,6 +30,10 @@ const validManifest = {
 
 test('accepts a valid v1 checkpoint manifest', () => {
   expect(checkpointManifestSchema.parse(validManifest)).toEqual(validManifest);
+});
+
+test('accepts a manifest written by the previously pinned OpenCode release', () => {
+  expect(checkpointManifestSchema.parse({ ...validManifest, opencodeVersion: '2.2.7' }).opencodeVersion).toBe('2.2.7');
 });
 
 test('rejects wrong schemaVersion, wrong opencodeVersion, malformed hashes, or unsafe paths', () => {

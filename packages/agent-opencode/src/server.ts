@@ -6,7 +6,9 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { OpenCodeClient } from './client.js';
 
-export const OPENCODE_VERSION = '2.2.7';
+export const OPENCODE_VERSION = '2.3.2';
+/** Releases whose exported sessions were observed to import into OPENCODE_VERSION. */
+export const RESTORABLE_OPENCODE_VERSIONS = ['2.2.7', OPENCODE_VERSION] as const;
 
 export function isolatedEnvironment(state: string, password: string, path: string): NodeJS.ProcessEnv {
   return {
@@ -31,7 +33,9 @@ async function availablePort(): Promise<number> {
 }
 
 /** Local verification harness only; not a production process supervisor. */
-export async function startIsolatedServer(workspace: string, stateDirectory: string) {
+export async function startIsolatedServer(
+  workspace: string, stateDirectory: string, binary = resolve('node_modules/.bin/opencode'),
+) {
   const state = resolve(stateDirectory);
   const password = randomBytes(32).toString('hex');
   const env = isolatedEnvironment(state, password, process.env.PATH ?? '/usr/bin:/bin');
@@ -40,7 +44,6 @@ export async function startIsolatedServer(workspace: string, stateDirectory: str
   }
   const port = await availablePort();
   const baseUrl = `http://127.0.0.1:${port}`;
-  const binary = resolve('node_modules/.bin/opencode');
   const child = spawn(binary, ['serve', '--hostname', '127.0.0.1', '--port', String(port)], {
     cwd: resolve(workspace), env, stdio: ['ignore', 'ignore', 'ignore'], detached: true,
   });

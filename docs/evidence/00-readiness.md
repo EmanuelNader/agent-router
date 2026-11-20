@@ -6,7 +6,7 @@ Recorded 2026-11-12. This is a partial readiness milestone, not a production or 
 | --- | --- | --- |
 | Node/pnpm | PASS: Node 24.18.1, pnpm 11.25.0 | Local macOS arm64 |
 | Docker engine | AVAILABLE: 29.6.2 | Container migration not exercised |
-| OpenCode | PASS: installed `@opencode/cli` 2.2.7 | Exact package and dependencies in lockfile |
+| OpenCode | PASS: installed `@opencode/cli` 2.2.7; re-pinned to 2.3.2 in [09](09-opencode-2.3.2.md) | Exact package and dependencies in lockfile |
 | Isolated authenticated HTTP server | PASS | Loopback; random password; no inherited user/model/cloud configuration |
 | Unauthorized request | PASS: HTTP 401 | Session listing endpoint |
 | Ancestor project configuration | PASS: fixture marker excluded | Project and Claude discovery disabled; actual configuration endpoint checked |

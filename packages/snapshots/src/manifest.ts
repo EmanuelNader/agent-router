@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
-import { OPENCODE_VERSION } from '../../agent-opencode/src/server.js';
+import { RESTORABLE_OPENCODE_VERSIONS } from '../../agent-opencode/src/server.js';
 
 export function assertSafeRelativePath(entryPath: string): string {
   if (
@@ -43,7 +43,7 @@ export const checkpointManifestSchema = z.object({
   checkpointId: z.string().regex(/^chk_[a-f0-9]{16,64}$/),
   createdAt: z.iso.datetime(),
   architecture: z.string().min(1),
-  opencodeVersion: z.literal(OPENCODE_VERSION),
+  opencodeVersion: z.enum(RESTORABLE_OPENCODE_VERSIONS),
   sessionIds: z.array(z.string().min(1)),
   git: gitStateSchema,
   workspaceFiles: z.array(fileReceiptSchema),

@@ -71,7 +71,7 @@ test('renders locked-down cloud-init with SHA-256 verified Node 24, systemd enab
   const root = await mkdtemp(join(tmpdir(), 'router-cloud-init-'));
   tempDirs.push(root);
 
-  const script = buildWorkerBootstrapScript('2.2.7');
+  const script = buildWorkerBootstrapScript('2.3.2');
   const scriptPath = join(root, 'bootstrap.sh');
   await writeFile(scriptPath, script, { mode: 0o700 });
   // Validate real POSIX/bash syntax using the OS shell parser
@@ -79,7 +79,7 @@ test('renders locked-down cloud-init with SHA-256 verified Node 24, systemd enab
 
   const cloudConfig = renderWorkerCloudInit({
     sshAuthorizedKey: sampleSshPubKey,
-    opencodeVersion: '2.2.7',
+    opencodeVersion: '2.3.2',
     loopbackPort: 4096,
   });
 
@@ -89,7 +89,7 @@ test('renders locked-down cloud-init with SHA-256 verified Node 24, systemd enab
   expect(cloudConfig).toContain('node-v24.18.1-linux-arm64.tar.xz');
   expect(cloudConfig).toContain('7201e3a09dc825bac57867c81913e2b8f0ef87d04cb9082af4cda82f6ff3d88c');
   expect(cloudConfig).toContain('127.0.0.1 --port 4096');
-  expect(cloudConfig).toContain('@opencode/cli@2.2.7');
+  expect(cloudConfig).toContain('@opencode/cli@2.3.2');
   expect(cloudConfig).toContain('systemctl enable --now agent-router-opencode.service');
   expect(cloudConfig).not.toContain('0.0.0.0');
   expect(cloudConfig).not.toContain('ocid1.');

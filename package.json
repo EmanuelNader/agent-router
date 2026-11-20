@@ -35,7 +35,7 @@
     "e2e": "tsx scripts/e2e.ts"
   },
   "devDependencies": {
-    "@opencode/cli": "2.2.7",
+    "@opencode/cli": "2.3.2",
     "@types/node": "24.19.2",
     "tsx": "4.23.15",
     "typescript": "7.0.2",

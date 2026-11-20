@@ -6,7 +6,7 @@ const transferSchema = z.object({
 }).passthrough();
 export type SessionTransfer = z.infer<typeof transferSchema>;
 
-/** Pinned to OpenCode 2.2.7. Transfer data can contain private conversation text. */
+/** Pinned to OpenCode 2.3.2. Transfer data can contain private conversation text. */
 export class OpenCodeClient {
   private readonly url: URL;
   private readonly authorization: string;

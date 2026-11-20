@@ -67,7 +67,7 @@ export async function verifyMcpLoaders() {
     visit(effective);
     assert.ok(candidates.some(value => value.type === 'local' && value.disabled === true && JSON.stringify(value.command) === '["node","--version"]'), 'OpenCode must load the translated disabled server');
     return { status: 'MCP_LOADERS_VERIFIED' as const, isolatedState: true,
-      opencode: '2.2.7', codex: codexVersion.replace('codex-cli ', ''), claude: claudeVersion.split(' ')[0],
+      opencode: '2.3.2', codex: codexVersion.replace('codex-cli ', ''), claude: claudeVersion.split(' ')[0],
       scope: 'CONFIGURATION_LOADING_ONLY' as const };
   } finally {
     await server?.stop();
