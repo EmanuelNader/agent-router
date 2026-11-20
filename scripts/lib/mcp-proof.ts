@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { findClaudeBinary } from '../../packages/agent-claude-code/src/adapter.js';
-import { findCodexBinary } from '../../packages/agent-codex/src/adapter.js';
+import { findCodexBinary, SUPPORTED_CODEX_MAJOR_MINOR } from '../../packages/agent-codex/src/adapter.js';
 import { startIsolatedServer } from '../../packages/agent-opencode/src/server.js';
 import { parseMcpConfig, translateMcpConfig } from '../../packages/workspace/src/mcp-portability.js';
 
@@ -36,7 +36,7 @@ export async function verifyMcpLoaders() {
     }
     const codexVersion = run(codex, ['--version'], codexHome).trim();
     const claudeVersion = run(claude, ['--version'], claudeHome).trim();
-    assert.match(codexVersion, /^codex-cli 0\.169\./);
+    assert.ok(codexVersion.startsWith(`codex-cli ${SUPPORTED_CODEX_MAJOR_MINOR}`), 'Codex CLI is not the supported release line');
     assert.match(claudeVersion, /^2\.1\.[0-9]+ \(Claude Code\)$/);
     await writeFile(join(codexHome, 'config.toml'), translateMcpConfig(servers, 'codex-cli'), { mode: 0o600 });
     const listed = JSON.parse(run(codex, ['mcp', 'list', '--json'], codexHome));
