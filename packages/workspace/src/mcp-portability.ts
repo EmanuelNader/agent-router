@@ -198,7 +198,7 @@ export function translateMcpConfig(servers: PortableMcpServer[], format: McpForm
 
 export async function inspectWorkspaceMcp(
   workspace: string,
-  exclusions: string[] = ['node_modules', '.pnpm-store', '.work'],
+  exclusions: string[] = ['node_modules', '.pnpm-store', '.work', '.cache'],
 ): Promise<{ configsChecked: number; serversChecked: number }> {
   let configsChecked = 0;
   let serversChecked = 0;

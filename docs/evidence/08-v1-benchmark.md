@@ -27,7 +27,7 @@ The following chronological notes preserve earlier RED/GREEN runs and superseded
 - Checkpoint capture now materializes linked Git worktrees into standalone Git
   metadata via a bundle, HEAD, and independently reconstructed staged blobs/index.
   New captures now emit v3, preserve confined relative symlinks, and exclude
-  `node_modules`, `.pnpm-store`, and `.work` by default. Exclusions are configurable
+  `node_modules`, `.pnpm-store`, `.work`, and `.cache` by default. Exclusions are configurable
   by basename; overlapping tracked Git files block capture rather than changing
   staged state silently. Legacy v1/v2 restore remains supported.
 - The benchmark runner is infrastructure only: dedicated executable proofs for

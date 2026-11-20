@@ -22,7 +22,7 @@ test('v3 preserves confined file/directory symlinks and excludes disposable cach
   await symlink('lib/data', join(source, 'file-link'));
   await symlink('lib', join(source, 'dir-link'));
   await symlink('dir-link/data', join(source, 'chain'));
-  for (const cache of ['node_modules', '.pnpm-store', '.work']) {
+  for (const cache of ['node_modules', '.pnpm-store', '.work', '.cache']) {
     await mkdir(join(source, cache));
     await writeFile(join(source, cache, 'disposable'), 'not portable');
   }
@@ -33,7 +33,7 @@ test('v3 preserves confined file/directory symlinks and excludes disposable cach
   expect(await readlink(join(target, 'file-link'))).toBe('lib/data');
   expect(await readlink(join(target, 'dir-link'))).toBe('lib');
   expect(await readFile(join(target, 'chain'), 'utf8')).toBe('portable');
-  for (const cache of ['node_modules', '.pnpm-store', '.work']) await expect(access(join(target, cache))).rejects.toThrow();
+  for (const cache of ['node_modules', '.pnpm-store', '.work', '.cache']) await expect(access(join(target, cache))).rejects.toThrow();
 });
 
 test.each(['../outside', '/etc/passwd', 'lib/../../outside'])('rejects escaping symlink %s before storing a checkpoint', async target => {

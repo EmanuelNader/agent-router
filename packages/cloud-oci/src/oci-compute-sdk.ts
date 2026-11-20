@@ -1,4 +1,5 @@
 import { common, core, identity } from 'oci-sdk';
+import { perRequestTimeout } from '../../cloud-readiness/src/oci-sdk.js';
 import type {
   LaunchOciWorkerParams,
   OciComputeGateway,
@@ -42,7 +43,7 @@ export function createOciComputeSdkGateway(
   const auth = new common.ConfigFileAuthenticationDetailsProvider(configPath, profile);
   const configuration: common.ClientConfiguration = {
     retryConfiguration: common.NoRetryConfigurationDetails,
-    httpOptions: { signal: AbortSignal.timeout(30_000) },
+    httpOptions: perRequestTimeout(30_000),
   };
 
   const compute = new core.ComputeClient({ authenticationDetailsProvider: auth }, configuration);

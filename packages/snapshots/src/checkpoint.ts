@@ -274,7 +274,7 @@ export async function captureAgentCheckpoint(options: {
   exclusions?: string[];
 }): Promise<CheckpointManifestV3> {
   const root = path.resolve(options.workspace);
-  const exclusions = options.exclusions ?? ['node_modules', '.pnpm-store', '.work'];
+  const exclusions = options.exclusions ?? ['node_modules', '.pnpm-store', '.work', '.cache'];
   checkpointManifestV3Schema.shape.exclusions.parse(exclusions);
   await inspectWorkspaceMcp(root, exclusions);
   let sessionIds: string[] = [];

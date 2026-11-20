@@ -2,12 +2,17 @@ import { budget, common, identity, limits } from 'oci-sdk';
 import type { OciGuardrailReader, SanitizedBudgetInput } from './oci-guardrails.js';
 import type { OciReader } from './oci-inspect.js';
 
+/** The SDK copies httpOptions into every fetch, so the getter gives each request its own deadline. */
+export function perRequestTimeout(timeoutMs: number): { readonly signal: AbortSignal } {
+  return { get signal() { return AbortSignal.timeout(timeoutMs); } };
+}
+
 /** Only read methods are exposed to the inspector. No credentials enter its report. */
 export function createOciSdkReader(configPath: string, profile = 'DEFAULT') {
   const auth = new common.ConfigFileAuthenticationDetailsProvider(configPath, profile);
   const configuration: common.ClientConfiguration = {
     retryConfiguration: common.NoRetryConfigurationDetails,
-    httpOptions: { signal: AbortSignal.timeout(30_000) },
+    httpOptions: perRequestTimeout(30_000),
   };
   const identities = new identity.IdentityClient({ authenticationDetailsProvider: auth }, configuration);
   const quotas = new limits.LimitsClient({ authenticationDetailsProvider: auth }, configuration);
@@ -56,7 +61,7 @@ export function createOciGuardrailSdkReader(
   const auth = new common.ConfigFileAuthenticationDetailsProvider(configPath, profile);
   const configuration: common.ClientConfiguration = {
     retryConfiguration: common.NoRetryConfigurationDetails,
-    httpOptions: { signal: AbortSignal.timeout(30_000) },
+    httpOptions: perRequestTimeout(30_000),
   };
   const quotas = new limits.QuotasClient({ authenticationDetailsProvider: auth }, configuration);
   const budgets = new budget.BudgetClient({ authenticationDetailsProvider: auth }, configuration);

@@ -191,13 +191,20 @@ export function buildResticRemoteConfig(input: ResticRemoteInput): ResticRemoteC
   };
 }
 
+/** Release line the restic store was observed against; other lines are refused. */
+export const SUPPORTED_RESTIC_MAJOR_MINOR = '0.19.';
+
+function isSupportedResticVersion(output: string): boolean {
+  return output.startsWith(`restic ${SUPPORTED_RESTIC_MAJOR_MINOR}`);
+}
+
 export function isResticAvailable(): boolean {
   try {
-    return execFileSync('restic', ['version'], {
+    return isSupportedResticVersion(execFileSync('restic', ['version'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       timeout: 5_000,
-    }).startsWith('restic ');
+    }));
   } catch {
     return false;
   }
@@ -213,6 +220,7 @@ export class ResticRepositoryStore implements SnapshotStore {
   private readonly extraEnv: Record<string, string>;
   private readonly resticBinary: string;
   private initialized = false;
+  private versionChecked = false;
 
   constructor(repository: string, password: string, extraEnvOrConfig: Record<string, string> | ResticStoreConfig = {}) {
     if (!repository.trim() || /[\r\n\0]/.test(repository) || !password || password.length < 16) {
@@ -303,6 +311,19 @@ export class ResticRepositoryStore implements SnapshotStore {
           throw new Error(`restic ${subcommand} failed`);
         }
       };
+
+      if (!this.versionChecked) {
+        let version: string;
+        try {
+          ({ stdout: version } = await execFileAsync(this.resticBinary, ['version'], { cwd: scratch, env, timeout: 5_000 }));
+        } catch {
+          throw new Error('restic version failed');
+        }
+        if (!isSupportedResticVersion(version)) {
+          throw new Error(`restic is not the supported ${SUPPORTED_RESTIC_MAJOR_MINOR}x release line`);
+        }
+        this.versionChecked = true;
+      }
 
       return await fn(run, scratch);
     } finally {

@@ -12,7 +12,7 @@ Fly is a paid scale-to-zero candidate for an existing owned Machine, with fresh 
 
 ## Run the local proof
 
-Requires Node 24, pnpm 11.25.0, Git, native Codex/Claude binaries at the verified versions, OpenSSH (`sshd`, `ssh`, `scp`), restic, and a working local Docker engine supporting Linux ARM64. No cloud account or model API key is needed. The full benchmark requires Linux proofs; missing tools fail the gates.
+Requires Node 24, pnpm 11.25.0, Git, native Codex/Claude binaries at the verified versions, OpenSSH (`sshd`, `ssh`, `scp`), restic 0.19.x (other release lines are refused), and a working local Docker engine supporting Linux ARM64. No cloud account or model API key is needed. The full benchmark requires Linux proofs; missing tools fail the gates.
 
 Prepare both Linux images on your verification engine before running the full suite:
 

@@ -96,6 +96,10 @@ if [ -n "\${AWS_SHARED_CREDENTIALS_FILE:-}" ] && [ -f "\${AWS_SHARED_CREDENTIALS
   cred_mode="$(stat -c '%a' "\${AWS_SHARED_CREDENTIALS_FILE}" 2>/dev/null || stat -f '%Lp' "\${AWS_SHARED_CREDENTIALS_FILE}")"
   grep -q "aws_secret_access_key = ultra-secret-oci-key-991" "\${AWS_SHARED_CREDENTIALS_FILE}"
 fi
+if [ "$1" = "version" ]; then
+  echo "restic \${FAKE_RESTIC_VERSION:-0.19.1} compiled with go1.26.4 on linux/amd64"
+  exit 0
+fi
 printf '%s|mode=%s\\n' "$*" "$cred_mode" >> "${logPath}"
 for arg in "$@"; do
   if [ "$arg" = "snapshots" ]; then
@@ -137,4 +141,23 @@ exit 0
 
   await expect(store.verifyIntegrity()).rejects.toThrow('restic check failed');
   await expect(store.verifyIntegrity()).rejects.not.toThrow(/ultra-secret-oci-key-991/);
+});
+
+test('restic store refuses a restic outside the supported release line before touching the repository', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'restic-version-'));
+  tempDirs.push(dir);
+  const fakeRestic = join(dir, 'restic');
+  const logPath = join(dir, 'calls.log');
+  await writeFile(
+    fakeRestic,
+    `#!/bin/sh\nif [ "$1" = "version" ]; then echo "restic 0.16.4 compiled with go1.21.6 on linux/amd64"; exit 0; fi\necho "$*" >> "${logPath}"\nexit 0\n`,
+    { mode: 0o700 },
+  );
+  await chmod(fakeRestic, 0o700);
+  const store = new ResticRepositoryStore(join(dir, 'repo'), 'strong-restic-passphrase-1234', { resticBinary: fakeRestic });
+
+  await expect(store.put('chk_0123456789abcdef', [
+    { path: 'note.txt', executable: false, data: Buffer.from('hello') },
+  ])).rejects.toThrow('restic is not the supported 0.19.x release line');
+  await expect(readFile(logPath, 'utf8')).rejects.toThrow();
 });
