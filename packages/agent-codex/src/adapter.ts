@@ -6,7 +6,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { assertSafeRelativePath } from '../../snapshots/src/manifest.js';
 
-export const SUPPORTED_CODEX_MAJOR_MINOR = '0.169.';
+export const SUPPORTED_CODEX_MAJOR_MINOR = '0.171.';
 
 export function findCodexBinary(): string | null {
   const pathDirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
