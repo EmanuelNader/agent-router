@@ -93,7 +93,7 @@ test('passes -o backend options and owner-only 0600 AWS_SHARED_CREDENTIALS_FILE 
 set -eu
 cred_mode=""
 if [ -n "\${AWS_SHARED_CREDENTIALS_FILE:-}" ] && [ -f "\${AWS_SHARED_CREDENTIALS_FILE}" ]; then
-  cred_mode="$(stat -f '%Lp' "\${AWS_SHARED_CREDENTIALS_FILE}" 2>/dev/null || stat -c '%a' "\${AWS_SHARED_CREDENTIALS_FILE}")"
+  cred_mode="$(stat -c '%a' "\${AWS_SHARED_CREDENTIALS_FILE}" 2>/dev/null || stat -f '%Lp' "\${AWS_SHARED_CREDENTIALS_FILE}")"
   grep -q "aws_secret_access_key = ultra-secret-oci-key-991" "\${AWS_SHARED_CREDENTIALS_FILE}"
 fi
 printf '%s|mode=%s\\n' "$*" "$cred_mode" >> "${logPath}"
