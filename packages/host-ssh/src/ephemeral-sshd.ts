@@ -123,7 +123,8 @@ export async function startEphemeralSshd(stateDirectory: string): Promise<Epheme
     'KbdInteractiveAuthentication no',
     'PubkeyAuthentication yes',
     'PermitRootLogin no',
-    'StrictModes yes',
+    // StrictModes rejects key files below a world-writable ancestor such as Linux /tmp.
+    'StrictModes no',
     `AllowUsers ${username}`,
     `Subsystem sftp ${sftpSubsystem}`,
     '',
