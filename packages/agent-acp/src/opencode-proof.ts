@@ -55,8 +55,16 @@ export async function verifyOpenCodeAcp() {
     assert.ok(replay.length > 0, 'ACP load must replay nonempty settled history');
     assert.ok(JSON.stringify(replay).includes('router-acp-conversation-fixture'), 'ACP replay must contain the imported saved user fixture');
     for (const update of replay) assert.equal((update as { sessionId?: unknown }).sessionId, sessionId);
+    await acp.close(); acp = undefined;
+
+    // session/resume must reattach the same saved session without replaying it.
+    const resumed: unknown[] = [];
+    acp = connect(targetState, params => { resumed.push(params); });
+    await acp.initialize();
+    assert.equal(await acp.reconnectSession(sessionId, workspace), 'resume');
+    assert.ok(!JSON.stringify(resumed).includes('router-acp-conversation-fixture'), 'ACP resume must not replay history');
     return { status: 'ACP_VERIFIED' as const, protocolVersion: 1, agentVersion: OPENCODE_VERSION,
-      coldResume: true, settledHistoryReplayed: true, historyFixture: 'IMPORTED_USER_MESSAGE' as const,
+      coldResume: true, settledHistoryReplayed: true, resumeWithoutReplay: true, historyFixture: 'IMPORTED_USER_MESSAGE' as const,
       shellHistoryReplay: 'UNSUPPORTED' as const, modelInference: 'UNTESTED' as const };
   } finally {
     await acp?.close();

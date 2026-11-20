@@ -4,7 +4,10 @@ import { z } from 'zod';
 
 const initializeSchema = z.object({
   protocolVersion: z.literal(1),
-  agentCapabilities: z.object({ loadSession: z.boolean().optional() }).passthrough(),
+  agentCapabilities: z.object({
+    loadSession: z.boolean().optional(),
+    sessionCapabilities: z.object({ resume: z.object({}).passthrough().optional() }).passthrough().optional(),
+  }).passthrough(),
   agentInfo: z.object({ name: z.string(), version: z.string() }).passthrough().optional(),
 }).passthrough();
 type Initialization = z.infer<typeof initializeSchema>;
@@ -165,6 +168,26 @@ export class AcpClient {
     if (!sessionId || sessionId.length > 4096) throw new Error('ACP_INVALID_SESSION');
     const result = await this.request('session/load', { sessionId, cwd, mcpServers: [] });
     if (!result || typeof result !== 'object' || Array.isArray(result)) { this.fail('ACP_INVALID_SESSION'); throw this.failure; }
+  }
+
+  /** Reattaches without history replay; the agent sends no session/update before responding. */
+  async resumeSession(sessionId: string, cwd: string): Promise<void> {
+    this.assertSession(cwd);
+    if (!this.initialization?.agentCapabilities.sessionCapabilities?.resume) throw new Error('ACP_RESUME_UNSUPPORTED');
+    if (!sessionId || sessionId.length > 4096) throw new Error('ACP_INVALID_SESSION');
+    const result = await this.request('session/resume', { sessionId, cwd, mcpServers: [] });
+    if (!result || typeof result !== 'object' || Array.isArray(result)) { this.fail('ACP_INVALID_SESSION'); throw this.failure; }
+  }
+
+  /** Prefers session/resume and falls back to session/load, which replays history through onSessionUpdate. */
+  async reconnectSession(sessionId: string, cwd: string): Promise<'resume' | 'load'> {
+    this.assertSession(cwd);
+    if (this.initialization?.agentCapabilities.sessionCapabilities?.resume) {
+      await this.resumeSession(sessionId, cwd);
+      return 'resume';
+    }
+    await this.loadSession(sessionId, cwd);
+    return 'load';
   }
 
   async close(): Promise<void> {

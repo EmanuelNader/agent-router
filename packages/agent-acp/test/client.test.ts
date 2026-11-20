@@ -20,10 +20,14 @@ createInterface({input:process.stdin}).on('line', line => {
  if(mode==='unknown-id') {process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id+1,result:{}})+'\\n');return;}
  if(mode==='malformed') {process.stdout.write('invalid\\n');return;}
  if(mode==='error') {process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,error:{code:-32603,message:'private-upstream-value'}})+'\\n');return;}
- const result=m.method==='initialize'?{protocolVersion:mode==='wrong-version'?2:1,agentCapabilities:{loadSession:mode!=='no-load'}}:m.method==='session/new'?{sessionId:'fixture-session'}:{};
+ const resume=mode==='resume'||mode==='resume-only';
+ if((m.method==='session/resume'&&!resume)||(m.method==='session/load'&&mode==='resume-only')) {process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,error:{code:-32601,message:'unadvertised'}})+'\\n');return;}
+ if(m.method==='session/load') process.stdout.write(JSON.stringify({jsonrpc:'2.0',method:'session/update',params:{sessionId:m.params.sessionId,replayed:true}})+'\\n');
+ const result=m.method==='initialize'?{protocolVersion:mode==='wrong-version'?2:1,agentCapabilities:{loadSession:mode!=='no-load'&&mode!=='resume-only',...(resume?{sessionCapabilities:{resume:{}}}:{})}}:m.method==='session/new'?{sessionId:'fixture-session'}:{};
  process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result})+'\\n');
 });`);
-  return { root, client: new AcpClient({ command: process.execPath, args: [file], cwd: root, env: { PATH: process.env.PATH, HOME: root }, timeoutMs: mode === 'hang' ? 100 : 3000, maxFrameBytes: 1024 }) };
+  const updates: unknown[] = [];
+  return { root, updates, client: new AcpClient({ command: process.execPath, args: [file], cwd: root, env: { PATH: process.env.PATH, HOME: root }, timeoutMs: mode === 'hang' ? 100 : 3000, maxFrameBytes: 1024, onSessionUpdate: params => { updates.push(params); } }) };
 }
 
 test('negotiates ACP v1 before creating and loading sessions', async () => {
@@ -33,6 +37,33 @@ test('negotiates ACP v1 before creating and loading sessions', async () => {
     expect((await client.initialize()).protocolVersion).toBe(1);
     expect(await client.newSession(root)).toBe('fixture-session');
     await expect(client.loadSession('fixture-session', root)).resolves.toBeUndefined();
+  } finally { await client.close(); }
+});
+
+test.each(['resume', 'resume-only'])('reconnects with session/resume and no history replay when %s is advertised', async mode => {
+  const { root, updates, client } = await fixture(mode);
+  try {
+    await client.initialize();
+    expect(await client.reconnectSession('fixture-session', root)).toBe('resume');
+    expect(updates).toEqual([]);
+  } finally { await client.close(); }
+});
+
+test('falls back to session/load with replay and never calls an unadvertised session/resume', async () => {
+  const { root, updates, client } = await fixture();
+  try {
+    await client.initialize();
+    await expect(client.resumeSession('fixture-session', root)).rejects.toThrow('ACP_RESUME_UNSUPPORTED');
+    expect(await client.reconnectSession('fixture-session', root)).toBe('load');
+    expect(updates).toEqual([{ sessionId: 'fixture-session', replayed: true }]);
+  } finally { await client.close(); }
+});
+
+test('refuses to reconnect when the agent advertises neither resume nor load', async () => {
+  const { root, client } = await fixture('no-load');
+  try {
+    await client.initialize();
+    await expect(client.reconnectSession('fixture-session', root)).rejects.toThrow('ACP_LOAD_UNSUPPORTED');
   } finally { await client.close(); }
 });
 
