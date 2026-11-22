@@ -6,6 +6,7 @@
   "labels": [
     "dependencies"
   ],
+  "minimumReleaseAge": "3 days",
   "customManagers": [
     {
       "customType": "regex",
@@ -33,6 +34,18 @@
     },
     {
       "customType": "regex",
+      "description": "Claude Code release line accepted by the MCP loader proof",
+      "managerFilePatterns": [
+        "/^packages/agent-claude-code/src/adapter\\.ts$/"
+      ],
+      "matchStrings": [
+        "SUPPORTED_CLAUDE_CODE_MAJOR_MINOR = '(?<currentValue>\\d+\\.\\d+)\\.'"
+      ],
+      "depNameTemplate": "@anthropic-ai/claude-code",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
       "description": "pnpm installed by CI must match packageManager",
       "managerFilePatterns": [
         "/^\\.github/workflows/.+\\.ya?ml$/"
@@ -49,7 +62,8 @@
       "description": "Agent bumps change adapter and checkpoint compatibility; they need the compatibility proofs from AGENTS.md before merging",
       "matchDepNames": [
         "@opencode/cli",
-        "@openai/codex"
+        "@openai/codex",
+        "@anthropic-ai/claude-code"
       ],
       "groupName": "{{depName}} compatibility",
       "addLabels": [

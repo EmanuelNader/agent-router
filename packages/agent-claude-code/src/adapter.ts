@@ -8,6 +8,8 @@ import { z } from 'zod';
 
 const execFileAsync = promisify(execFile);
 
+export const SUPPORTED_CLAUDE_CODE_MAJOR_MINOR = '2.1.';
+
 export function findClaudeBinary(): string | null {
   const pathDirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
   const candidates = [
