@@ -39,4 +39,4 @@ Limits:
 - A prompt admitted after the second inbox read and before the server stops is not seen.
 - Delivery of a re-admitted prompt needs model inference and is not tested. Only OpenCode 2.3.2 was run.
 - A destination session that already holds other inbox items fails the post-admission comparison.
-- An Agent Router build older than this change restores such a checkpoint without its pending items: OpenCode's import endpoint ignores the extra field.
+- An Agent Router build older than this change restores such a checkpoint without its pending items: OpenCode's import endpoint ignores the extra field. The CLI version did not change, so `move --agent opencode` first runs `agent-router supports opencode-pending-inbox` on the remote host and refuses with `REMOTE_ROUTER_TOO_OLD` before capture when that fails (`packages/host-ssh/test/move.test.ts`). `restore` run by hand with an older build has no such check.

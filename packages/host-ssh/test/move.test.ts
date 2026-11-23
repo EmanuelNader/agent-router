@@ -39,7 +39,7 @@ async function fixture(restore: (stdin: Buffer | undefined) => string) {
     transport, routerVersion: '9.9.9', remoteRouter: 'agent-router', remoteWorkspace: '/home/u/ws', remoteSpool: '/home/u/.agent-router/spool',
     ...overrides,
   });
-  return { workspace, calls, spool, journal, run };
+  return { workspace, calls, spool, journal, run, transport };
 }
 
 test('a remote restore failure after it started is journaled as NEEDS_RECONCILE and keeps the source', async () => {
@@ -62,6 +62,21 @@ test('a version mismatch refuses before capture and leaves no blocking journal e
   expect(await f.journal.listBlocking()).toEqual([]);
   expect(f.calls.some(c => c[1] === 'restore')).toBe(false);
   expect(f.spool.size).toBe(0);
+});
+
+test('a remote build without a required feature refuses before capture and leaves no blocking journal entry', async () => {
+  const f = await fixture(() => '{}');
+  const transport: MoveTransport = {
+    ...f.transport,
+    async runRemoteCommand(command, input) {
+      if (command[1] === 'supports') throw new Error('exit 1');
+      return await f.transport.runRemoteCommand(command, input);
+    },
+  };
+  await expect(f.run({ transport, requiredRemoteFeatures: ['opencode-pending-inbox'] })).rejects.toThrow(/REMOTE_ROUTER_TOO_OLD/);
+  expect(f.calls.some(command => command[1] === 'restore')).toBe(false);
+  expect(f.spool.size).toBe(0);
+  expect(await f.journal.listBlocking()).toEqual([]);
 });
 
 test('the key travels on stdin, never in the remote command', async () => {

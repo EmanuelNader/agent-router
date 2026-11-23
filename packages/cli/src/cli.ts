@@ -58,6 +58,8 @@ import { renderLaunchdPlist, renderSystemdUserUnits } from './service-units.js';
 import { runAllowanceWatchLoop } from './watch.js';
 
 export const ROUTER_CLI_VERSION = '1.0.0';
+/** Restore behaviors added without a version change; `move` asks the remote build for the ones it relies on. */
+const SUPPORTED_FEATURES = new Set(['opencode-pending-inbox']);
 
 export interface RouterCliIo {
   stdout: (line: string) => void;
@@ -81,6 +83,7 @@ const helpText = `Usage: agent-router <subcommand> [options]
 
 General:
   --version | version     Print Agent Router CLI version (${ROUTER_CLI_VERSION})
+  supports                <feature>  (exit 0 when this build has the named restore feature)
   --help | help           Show this command reference
 
 Local journal, Tailscale peers, pairing, checkpoints & handoffs:
@@ -163,6 +166,12 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
   if (subcommand === 'version' || subcommand === '--version' || subcommand === '-v') {
     io.stdout(ROUTER_CLI_VERSION);
     return 0;
+  }
+
+  if (subcommand === 'supports') {
+    const supported = rest.length === 1 && SUPPORTED_FEATURES.has(rest[0]!);
+    io.stdout(supported ? 'supported' : 'unsupported');
+    return supported ? 0 : 1;
   }
 
   try {
@@ -664,6 +673,8 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         remoteWorkspace,
         remoteSpool,
         remoteAgentArgs,
+        // An older remote build would restore the session but ignore the checkpoint's pending inbox items.
+        ...(captureAgent.kind === 'opencode' ? { requiredRemoteFeatures: ['opencode-pending-inbox'] } : {}),
         removeSource: values['remove-source'] === true,
       });
       io.stdout(JSON.stringify(result, null, 2));

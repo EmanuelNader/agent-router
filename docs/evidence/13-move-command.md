@@ -15,7 +15,7 @@ Recorded 2026-11-22 on Ubuntu Linux `x86_64` (Node 24, `pnpm 12.21.0`). The remo
 | `--remove-source` removes the source after a verified remote restore | PASS | `packages/cli/test/move.test.ts` |
 | Remote arguments containing shell syntax refused | PASS | `packages/host-ssh/test/move.test.ts` |
 
-`pnpm check`: 837 passed, 2 skipped (832 when first recorded). The SSH tests skip when no local `sshd` binary exists; the Codex test also skips when no supported Codex CLI is installed, which is the case in CI.
+`pnpm check`: 838 passed, 2 skipped (832 when first recorded). The SSH tests skip when no local `sshd` binary exists; the Codex test also skips when no supported Codex CLI is installed, which is the case in CI.
 
 ## Not established
 

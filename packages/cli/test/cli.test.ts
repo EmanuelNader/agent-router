@@ -164,6 +164,8 @@ test('router CLI supports --version, aws:allowance, hetzner:simulate-lifecycle, 
   const verIo = captureIo();
   expect(await runRouterCli(['--version'], verIo.io)).toBe(0);
   expect(verIo.out.join('\n').trim()).toBe('1.0.0');
+  expect(await runRouterCli(['supports', 'opencode-pending-inbox'], verIo.io)).toBe(0);
+  expect(await runRouterCli(['supports', 'unknown-feature'], verIo.io)).toBe(1);
 
   const awsReportPath = join(root, 'aws-low.json');
   await writeFile(
