@@ -6,7 +6,7 @@ Observed 2026-11-18. v1.0.0 engineering candidate; native read-only reviews and 
 
 - Latest complete `pnpm benchmark`: **8/8 gates, 100/100**, exit **0**. Build, check, probe, agent roundtrip, master E2E, and all executable gate proofs passed. The earlier pre-documentation run was 7/8, 87.5/100, exit 1.
 - Full check: **817 tests across 53 files, zero skipped files**. The adversarial corpus executes **642 attack vectors**, plus two controls.
-- Native compatibility: OpenCode 2.2.7, Codex CLI 0.169.0, Claude Code 2.1.326. MCP receipt scope is `CONFIGURATION_LOADING_ONLY`; neither MCP tool execution nor OAuth is claimed.
+- Native compatibility: OpenCode 2.2.7, Codex CLI 0.169.0, Claude Code 2.1.326. Later re-observed with OpenCode 2.3.2 ([09](09-opencode-2.3.2.md)) and Codex CLI 0.171.0 with Claude Code 2.1.329 ([10](10-codex-0.171.md)). MCP receipt scope is `CONFIGURATION_LOADING_ONLY`; neither MCP tool execution nor OAuth is claimed.
 - ACP v1 cold resume passes using an `IMPORTED_USER_MESSAGE` saved fixture. Shell-history replay is unsupported by the pinned upstream ACP implementation. No model inference is performed.
 - v3 linked-worktree restore passes natively and inside real `ubuntu:24.04` Linux/aarch64 with Node 24, after deleting both original linked source and parent repository. It verifies staged index, dirty/untracked bytes, confined relative symlink, and cache exclusion.
 - Master E2E passes real HTTP/ACP, doctor, linked Git worktree, SSH/SCP, restic SFTP, guest `sha256sum -c`, allowance watch with one active agent, zero simulated cloud remnants, and zero blocking journal entries.
