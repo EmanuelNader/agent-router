@@ -2,7 +2,7 @@
 
 Recorded 2026-11-22 on Ubuntu Linux `x86_64` (Node 24, `pnpm 12.21.0`, OpenCode 2.3.2). No model inference and no cloud calls: every prompt was admitted with `resume: false`.
 
-Checkpoints do **not** carry the inbox. Re-admission below is research only; the only part wired into capture is the guard described at the end.
+Checkpoints carry text-only `user` and `synthetic` inbox items and refuse everything else; see the last section.
 
 | Observation (`pnpm agent:inbox-probe`) | Result |
 | --- | --- |
@@ -17,18 +17,26 @@ Checkpoints do **not** carry the inbox. Re-admission below is research only; the
 ## What this does and does not establish
 
 - Text-only `user` and `synthetic` items can be listed on the source and re-admitted on the destination without waking the agent loop.
-- `compaction` and `move` items have no admission endpoint in the 2.3.2 OpenAPI document, so they cannot be carried.
+- `compaction` and `move` items have no admission endpoint in the 2.3.2 OpenAPI document, so they cannot be carried and block capture.
 - Not tested: prompts with file, agent, or skill attachments (the list and admission schemas use different attachment types); delivery after re-admission, which needs model inference; any release other than 2.3.2.
 - The inbox API is not marked stable upstream. Its lifecycle is still being designed ([opencode#35966](https://github.com/anomalyco/opencode/issues/35966)). A report of delivered items leaving stale queued entries ([opencode#62618](https://github.com/anomalyco/opencode/issues/62618)) was closed as not planned on 2026-11-10: the maintainer could not reproduce it on 2.2.5, found the server inbox empty after delivery, and suspects a display problem in the terminal UI. That was not rerun here on 2.3.2.
 
-## Capture guard
+## Capture and restore
 
-The `checkpoint`, `handoff`, `migrate` and `move` OpenCode capture paths export through `OpenCodeClient.exportSessionForCheckpoint`. It reads the inbox before and after the export and refuses with `OPENCODE_PENDING_INBOX` when any item is present, except a `synthetic` item with `metadata.source: "shell"`: that item records a shell turn whose result is already in the exported messages.
+The `checkpoint`, `handoff`, `migrate` and `move` OpenCode capture paths export through `OpenCodeClient.exportSessionForCheckpoint`. It reads the inbox before and after the export and stores the items as `pendingInbox` beside the exported session in the checkpoint's agent bundle. It refuses with `OPENCODE_PENDING_INBOX` when an item is not a text-only `user` or `synthetic` item, or when the two reads differ. `OpenCodeClient.importSession` imports the session, re-admits each carried item with its original `id` and `resume: false`, then lists the destination inbox and fails unless it equals what the checkpoint carried.
+
+The `synthetic` item a finished shell turn leaves (`metadata.source: "shell"`) is carried like any other item, so the destination inbox equals the source inbox. `metadata` is carried only on `synthetic` items; a `user` item with any payload field other than `text` is refused.
 
 | Observation | Result |
 | --- | --- |
-| Export for a checkpoint succeeds with only the shell item in the inbox (`pnpm agent:inbox-probe`, OpenCode 2.3.2) | PASS |
-| Export for a checkpoint is refused once a queued user prompt is admitted (`pnpm agent:inbox-probe`, OpenCode 2.3.2) | PASS |
-| `user`, non-shell `synthetic` and `compaction` items are each refused (`packages/agent-opencode/test/client.test.ts`, fixture server) | PASS |
+| `move` carries a shell `synthetic` item, a queued user prompt and a steered user prompt; the remote inbox has the same IDs, order, delivery modes and payloads (`packages/cli/test/move.test.ts`, OpenCode 2.3.2, loopback SSH) | PASS |
+| A user prompt with a `files` attachment, a `compaction` item and a `move` item are each refused at capture (`packages/agent-opencode/test/client.test.ts`, fixture server) | PASS |
+| An inbox that changes between the two reads is refused (same test) | PASS |
+| Restore fails when the destination inbox differs from the checkpoint after re-admission, and rejects a carried item of another type (same file, fixture server) | PASS |
 
-Limits: a prompt admitted after the second inbox read and before the server stops is not seen. The guard trusts the server's inbox listing: any delivered item the server still listed would make it refuse until that item is deleted. No such case was observed. Pending items are still not carried in a checkpoint.
+Limits:
+
+- A prompt admitted after the second inbox read and before the server stops is not seen.
+- Delivery of a re-admitted prompt needs model inference and is not tested. Only OpenCode 2.3.2 was run.
+- A destination session that already holds other inbox items fails the post-admission comparison.
+- An Agent Router build older than this change restores such a checkpoint without its pending items: OpenCode's import endpoint ignores the extra field. The CLI version did not change, so `move --agent opencode` first runs `agent-router supports opencode-pending-inbox` on the remote host and refuses with `REMOTE_ROUTER_TOO_OLD` before capture when that fails (`packages/host-ssh/test/move.test.ts`). `restore` run by hand with an older build has no such check.

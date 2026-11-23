@@ -41,7 +41,7 @@ The checked release is [OpenCode v2.2.7](https://github.com/anomalyco/opencode/t
 
 `OPENCODE_PASSWORD` protects the server using HTTP Basic authentication with username `opencode`. Transfer routes are experimental and require a pinned-version compatibility test. The client does not send credentials over non-loopback HTTP, follow redirects, or include upstream error bodies in error messages.
 
-A pending prompt is durably admitted to the inbox, but is not settled history. The first round-trip test deliberately failed when it expected a queued prompt in export. Changing the fixture to a completed shell turn established the supported saved-history boundary. Future migration must stop accepting input and drain or explicitly transfer pending inbox items; copying a transcript alone can lose queued work.
+A pending prompt is durably admitted to the inbox, but is not settled history. The first round-trip test deliberately failed when it expected a queued prompt in export. Changing the fixture to a completed shell turn established the supported saved-history boundary. Future migration must stop accepting input and drain or explicitly transfer pending inbox items; copying a transcript alone can lose queued work. Since 2026-11-22 capture transfers text-only inbox items and refuses the rest ([12-opencode-inbox.md](12-opencode-inbox.md)).
 
 ## Remaining gates
 

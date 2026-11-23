@@ -15,7 +15,7 @@ Recorded 2026-11-22 on Ubuntu Linux `x86_64` (Node 24, `pnpm 12.21.0`). The remo
 | `--remove-source` removes the source after a verified remote restore | PASS | `packages/cli/test/move.test.ts` |
 | Remote arguments containing shell syntax refused | PASS | `packages/host-ssh/test/move.test.ts` |
 
-`pnpm check`: 835 passed, 2 skipped (832 when first recorded). The SSH tests skip when no local `sshd` binary exists; the Codex test also skips when no supported Codex CLI is installed, which is the case in CI.
+`pnpm check`: 838 passed, 2 skipped (832 when first recorded). The SSH tests skip when no local `sshd` binary exists; the Codex test also skips when no supported Codex CLI is installed, which is the case in CI.
 
 ## Not established
 
@@ -23,4 +23,4 @@ Recorded 2026-11-22 on Ubuntu Linux `x86_64` (Node 24, `pnpm 12.21.0`). The remo
 - Codex and OpenCode history with model turns. The fixtures are shell turns, which need no credentials or inference. Both agent states were isolated and on the same machine.
 - For OpenCode, the source server must be running during `move` and an OpenCode server must already be running on the remote host; `move` starts neither.
 - Stopping the source agent. `move` does not fence a running agent process; the operator must stop it first.
-- Pending OpenCode inbox items, running processes, sockets, and in-flight side effects are not moved.
+- Running processes, sockets, and in-flight side effects are not moved. Text-only pending OpenCode inbox items are moved ([12-opencode-inbox.md](12-opencode-inbox.md)); any other inbox item blocks the move.

@@ -48,6 +48,8 @@ export async function moveWorkspaceToHost(options: {
   remoteWorkspace: string;
   remoteSpool: string;
   remoteAgentArgs?: string[];
+  /** Features the remote build must report through `supports`, checked before capture. */
+  requiredRemoteFeatures?: string[];
   quiesceSource?: () => Promise<void>;
   removeSource?: boolean;
 }): Promise<{ operation: OperationRecord; manifest: CheckpointManifestV3; remoteWorkspace: string; sourceRemoved: boolean }> {
@@ -77,6 +79,13 @@ export async function moveWorkspaceToHost(options: {
     }
     if (remoteVersion !== options.routerVersion) {
       throw new Error(`REMOTE_ROUTER_VERSION_MISMATCH: local ${options.routerVersion}, remote differs`);
+    }
+    for (const feature of assertRemoteWords(options.requiredRemoteFeatures ?? [])) {
+      try {
+        await transport.runRemoteCommand([router, 'supports', feature]);
+      } catch {
+        throw new Error(`REMOTE_ROUTER_TOO_OLD: the remote Agent Router does not support ${feature}; update it`);
+      }
     }
     try {
       await transport.runRemoteCommand(['test', '!', '-e', remoteWorkspace]);
