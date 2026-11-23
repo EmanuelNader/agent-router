@@ -16,6 +16,14 @@ const inboxItemSchema = z.object({
 const textPayloadSchema = z.object({ text: z.string() }).passthrough();
 export type InboxItem = z.infer<typeof inboxItemSchema>;
 
+const shellRecordSchema = z.object({
+  type: z.literal('synthetic'),
+  payload: z.object({ metadata: z.object({ source: z.literal('shell') }).passthrough() }).passthrough(),
+}).passthrough();
+function isShellRecord(item: InboxItem): boolean {
+  return shellRecordSchema.safeParse(item).success;
+}
+
 /** Pinned to OpenCode 2.3.2. Transfer data can contain private conversation text. */
 export class OpenCodeClient {
   private readonly url: URL;
@@ -74,6 +82,28 @@ export class OpenCodeClient {
     );
     if (!result.success) throw new Error('Invalid OpenCode transfer response');
     return result.data.data;
+  }
+
+  /**
+   * Exports a session for a checkpoint, refusing when its inbox holds work the export does not carry.
+   * A synthetic item recording a finished shell turn is allowed: that turn is already in the exported messages.
+   * The inbox is read again after the export so an item admitted during the export is also refused.
+   */
+  async exportSessionForCheckpoint(sessionId: string): Promise<SessionTransfer> {
+    await this.assertNoPendingInbox(sessionId);
+    const transfer = await this.exportSession(sessionId);
+    await this.assertNoPendingInbox(sessionId);
+    return transfer;
+  }
+
+  private async assertNoPendingInbox(sessionId: string): Promise<void> {
+    const pending = (await this.listInbox(sessionId)).filter(item => !isShellRecord(item));
+    if (pending.length > 0) {
+      throw new Error(
+        `OPENCODE_PENDING_INBOX: session has ${pending.length} pending inbox item(s) (${pending.map(item => `${item.type} ${item.id}`).join(', ')}) ` +
+          'that a checkpoint would drop; let the agent consume them or delete them first',
+      );
+    }
   }
 
   async importSession(transfer: SessionTransfer, directory: string): Promise<string> {

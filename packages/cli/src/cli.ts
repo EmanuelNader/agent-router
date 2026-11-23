@@ -314,7 +314,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         const sessionId = values['session-id'];
         return {
           kind: 'opencode',
-          exportSessions: async () => [await client.exportSession(sessionId)],
+          exportSessions: async () => [await client.exportSessionForCheckpoint(sessionId)],
         };
       }
       if (agentFlag === 'codex-cli') {
