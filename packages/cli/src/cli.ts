@@ -38,7 +38,7 @@ import {
   type PreparedCodespaceSshConfig,
 } from '../../host-ssh/src/codespaces-ssh.js';
 import { moveWorkspaceToHost } from '../../host-ssh/src/move.js';
-import { assertStoppableProcess, stopProcess } from '../../host-ssh/src/stop-process.js';
+import { identifyStoppableProcess, stopProcess } from '../../host-ssh/src/stop-process.js';
 import { pairingAgentKindSchema, runRemotePairingOverSsh } from '../../host-ssh/src/pairing.js';
 import { discoverTailscalePeers } from '../../host-ssh/src/tailscale.js';
 import { LoopbackHostTransport, SshCliTransport } from '../../host-ssh/src/transport.js';
@@ -631,8 +631,9 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
           '--opencode-password-file', values['target-opencode-password-file'],
         );
       }
-      const stopSourcePid = values['stop-source-pid'] === undefined ? undefined : Number(values['stop-source-pid']);
-      if (stopSourcePid !== undefined) assertStoppableProcess(stopSourcePid);
+      const sourceAgentProcess = values['stop-source-pid'] === undefined
+        ? undefined
+        : await identifyStoppableProcess(Number(values['stop-source-pid']));
       const workspace = path.resolve(workspaceArg);
       const wsKey = values['workspace-key'] ?? path.basename(workspace);
       const journalFromWorkspace = path.relative(workspace, path.resolve(values['journal-dir']));
@@ -668,7 +669,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         remoteWorkspace,
         remoteSpool,
         remoteAgentArgs,
-        ...(stopSourcePid !== undefined ? { quiesceSource: () => stopProcess(stopSourcePid) } : {}),
+        ...(sourceAgentProcess ? { quiesceSource: () => stopProcess(sourceAgentProcess) } : {}),
         removeSource: values['remove-source'] === true,
       });
       io.stdout(JSON.stringify(result, null, 2));
