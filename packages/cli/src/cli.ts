@@ -38,6 +38,7 @@ import {
   type PreparedCodespaceSshConfig,
 } from '../../host-ssh/src/codespaces-ssh.js';
 import { moveWorkspaceToHost } from '../../host-ssh/src/move.js';
+import { identifyStoppableProcess, stopProcess } from '../../host-ssh/src/stop-process.js';
 import { pairingAgentKindSchema, runRemotePairingOverSsh } from '../../host-ssh/src/pairing.js';
 import { discoverTailscalePeers } from '../../host-ssh/src/tailscale.js';
 import { LoopbackHostTransport, SshCliTransport } from '../../host-ssh/src/transport.js';
@@ -94,7 +95,7 @@ Local journal, Tailscale peers, pairing, checkpoints & handoffs:
   checkpoint              --workspace <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path> --session-id <id>] [--codex-home <dir>] [--claude-config-dir <dir>]
   restore                 --checkpoint chk_<hex> --target <dir> --store <dir> (--key-file <0600-path> | --key-stdin) [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path>] [--codex-home <dir>] [--claude-config-dir <dir>]
   handoff                 --workspace <dir> --target-workspace <dir> (--ssh-target <user@host> | --codespace <name>) --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>]
-  move                    <workspace> <user@host> --key-file <0600-path> [--remote-workspace <posix-dir>] [--remote-spool <posix-dir>] [--remote-router <command>] [--agent <none|opencode|codex-cli|claude-code>] [--target-codex-home <posix-dir>] [--target-claude-config-dir <posix-dir>] [--target-opencode-url <url> --target-opencode-password-file <posix-path>] [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--remove-source]
+  move                    <workspace> <user@host> --key-file <0600-path> [--remote-workspace <posix-dir>] [--remote-spool <posix-dir>] [--remote-router <command>] [--agent <none|opencode|codex-cli|claude-code>] [--target-codex-home <posix-dir>] [--target-claude-config-dir <posix-dir>] [--target-opencode-url <url> --target-opencode-password-file <posix-path>] [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--stop-source-pid <pid>] [--remove-source]
   prune                   --store <dir> --keep-last <int> [--journal-dir .work/router-journal]
   mcp:doctor              --workspace <dir>
   migrate:simulate        [--workspace-key ws-sim]
@@ -212,6 +213,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         'remote-workspace': { type: 'string' },
         'remote-router': { type: 'string', default: 'agent-router' },
         'remove-source': { type: 'boolean' },
+        'stop-source-pid': { type: 'string' },
         'key-stdin': { type: 'boolean' },
         'session-name': { type: 'string' },
         'keep-last': { type: 'string' },
@@ -638,6 +640,9 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
           '--opencode-password-file', values['target-opencode-password-file'],
         );
       }
+      const sourceAgentProcess = values['stop-source-pid'] === undefined
+        ? undefined
+        : await identifyStoppableProcess(Number(values['stop-source-pid']));
       const workspace = path.resolve(workspaceArg);
       const wsKey = values['workspace-key'] ?? path.basename(workspace);
       const journalFromWorkspace = path.relative(workspace, path.resolve(values['journal-dir']));
@@ -675,6 +680,7 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         remoteAgentArgs,
         // An older remote build would restore the session but ignore the checkpoint's pending inbox items.
         ...(captureAgent.kind === 'opencode' ? { requiredRemoteFeatures: ['opencode-pending-inbox'] } : {}),
+        ...(sourceAgentProcess ? { quiesceSource: () => stopProcess(sourceAgentProcess) } : {}),
         removeSource: values['remove-source'] === true,
       });
       io.stdout(JSON.stringify(result, null, 2));

@@ -1,4 +1,6 @@
+import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { once } from 'node:events';
 import { access, chmod, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -175,3 +177,42 @@ test.skipIf(!isLocalSshdAvailable())('move carries settled OpenCode history and 
   // Pending prompts are not in OpenCode's export; the checkpoint carries them and the remote restore re-admits them.
   expect((await target.client.listInbox(sessionId)).map(({ id, type, delivery, payload }) => ({ id, type, delivery, payload }))).toEqual(pending);
 }, 180_000);
+
+test.skipIf(!isLocalSshdAvailable())('move --stop-source-pid stops the source OpenCode server after exporting its history', async () => {
+  const f = await setup();
+  const source = await startIsolatedServer(f.workspace, join(f.root, 'laptop', 'opencode'));
+  cleanup.push(() => source.stop());
+  const target = await startIsolatedServer(join(f.root, 'remote'), join(f.root, 'remote', 'opencode'));
+  cleanup.push(() => target.stop());
+  const sourcePassword = join(f.root, 'laptop', 'opencode.password');
+  const targetPassword = join(f.root, 'remote', 'opencode.password');
+  await writeFile(sourcePassword, source.password, { mode: 0o600 });
+  await writeFile(targetPassword, target.password, { mode: 0o600 });
+  const sessionId = await source.client.createSession(f.workspace, 'Move fixture');
+  await source.client.runShellCommand(sessionId, "printf 'opencode-stop-turn\\n'");
+  expect(
+    await f.move([
+      '--agent', 'opencode', '--opencode-url', source.baseUrl, '--opencode-password-file', sourcePassword, '--session-id', sessionId,
+      '--target-opencode-url', target.baseUrl, '--target-opencode-password-file', targetPassword,
+      '--stop-source-pid', String(source.pid),
+    ]),
+    f.err.join('\n'),
+  ).toBe(0);
+  expect(JSON.parse(f.out.join('\n')).sourceAgentStopped).toBe(true);
+  // This test process is the server's parent and reaps it shortly after it dies.
+  await expect.poll(() => { try { process.kill(source.pid!, 0); return 'running'; } catch { return 'gone'; } }).toBe('gone');
+  await expect(source.client.listSessions()).rejects.toThrow();
+  expect(JSON.stringify((await target.client.exportSession(sessionId)).messages)).toContain('opencode-stop-turn');
+}, 180_000);
+
+test.skipIf(!isLocalSshdAvailable())('move --stop-source-pid leaves the source agent running when the remote pre-flight check fails', async () => {
+  const f = await setup();
+  const agent = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
+  cleanup.push(async () => { if (agent.exitCode === null && agent.signalCode === null) { agent.kill('SIGKILL'); await once(agent, 'exit'); } });
+  expect(await f.move(['--remote-router', join(f.root, 'remote', 'missing-router'), '--stop-source-pid', String(agent.pid)])).toBe(1);
+  expect(f.err.join('\n')).toContain('REMOTE_ROUTER_UNAVAILABLE');
+  expect(() => process.kill(agent.pid!, 0)).not.toThrow();
+  expect(await f.move(['--stop-source-pid', '999999999'])).toBe(1);
+  expect(f.err.join('\n')).toContain('SOURCE_AGENT_NOT_RUNNING');
+  await expect(access(join(f.root, 'remote', 'project'))).rejects.toThrow();
+}, 60_000);

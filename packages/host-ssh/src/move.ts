@@ -33,6 +33,7 @@ export function assertRemoteWords(words: string[]): string[] {
  * stdin so it is never written to the remote disk. A failure before the remote restore starts leaves the
  * source untouched and clears the journal entry. Once the remote restore has been started its outcome can be
  * unknown (for example a dropped connection), so any failure from there is recorded as NEEDS_RECONCILE.
+ * The source agent is stopped only after the remote pre-flight checks pass and is never restarted here.
  * The source is removed only on request, only after the remote reports the same manifest, and only if the
  * source still matches the checkpoint.
  */
@@ -50,9 +51,10 @@ export async function moveWorkspaceToHost(options: {
   remoteAgentArgs?: string[];
   /** Features the remote build must report through `supports`, checked before capture. */
   requiredRemoteFeatures?: string[];
+  /** Stops the source agent. Runs after the remote pre-flight checks, at the point capture needs the agent quiet. */
   quiesceSource?: () => Promise<void>;
   removeSource?: boolean;
-}): Promise<{ operation: OperationRecord; manifest: CheckpointManifestV3; remoteWorkspace: string; sourceRemoved: boolean }> {
+}): Promise<{ operation: OperationRecord; manifest: CheckpointManifestV3; remoteWorkspace: string; sourceRemoved: boolean; sourceAgentStopped: boolean }> {
   const source = path.resolve(options.sourceWorkspace);
   const remoteWorkspace = validateRemotePosixDirectory(options.remoteWorkspace);
   const remoteSpool = validateRemotePosixDirectory(options.remoteSpool);
@@ -70,6 +72,7 @@ export async function moveWorkspaceToHost(options: {
   const scratch = await mkdtemp(path.join(tmpdir(), 'router-move-'));
   let uploadedId: string | undefined;
   let remoteRestoreStarted = false;
+  let sourceAgentStopped = false;
   try {
     let remoteVersion: string;
     try {
@@ -98,7 +101,14 @@ export async function moveWorkspaceToHost(options: {
       workspace: source,
       store,
       agent: options.agent,
-      ...(options.quiesceSource ? { quiesceSource: options.quiesceSource } : {}),
+      ...(options.quiesceSource
+        ? {
+            quiesceSource: async () => {
+              await options.quiesceSource!();
+              sourceAgentStopped = true;
+            },
+          }
+        : {}),
     });
     const ciphertext = await readFile(path.join(scratch, 'store', `${manifest.checkpointId}.enc`));
     await transport.transferEncryptedCheckpoint(manifest.checkpointId, ciphertext);
@@ -146,7 +156,7 @@ export async function moveWorkspaceToHost(options: {
     }
     await transport.removeTransferredCheckpoint(manifest.checkpointId).catch(() => undefined);
     const operation = await options.journal.complete(op.operationId, `Moved ${manifest.checkpointId}; ${note}`);
-    return { operation, manifest, remoteWorkspace, sourceRemoved };
+    return { operation, manifest, remoteWorkspace, sourceRemoved, sourceAgentStopped };
   } catch (error) {
     if (remoteRestoreStarted) {
       await options.journal
@@ -158,6 +168,9 @@ export async function moveWorkspaceToHost(options: {
     } else {
       if (uploadedId) await transport.removeTransferredCheckpoint(uploadedId).catch(() => undefined);
       await options.journal.abortUnfenced(op.operationId).catch(() => undefined);
+    }
+    if (sourceAgentStopped && error instanceof Error) {
+      error.message += '; the source agent was stopped and has not been restarted';
     }
     throw error;
   } finally {
