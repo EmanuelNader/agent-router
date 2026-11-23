@@ -1,6 +1,6 @@
 # OpenCode 2.3.2 pending inbox
 
-Recorded 2026-11-22 on Ubuntu Linux `x86_64` (Node 24, `pnpm 12.21.0`, OpenCode 2.3.2). No model inference and no cloud calls: every prompt was admitted with `resume: false`.
+Recorded 2026-11-22 on Ubuntu Linux `x86_64` (Node 24, `pnpm 12.21.0`, OpenCode 2.3.2). No cloud calls and no real model inference: every prompt was admitted with `resume: false`. The delivery check added 2026-11-23 points OpenCode at a stub model server on loopback.
 
 Checkpoints carry text-only `user` and `synthetic` inbox items and refuse everything else; see the last section.
 
@@ -18,7 +18,7 @@ Checkpoints carry text-only `user` and `synthetic` inbox items and refuse everyt
 
 - Text-only `user` and `synthetic` items can be listed on the source and re-admitted on the destination without waking the agent loop.
 - `compaction` and `move` items have no admission endpoint in the 2.3.2 OpenAPI document, so they cannot be carried and block capture.
-- Not tested: prompts with file, agent, or skill attachments (the list and admission schemas use different attachment types); delivery after re-admission, which needs model inference; any release other than 2.3.2.
+- Not tested: prompts with file, agent, or skill attachments (the list and admission schemas use different attachment types); any release other than 2.3.2.
 - The inbox API is not marked stable upstream. Its lifecycle is still being designed ([opencode#35966](https://github.com/anomalyco/opencode/issues/35966)). A report of delivered items leaving stale queued entries ([opencode#62618](https://github.com/anomalyco/opencode/issues/62618)) was closed as not planned on 2026-11-10: the maintainer could not reproduce it on 2.2.5, found the server inbox empty after delivery, and suspects a display problem in the terminal UI. That was not rerun here on 2.3.2.
 
 ## Capture and restore
@@ -33,10 +33,12 @@ The `synthetic` item a finished shell turn leaves (`metadata.source: "shell"`) i
 | A user prompt with a `files` attachment, a `compaction` item and a `move` item are each refused at capture (`packages/agent-opencode/test/client.test.ts`, fixture server) | PASS |
 | An inbox that changes between the two reads is refused (same test) | PASS |
 | Restore fails when the destination inbox differs from the checkpoint after re-admission, and rejects a carried item of another type (same file, fixture server) | PASS |
+| After a checkpoint export and an import into fresh agent state, resuming the destination session empties its inbox, records the queued and the steered prompt as user messages, and sends both texts and the shell output to the model (`packages/agent-opencode/test/inbox-delivery.test.ts`, OpenCode 2.3.2, stub OpenAI-compatible model on loopback; added 2026-11-23) | PASS |
 
 Limits:
 
 - A prompt admitted after the second inbox read and before the server stops is not seen.
-- Delivery of a re-admitted prompt needs model inference and is not tested. Only OpenCode 2.3.2 was run.
+- Delivery was observed only with a stub model that returns one fixed text reply and no tool calls, on OpenCode 2.3.2. No real provider was called, and the order in which the model receives the items was not asserted.
+- Agent Router never resumes the destination session. In the delivery test the agent loop is woken by admitting a prompt with `resume: true`, reusing the ID of a carried prompt so that no new item is added; any later prompt from a client does the same.
 - A destination session that already holds other inbox items fails the post-admission comparison.
 - An Agent Router build older than this change restores such a checkpoint without its pending items: OpenCode's import endpoint ignores the extra field. The CLI version did not change, so `move --agent opencode` first runs `agent-router supports opencode-pending-inbox` on the remote host and refuses with `REMOTE_ROUTER_TOO_OLD` before capture when that fails (`packages/host-ssh/test/move.test.ts`). `restore` run by hand with an older build has no such check.
