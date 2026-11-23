@@ -17,9 +17,7 @@ try {
   const id = await server.client.createSession(source, 'Inbox probe fixture');
   await server.client.runShellCommand(id, "printf 'x\\n'");
   assert.deepEqual((await server.client.listInbox(id)).map(i => i.type), ['synthetic'], 'a shell turn leaves one synthetic item');
-  await server.client.exportSessionForCheckpoint(id);
   await server.client.admitInboxItem(id, { type: 'user', delivery: 'queue', payload: { text: 'queued fixture' } });
-  await assert.rejects(server.client.exportSessionForCheckpoint(id), /OPENCODE_PENDING_INBOX/, 'a checkpoint export must refuse a pending prompt');
   await server.client.admitInboxItem(id, { type: 'user', delivery: 'steer', payload: { text: 'steer fixture' } });
   const before = await server.client.listInbox(id);
   assert.deepEqual(before.map(i => i.type), ['synthetic', 'user', 'user']);

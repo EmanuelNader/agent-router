@@ -7,7 +7,7 @@ Read README.md and docs/evidence/00-readiness.md before extending the adapters.
 - Keep personal configuration, credentials, transcripts, and raw cloud responses out of Git and logs. Use isolated agent state. Never copy an entire personal home directory.
 - Cloud inspection is read-only. Missing or stale entitlement, usage, capacity, or cost evidence must block provisioning. Authentication alone does not establish free eligibility.
 - Keep provider and agent adapters separate. Add an actual compatibility test before claiming support for another CLI or release.
-- A migration restores a quiesced workspace and supported saved history. It does not preserve arbitrary processes, pending inputs, sockets, or in-flight side effects.
+- A migration restores a quiesced workspace and supported saved history. It does not preserve arbitrary processes, sockets, or in-flight side effects. The only pending inputs it carries are text-only OpenCode inbox items; any other pending input must block the checkpoint.
 - Use provider retry tokens and reconciliation for future mutations. A durable workflow can repeat external calls.
 - Do not create or modify cloud resources as part of local tests or CI. Keep live tests separately invoked and scoped to a dedicated project/compartment.
 - Research/plans describe intended work; evidence describes implemented and observed behavior. Update both when they diverge.

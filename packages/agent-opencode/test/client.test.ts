@@ -57,25 +57,65 @@ test('lists the inbox and re-admits an item under its original ID without waking
   await expect(client.admitInboxItem('ses_fixture', { ...move, delivery: 'queue' })).rejects.toThrow(/cannot be admitted/);
 });
 
-test('a checkpoint export refuses pending inbox work but allows the record of a finished shell turn', async () => {
+test('a checkpoint export carries text-only pending inbox items and refuses the rest', async () => {
   const transcript = { info: { id: 'ses_fixture' }, messages: [] };
-  const shell = { id: 'msg_shell', type: 'synthetic', delivery: 'queue', payload: { text: 'ran', metadata: { source: 'shell' } } };
-  let inbox: unknown[] = [shell];
+  const shell = { id: 'msg_shell', type: 'synthetic', delivery: 'steer', payload: { text: 'ran', metadata: { source: 'shell' } }, sessionID: 'ses_fixture', time: { created: 1 } };
+  const user = { id: 'msg_user', type: 'user', delivery: 'queue', payload: { text: 'do this next' }, sessionID: 'ses_fixture', time: { created: 2 } };
+  let inbox: unknown[] = [];
+  let inboxReads = 0;
+  let afterFirstRead: unknown[] | undefined;
   const server = createServer((req, res) => {
     res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify({ data: req.url?.endsWith('/inbox') ? inbox : transcript }));
+    if (!req.url?.endsWith('/inbox')) { res.end(JSON.stringify({ data: transcript })); return; }
+    res.end(JSON.stringify({ data: inboxReads++ > 0 && afterFirstRead ? afterFirstRead : inbox }));
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   cleanup.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('No address');
   const client = new OpenCodeClient(`http://127.0.0.1:${address.port}`, 'temporary-test-password');
   expect(await client.exportSessionForCheckpoint('ses_fixture')).toEqual(transcript);
-  for (const pending of [
-    { id: 'msg_user', type: 'user', delivery: 'queue', payload: { text: 'do this next' } },
-    { id: 'msg_other', type: 'synthetic', delivery: 'steer', payload: { text: 'not from a shell turn' } },
+  inbox = [shell, user];
+  expect(await client.exportSessionForCheckpoint('ses_fixture')).toEqual({
+    ...transcript,
+    pendingInbox: [
+      { id: 'msg_shell', type: 'synthetic', delivery: 'steer', payload: shell.payload },
+      { id: 'msg_user', type: 'user', delivery: 'queue', payload: user.payload },
+    ],
+  });
+  for (const blocked of [
+    { id: 'msg_files', type: 'user', delivery: 'queue', payload: { text: 'see file', files: [{ uri: 'file:///x' }] } },
     { id: 'msg_compact', type: 'compaction', delivery: 'queue', payload: {} },
+    { id: 'msg_move', type: 'move', delivery: 'queue', payload: { projectID: 'prj_fixture' } },
   ]) {
-    inbox = [shell, pending];
-    await expect(client.exportSessionForCheckpoint('ses_fixture')).rejects.toThrow(`OPENCODE_PENDING_INBOX: session has 1 pending inbox item(s) (${pending.type} ${pending.id})`);
+    inbox = [user, blocked];
+    await expect(client.exportSessionForCheckpoint('ses_fixture')).rejects.toThrow(`OPENCODE_PENDING_INBOX: inbox item ${blocked.type} ${blocked.id}`);
   }
+  inbox = [user]; inboxReads = 0; afterFirstRead = [user, { ...user, id: 'msg_late' }];
+  await expect(client.exportSessionForCheckpoint('ses_fixture')).rejects.toThrow(/inbox changed during the export/);
+});
+
+test('an import re-admits carried inbox items under their original IDs and refuses a destination inbox that differs', async () => {
+  const item = { id: 'msg_user', type: 'user', delivery: 'queue', payload: { text: 'do this next' } };
+  const requests: { url: string | undefined; body: unknown }[] = [];
+  let listed: unknown[] = [item];
+  const server = createServer(async (req, res) => {
+    let raw = ''; for await (const chunk of req) raw += chunk;
+    requests.push({ url: req.url, body: raw ? JSON.parse(raw) : undefined });
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ data: req.url?.endsWith('/import') ? { id: 'ses_fixture' } : req.method === 'GET' ? listed : item }));
+  });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  cleanup.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+  const address = server.address(); if (!address || typeof address === 'string') throw new Error('No address');
+  const client = new OpenCodeClient(`http://127.0.0.1:${address.port}`, 'temporary-test-password');
+  const transfer = { info: { id: 'ses_fixture' }, messages: [], pendingInbox: [item] };
+  expect(await client.importSession(transfer, '/work/project')).toBe('ses_fixture');
+  expect(requests).toEqual([
+    { url: '/api/experimental/session/import', body: { info: { id: 'ses_fixture' }, messages: [], location: { directory: '/work/project' } } },
+    { url: '/api/session/ses_fixture/prompt', body: { text: 'do this next', id: 'msg_user', delivery: 'queue', resume: false } },
+    { url: '/api/session/ses_fixture/inbox', body: undefined },
+  ]);
+  listed = [];
+  await expect(client.importSession(transfer, '/work/project')).rejects.toThrow(/does not match the checkpoint/);
+  await expect(client.importSession({ ...transfer, pendingInbox: [{ ...item, type: 'move' }] }, '/work/project')).rejects.toThrow('Invalid pending inbox');
 });

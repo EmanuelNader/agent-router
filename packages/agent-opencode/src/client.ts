@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
 
 const transferSchema = z.object({
@@ -16,12 +17,25 @@ const inboxItemSchema = z.object({
 const textPayloadSchema = z.object({ text: z.string() }).passthrough();
 export type InboxItem = z.infer<typeof inboxItemSchema>;
 
-const shellRecordSchema = z.object({
-  type: z.literal('synthetic'),
-  payload: z.object({ metadata: z.object({ source: z.literal('shell') }).passthrough() }).passthrough(),
-}).passthrough();
-function isShellRecord(item: InboxItem): boolean {
-  return shellRecordSchema.safeParse(item).success;
+const pendingInboxItemSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum(['user', 'synthetic']),
+  delivery: z.enum(['steer', 'queue']),
+  payload: z.object({ text: z.string(), metadata: z.record(z.string(), z.unknown()).optional() }).strict(),
+}).strict();
+/** A pending inbox item a checkpoint can carry: text only, with an admission endpoint in OpenCode 2.3.2. */
+export type PendingInboxItem = z.infer<typeof pendingInboxItemSchema>;
+
+function toPendingInboxItem(item: InboxItem): PendingInboxItem {
+  const carried = pendingInboxItemSchema.safeParse({ id: item.id, type: item.type, delivery: item.delivery, payload: item.payload });
+  // Only a user prompt's text is carried; anything else in its payload (files, agents, skills) is untested.
+  if (!carried.success || (carried.data.type === 'user' && carried.data.payload.metadata !== undefined)) {
+    throw new Error(
+      `OPENCODE_PENDING_INBOX: inbox item ${item.type} ${item.id} is not a text-only prompt and cannot be carried in a checkpoint; ` +
+        'let the agent consume it or delete it first',
+    );
+  }
+  return carried.data;
 }
 
 /** Pinned to OpenCode 2.3.2. Transfer data can contain private conversation text. */
@@ -85,33 +99,37 @@ export class OpenCodeClient {
   }
 
   /**
-   * Exports a session for a checkpoint, refusing when its inbox holds work the export does not carry.
-   * A synthetic item recording a finished shell turn is allowed: that turn is already in the exported messages.
-   * The inbox is read again after the export so an item admitted during the export is also refused.
+   * Exports a session for a checkpoint together with its pending text-only inbox items, which the export omits.
+   * Refuses when the inbox holds an item that cannot be re-admitted, or when it changes during the export.
    */
   async exportSessionForCheckpoint(sessionId: string): Promise<SessionTransfer> {
-    await this.assertNoPendingInbox(sessionId);
+    const before = (await this.listInbox(sessionId)).map(toPendingInboxItem);
     const transfer = await this.exportSession(sessionId);
-    await this.assertNoPendingInbox(sessionId);
-    return transfer;
-  }
-
-  private async assertNoPendingInbox(sessionId: string): Promise<void> {
-    const pending = (await this.listInbox(sessionId)).filter(item => !isShellRecord(item));
-    if (pending.length > 0) {
-      throw new Error(
-        `OPENCODE_PENDING_INBOX: session has ${pending.length} pending inbox item(s) (${pending.map(item => `${item.type} ${item.id}`).join(', ')}) ` +
-          'that a checkpoint would drop; let the agent consume them or delete them first',
-      );
+    const after = (await this.listInbox(sessionId)).map(toPendingInboxItem);
+    if (!isDeepStrictEqual(before, after)) {
+      throw new Error('OPENCODE_PENDING_INBOX: the session inbox changed during the export; stop sending prompts and retry');
     }
+    return after.length > 0 ? { ...transfer, pendingInbox: after } : transfer;
   }
 
+  /** Imports a session, then re-admits any pending inbox items the checkpoint carried, without waking the agent loop. */
   async importSession(transfer: SessionTransfer, directory: string): Promise<string> {
+    const { pendingInbox, ...session } = transferSchema.parse(transfer);
+    const pending = z.array(pendingInboxItemSchema).safeParse(pendingInbox ?? []);
+    if (!pending.success) throw new Error('Invalid pending inbox in OpenCode transfer');
     const result = z.object({ data: z.object({ id: z.string().min(1) }) }).safeParse(
-      await this.request('/api/experimental/session/import', { ...transferSchema.parse(transfer), location: { directory } }),
+      await this.request('/api/experimental/session/import', { ...session, location: { directory } }),
     );
     if (!result.success) throw new Error('Invalid OpenCode import response');
-    return result.data.data.id;
+    const sessionId = result.data.data.id;
+    if (pending.data.length > 0) {
+      for (const item of pending.data) await this.admitInboxItem(sessionId, item);
+      const admitted = (await this.listInbox(sessionId)).map(toPendingInboxItem);
+      if (!isDeepStrictEqual(admitted, pending.data)) {
+        throw new Error('OPENCODE_PENDING_INBOX: the destination inbox does not match the checkpoint after re-admission');
+      }
+    }
+    return sessionId;
   }
 
   /** Admitted work not yet delivered to the agent loop. It is absent from exportSession. */

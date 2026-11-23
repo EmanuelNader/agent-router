@@ -143,7 +143,7 @@ test.skipIf(!isLocalSshdAvailable() || !isCodexCliAvailable())('move carries Cod
   } finally { await target.stop(); }
 }, 180_000);
 
-test.skipIf(!isLocalSshdAvailable())('move carries settled OpenCode history into the OpenCode server on the remote host', async () => {
+test.skipIf(!isLocalSshdAvailable())('move carries settled OpenCode history and pending text prompts into the OpenCode server on the remote host', async () => {
   const f = await setup();
   const source = await startIsolatedServer(f.workspace, join(f.root, 'laptop', 'opencode'));
   cleanup.push(() => source.stop());
@@ -156,6 +156,10 @@ test.skipIf(!isLocalSshdAvailable())('move carries settled OpenCode history into
   await writeFile(targetPassword, target.password, { mode: 0o600 });
   const sessionId = await source.client.createSession(f.workspace, 'Move fixture');
   await source.client.runShellCommand(sessionId, "printf 'opencode-move-turn\\n'");
+  await source.client.admitInboxItem(sessionId, { type: 'user', delivery: 'queue', payload: { text: 'queued before the move' } });
+  await source.client.admitInboxItem(sessionId, { type: 'user', delivery: 'steer', payload: { text: 'steered before the move' } });
+  const pending = (await source.client.listInbox(sessionId)).map(({ id, type, delivery, payload }) => ({ id, type, delivery, payload }));
+  expect(pending.map(item => item.type)).toEqual(['synthetic', 'user', 'user']);
   const exported = await source.client.exportSession(sessionId);
   expect(
     await f.move([
@@ -168,4 +172,6 @@ test.skipIf(!isLocalSshdAvailable())('move carries settled OpenCode history into
   expect((restored.info.location as { directory?: unknown }).directory).toBe(join(f.root, 'remote', 'project'));
   expect(JSON.stringify(restored.messages)).toContain('opencode-move-turn');
   expect(restored.messages).toEqual(exported.messages);
+  // Pending prompts are not in OpenCode's export; the checkpoint carries them and the remote restore re-admits them.
+  expect((await target.client.listInbox(sessionId)).map(({ id, type, delivery, payload }) => ({ id, type, delivery, payload }))).toEqual(pending);
 }, 180_000);
