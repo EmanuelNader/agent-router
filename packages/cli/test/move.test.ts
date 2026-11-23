@@ -193,7 +193,8 @@ test.skipIf(!isLocalSshdAvailable())('move --stop-source-pid stops the source Op
     f.err.join('\n'),
   ).toBe(0);
   expect(JSON.parse(f.out.join('\n')).sourceAgentStopped).toBe(true);
-  expect(() => process.kill(source.pid!, 0)).toThrow(/ESRCH/);
+  // This test process is the server's parent and reaps it shortly after it dies.
+  await expect.poll(() => { try { process.kill(source.pid!, 0); return 'running'; } catch { return 'gone'; } }).toBe('gone');
   await expect(source.client.listSessions()).rejects.toThrow();
   expect(JSON.stringify((await target.client.exportSession(sessionId)).messages)).toContain('opencode-stop-turn');
 }, 180_000);

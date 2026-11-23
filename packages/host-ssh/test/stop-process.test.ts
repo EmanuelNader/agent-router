@@ -11,8 +11,10 @@ async function started(script: string) {
 
 test('stopProcess waits for a process that exits on SIGTERM', async () => {
   const child = await started("console.log('ready'); setInterval(() => {}, 1000)");
+  const exited = once(child, 'exit');
   await stopProcess(await identifyStoppableProcess(child.pid!));
-  expect(() => process.kill(child.pid!, 0)).toThrow(/ESRCH/);
+  // stopProcess returns once the process is dead; this test process is its parent and reaps it just after.
+  expect(await exited).toEqual([null, 'SIGTERM']);
 });
 
 test('stopProcess fails without killing a process that ignores SIGTERM', async () => {
