@@ -10,8 +10,10 @@ const inboxItemSchema = z.object({
   id: z.string().min(1),
   type: z.string().min(1),
   delivery: z.enum(['steer', 'queue']),
-  payload: z.object({ text: z.string() }).passthrough(),
+  // Only user and synthetic items carry text; compaction and move payloads have other shapes.
+  payload: z.unknown(),
 }).passthrough();
+const textPayloadSchema = z.object({ text: z.string() }).passthrough();
 export type InboxItem = z.infer<typeof inboxItemSchema>;
 
 /** Pinned to OpenCode 2.3.2. Transfer data can contain private conversation text. */
@@ -99,11 +101,14 @@ export class OpenCodeClient {
   async admitInboxItem(
     sessionId: string, item: Pick<InboxItem, 'type' | 'delivery' | 'payload'> & { id?: string },
   ): Promise<InboxItem> {
-    if (item.type !== 'user' && item.type !== 'synthetic') throw new Error(`OpenCode inbox item type "${item.type}" cannot be admitted`);
+    const payload = textPayloadSchema.safeParse(item.payload);
+    if ((item.type !== 'user' && item.type !== 'synthetic') || !payload.success) {
+      throw new Error(`OpenCode inbox item type "${item.type}" cannot be admitted`);
+    }
     const result = z.object({ data: inboxItemSchema }).safeParse(
       await this.request(
         `/api/session/${encodeURIComponent(sessionId)}/${item.type === 'user' ? 'prompt' : 'synthetic'}`,
-        { ...item.payload, ...(item.id ? { id: item.id } : {}), delivery: item.delivery, resume: false },
+        { ...payload.data, ...(item.id ? { id: item.id } : {}), delivery: item.delivery, resume: false },
       ),
     );
     if (!result.success) throw new Error('Invalid OpenCode admission response');

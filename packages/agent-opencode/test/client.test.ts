@@ -36,22 +36,23 @@ test('rejects sending credentials to an unencrypted remote host', () => {
 
 test('lists the inbox and re-admits an item under its original ID without waking the agent loop', async () => {
   const item = { id: 'msg_fixture', type: 'user', delivery: 'queue', payload: { text: 'pending fixture' } };
+  const move = { id: 'msg_move', type: 'move', delivery: 'queue', payload: { projectID: 'prj_fixture', location: {} } };
   const requests: { url: string | undefined; body: unknown }[] = [];
   const server = createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
     requests.push({ url: req.url, body: raw ? JSON.parse(raw) : undefined });
     res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify({ data: req.method === 'GET' ? [item] : item }));
+    res.end(JSON.stringify({ data: req.method === 'GET' ? [item, move] : item }));
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   cleanup.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('No address');
   const client = new OpenCodeClient(`http://127.0.0.1:${address.port}`, 'temporary-test-password');
-  expect(await client.listInbox('ses_fixture')).toEqual([item]);
+  expect(await client.listInbox('ses_fixture')).toEqual([item, move]);
   await client.admitInboxItem('ses_fixture', { ...item, delivery: 'queue' });
   expect(requests).toEqual([
     { url: '/api/session/ses_fixture/inbox', body: undefined },
     { url: '/api/session/ses_fixture/prompt', body: { text: 'pending fixture', id: 'msg_fixture', delivery: 'queue', resume: false } },
   ]);
-  await expect(client.admitInboxItem('ses_fixture', { ...item, delivery: 'queue', type: 'compaction' })).rejects.toThrow(/cannot be admitted/);
+  await expect(client.admitInboxItem('ses_fixture', { ...move, delivery: 'queue' })).rejects.toThrow(/cannot be admitted/);
 });

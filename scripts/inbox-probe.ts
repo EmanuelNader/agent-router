@@ -36,7 +36,7 @@ try {
   for (let pass = 0; pass < 2; pass++) for (const item of before) await server.client.admitInboxItem(id, item);
   const after = await server.client.listInbox(id);
   assert.deepEqual(shape(after), shape(before), 'admission keeps IDs, order and delivery, and is idempotent');
-  assert.deepEqual(after.map(i => i.payload.text), before.map(i => i.payload.text));
+  assert.deepEqual(after.map(i => i.payload), before.map(i => i.payload));
   console.log(JSON.stringify({ status: 'INBOX_READMISSION_OBSERVED', items: after.length }));
 } finally {
   await server?.stop().catch(() => {});
