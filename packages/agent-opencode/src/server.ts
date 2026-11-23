@@ -64,7 +64,7 @@ export async function startIsolatedServer(
   const client = new OpenCodeClient(baseUrl, password);
   const deadline = Date.now() + 45_000;
   while (Date.now() < deadline && !exited) {
-    try { await client.listSessions(); return { client, baseUrl, stop }; }
+    try { await client.listSessions(); return { client, baseUrl, password, stop }; }
     catch { await delay(200); }
   }
   await stop();

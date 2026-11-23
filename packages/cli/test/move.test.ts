@@ -6,6 +6,8 @@ import { afterEach, expect, test } from 'vitest';
 import { runRouterCli } from '../src/cli.js';
 import { OperationJournal } from '../src/journal.js';
 import { encodeClaudeProjectSlug } from '../../agent-claude-code/src/adapter.js';
+import { isCodexCliAvailable, startIsolatedCodexAppServer } from '../../agent-codex/src/adapter.js';
+import { startIsolatedServer } from '../../agent-opencode/src/server.js';
 import { isLocalSshdAvailable, startEphemeralSshd, type EphemeralSshd } from '../../host-ssh/src/ephemeral-sshd.js';
 
 const cleanup: (() => Promise<void>)[] = [];
@@ -116,3 +118,54 @@ test.skipIf(!isLocalSshdAvailable())('move carries Claude Code history and rewri
   const moved = await readFile(join(claudeRemote, 'projects', encodeClaudeProjectSlug(remoteWorkspace), `${uuid}.jsonl`), 'utf8');
   expect((JSON.parse(moved.trim()) as { cwd: string }).cwd).toBe(remoteWorkspace);
 }, 120_000);
+
+test.skipIf(!isLocalSshdAvailable() || !isCodexCliAvailable())('move carries Codex CLI history that the installed Codex resumes at the remote path', async () => {
+  const f = await setup();
+  const codexLocal = join(f.root, 'laptop', 'codex');
+  const codexRemote = join(f.root, 'remote', 'codex');
+  const source = await startIsolatedCodexAppServer({ isolatedHome: join(f.root, 'laptop', 'home'), codexHome: codexLocal });
+  let threadId: string;
+  try {
+    threadId = await source.startThread(f.workspace);
+    await source.runShellCommand(threadId, "printf 'codex-move-turn\\n'");
+  } finally { await source.stop(); }
+  expect(
+    await f.move(['--agent', 'codex-cli', '--codex-home', codexLocal, '--target-codex-home', codexRemote]),
+    f.err.join('\n'),
+  ).toBe(0);
+  const remoteWorkspace = join(f.root, 'remote', 'project');
+  const target = await startIsolatedCodexAppServer({ isolatedHome: join(f.root, 'remote', 'home'), codexHome: codexRemote });
+  try {
+    expect((await target.resumeThread(threadId, remoteWorkspace)).cwd).toBe(remoteWorkspace);
+    const thread = await target.readThread(threadId);
+    expect(thread.cwd).toBe(remoteWorkspace);
+    expect(JSON.stringify(thread.turns)).toContain('codex-move-turn');
+  } finally { await target.stop(); }
+}, 180_000);
+
+test.skipIf(!isLocalSshdAvailable())('move carries settled OpenCode history into the OpenCode server on the remote host', async () => {
+  const f = await setup();
+  const source = await startIsolatedServer(f.workspace, join(f.root, 'laptop', 'opencode'));
+  cleanup.push(() => source.stop());
+  // The remote server runs before the workspace exists there; the import binds the session to it.
+  const target = await startIsolatedServer(join(f.root, 'remote'), join(f.root, 'remote', 'opencode'));
+  cleanup.push(() => target.stop());
+  const sourcePassword = join(f.root, 'laptop', 'opencode.password');
+  const targetPassword = join(f.root, 'remote', 'opencode.password');
+  await writeFile(sourcePassword, source.password, { mode: 0o600 });
+  await writeFile(targetPassword, target.password, { mode: 0o600 });
+  const sessionId = await source.client.createSession(f.workspace, 'Move fixture');
+  await source.client.runShellCommand(sessionId, "printf 'opencode-move-turn\\n'");
+  const exported = await source.client.exportSession(sessionId);
+  expect(
+    await f.move([
+      '--agent', 'opencode', '--opencode-url', source.baseUrl, '--opencode-password-file', sourcePassword, '--session-id', sessionId,
+      '--target-opencode-url', target.baseUrl, '--target-opencode-password-file', targetPassword,
+    ]),
+    f.err.join('\n'),
+  ).toBe(0);
+  const restored = await target.client.exportSession(sessionId);
+  expect((restored.info.location as { directory?: unknown }).directory).toBe(join(f.root, 'remote', 'project'));
+  expect(JSON.stringify(restored.messages)).toContain('opencode-move-turn');
+  expect(restored.messages).toEqual(exported.messages);
+}, 180_000);
