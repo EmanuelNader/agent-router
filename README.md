@@ -47,6 +47,21 @@ The probe starts a password-protected OpenCode 2.3.2 server on loopback and chec
 
 Each run uses private temporary directories under ignored `.work/`, a generated password, and isolated HOME/XDG directories. Project/Claude configuration discovery is disabled to prevent ancestor configuration from loading. It excludes inherited model/cloud credentials and removes its temporary state after stopping its own processes. The shell command is a fixed fixture; these checks perform no model inference. Native agent processes and disposable Linux verification containers are both exercised. Docker is mandatory for the full benchmark.
 
+## Move a workspace to another host
+
+```sh
+agent-router move ./project user@host --key-file ./move.key
+```
+
+`move` captures an encrypted checkpoint, uploads it over SSH, and has the Agent Router on the remote host restore it. The remote host must already have the same Agent Router version installed (`--remote-router <command>` if it is not on the remote `PATH`); `move` refuses otherwise. The encryption key is sent on the SSH session's stdin for the restore and is not written to the remote disk.
+
+- Defaults: the workspace is restored to `<remote login directory>/<workspace name>` and the checkpoint is spooled under `<remote login directory>/.agent-router/spool`. Override with `--remote-workspace` and `--remote-spool`.
+- Agent history: `--agent claude-code --claude-config-dir <local> --target-claude-config-dir <remote>`, `--agent codex-cli --codex-home <local> --target-codex-home <remote>`, or `--agent opencode` with the local and `--target-opencode-*` options. Stop the agent first; `move` does not stop it for you.
+- The source is kept unless you pass `--remove-source`. It is then removed only after the remote reports the same manifest, and only if the source files and Git state still match the checkpoint. It requires `--journal-dir` outside the workspace. Excluded folders (`node_modules`, `.pnpm-store`, `.work`, `.cache`) are not moved, and `--remove-source` deletes them with the rest of the source.
+- A failure before the remote restore starts leaves the source untouched. A failure after it starts is recorded as `NEEDS_RECONCILE`: check the remote workspace, then run `agent-router reconcile`.
+
+See [move evidence](docs/evidence/13-move-command.md).
+
 ## Optional cloud inspection
 
 These commands only read account metadata. Run them yourself with a dedicated cloud configuration. Do not paste keys into chat, commit them, or place them in a workspace that an agent can read.

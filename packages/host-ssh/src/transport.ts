@@ -249,14 +249,18 @@ export class SshCliTransport implements HostTransport {
     return process.env;
   }
 
-  async runRemoteCommand(remoteCommand: string[]): Promise<{ stdout: string }> {
+  /** `input` is written to the remote command's stdin and never appears in the argument vector. */
+  async runRemoteCommand(remoteCommand: string[], input?: Buffer): Promise<{ stdout: string }> {
     const args = buildSshArgs(this.target, remoteCommand, this.connOptions);
     try {
-      const { stdout } = await execFileAsync(this.sshBinary, args, {
+      const pending = execFileAsync(this.sshBinary, args, {
         env: this.subprocessEnv(),
         timeout: this.timeoutMs,
         maxBuffer: 8 * 1024 * 1024,
       });
+      pending.child.stdin?.on('error', () => undefined);
+      pending.child.stdin?.end(input);
+      const { stdout } = await pending;
       return { stdout };
     } catch (err) {
       const code = typeof (err as { code?: unknown })?.code === 'number' ? (err as { code: number }).code : undefined;
@@ -321,6 +325,11 @@ export class SshCliTransport implements HostTransport {
       }
       await rm(scratch, { recursive: true, force: true });
     }
+  }
+
+  async removeTransferredCheckpoint(checkpointId: string): Promise<void> {
+    const id = checkpointIdSchema.parse(checkpointId);
+    await this.runRemoteCommand(['rm', '-f', path.posix.join(this.remoteSpoolDirectory, `${id}.enc`)]);
   }
 
   async readTransferredCheckpoint(checkpointId: string): Promise<Buffer> {

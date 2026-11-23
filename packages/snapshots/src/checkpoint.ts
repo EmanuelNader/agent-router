@@ -47,7 +47,7 @@ function runGit(cwd: string, args: string[], input?: string): string {
   });
 }
 
-async function inspectGit(workspace: string, exclusions: string[] = []): Promise<CheckpointManifest['git']> {
+export async function inspectGit(workspace: string, exclusions: string[] = []): Promise<CheckpointManifest['git']> {
   try {
     const stat = await lstat(path.join(workspace, '.git'));
     if (!stat.isDirectory() && !stat.isFile()) throw new Error('Unsupported Git metadata entry');

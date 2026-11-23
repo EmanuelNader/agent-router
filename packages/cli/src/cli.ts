@@ -37,6 +37,7 @@ import {
   prepareIsolatedCodespaceSshConfig,
   type PreparedCodespaceSshConfig,
 } from '../../host-ssh/src/codespaces-ssh.js';
+import { moveWorkspaceToHost } from '../../host-ssh/src/move.js';
 import { pairingAgentKindSchema, runRemotePairingOverSsh } from '../../host-ssh/src/pairing.js';
 import { discoverTailscalePeers } from '../../host-ssh/src/tailscale.js';
 import { LoopbackHostTransport, SshCliTransport } from '../../host-ssh/src/transport.js';
@@ -61,6 +62,14 @@ export const ROUTER_CLI_VERSION = '1.0.0';
 export interface RouterCliIo {
   stdout: (line: string) => void;
   stderr: (line: string) => void;
+  /** Reads all of stdin; used by `restore --key-stdin`. Defaults to the process stdin. */
+  readStdin?: () => Promise<Buffer>;
+}
+
+async function readProcessStdin(): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk as Buffer));
+  return Buffer.concat(chunks);
 }
 
 const defaultIo: RouterCliIo = {
@@ -80,8 +89,9 @@ Local journal, Tailscale peers, pairing, checkpoints & handoffs:
   peers                   [--status-file <json>] [--include-offline] [--ssh-user agentrouter]
   pair                    (--ssh-target <user@host> | --codespace <name>) --agent <opencode|codex-cli|claude-code> [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--session-name <name>]
   checkpoint              --workspace <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path> --session-id <id>] [--codex-home <dir>] [--claude-config-dir <dir>]
-  restore                 --checkpoint chk_<hex> --target <dir> --store <dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path>] [--codex-home <dir>] [--claude-config-dir <dir>]
+  restore                 --checkpoint chk_<hex> --target <dir> --store <dir> (--key-file <0600-path> | --key-stdin) [--agent <none|opencode|codex-cli|claude-code>] [--opencode-url <url> --opencode-password-file <0600-path>] [--codex-home <dir>] [--claude-config-dir <dir>]
   handoff                 --workspace <dir> --target-workspace <dir> (--ssh-target <user@host> | --codespace <name>) --remote-spool <posix-dir> --key-file <0600-path> [--agent <none|opencode|codex-cli|claude-code>]
+  move                    <workspace> <user@host> --key-file <0600-path> [--remote-workspace <posix-dir>] [--remote-spool <posix-dir>] [--remote-router <command>] [--agent <none|opencode|codex-cli|claude-code>] [--target-codex-home <posix-dir>] [--target-claude-config-dir <posix-dir>] [--target-opencode-url <url> --target-opencode-password-file <posix-path>] [--ssh-port <p>] [--identity-file <path>] [--known-hosts-file <path>] [--remove-source]
   prune                   --store <dir> --keep-last <int> [--journal-dir .work/router-journal]
   mcp:doctor              --workspace <dir>
   migrate:simulate        [--workspace-key ws-sim]
@@ -118,7 +128,10 @@ async function readOwnerOnlySecretFile(filePath: string, label: string): Promise
 }
 
 async function loadOwnerOnlyMasterKey(keyFilePath: string): Promise<Buffer> {
-  const raw = await readOwnerOnlySecretFile(keyFilePath, 'Encryption key file');
+  return parseMasterKey(await readOwnerOnlySecretFile(keyFilePath, 'Encryption key file'), 'Encryption key file');
+}
+
+function parseMasterKey(raw: Buffer, label: string): Buffer {
   const text = raw.toString('utf8').trim();
   if (/^[a-fA-F0-9]{64}$/.test(text)) {
     return Buffer.from(text, 'hex');
@@ -126,7 +139,7 @@ async function loadOwnerOnlyMasterKey(keyFilePath: string): Promise<Buffer> {
   if (raw.byteLength === 32) {
     return raw;
   }
-  throw new Error('Encryption key file must contain 32 raw bytes or 64 hex characters');
+  throw new Error(`${label} must contain 32 raw bytes or 64 hex characters`);
 }
 
 async function loadOwnerOnlyApiToken(tokenFilePath: string): Promise<string> {
@@ -153,8 +166,9 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
   }
 
   try {
-    const { values } = parseArgs({
+    const { values, positionals } = parseArgs({
       args: rest,
+      allowPositionals: subcommand === 'move',
       options: {
         'journal-dir': { type: 'string', default: '.work/router-journal' },
         operation: { type: 'string' },
@@ -186,6 +200,10 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
         'identity-file': { type: 'string' },
         'known-hosts-file': { type: 'string' },
         'remote-spool': { type: 'string' },
+        'remote-workspace': { type: 'string' },
+        'remote-router': { type: 'string', default: 'agent-router' },
+        'remove-source': { type: 'boolean' },
+        'key-stdin': { type: 'boolean' },
         'session-name': { type: 'string' },
         'keep-last': { type: 'string' },
         'usage-file': { type: 'string' },
@@ -442,10 +460,12 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
     }
 
     if (subcommand === 'restore') {
-      if (!values.checkpoint || !values.target || !values.store || !values['key-file']) {
-        throw new Error('restore requires --checkpoint, --target, --store, and --key-file');
+      if (!values.checkpoint || !values.target || !values.store || Boolean(values['key-file']) === Boolean(values['key-stdin'])) {
+        throw new Error('restore requires --checkpoint, --target, --store, and exactly one of --key-file or --key-stdin');
       }
-      const key = await loadOwnerOnlyMasterKey(values['key-file']);
+      const key = values['key-file']
+        ? await loadOwnerOnlyMasterKey(values['key-file'])
+        : parseMasterKey(await (io.readStdin ?? readProcessStdin)(), 'Encryption key on stdin');
       const restoreAgent = await resolveRestoreAgent(values.agent, false);
       const wsKey = values['workspace-key'] ?? path.basename(path.resolve(values.target));
       const op = await journal.begin({
@@ -584,6 +604,70 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       } finally {
         if (preparedCs) await preparedCs.cleanup();
       }
+    }
+
+    if (subcommand === 'move') {
+      const [workspaceArg, hostArg, ...extra] = positionals;
+      if (!workspaceArg || !hostArg || extra.length > 0 || !values['key-file']) {
+        throw new Error('move requires <workspace> <user@host> and --key-file');
+      }
+      const key = await loadOwnerOnlyMasterKey(values['key-file']);
+      const captureAgent = await resolveCaptureAgent(values.agent);
+      const remoteAgentArgs: string[] = [];
+      if (values.agent === 'codex-cli') {
+        if (!values['target-codex-home']) throw new Error('--agent codex-cli move requires --target-codex-home');
+        remoteAgentArgs.push('--codex-home', values['target-codex-home']);
+      } else if (values.agent === 'claude-code') {
+        if (!values['target-claude-config-dir']) throw new Error('--agent claude-code move requires --target-claude-config-dir');
+        remoteAgentArgs.push('--claude-config-dir', values['target-claude-config-dir']);
+      } else if (values.agent === 'opencode') {
+        if (!values['target-opencode-url'] || !values['target-opencode-password-file']) {
+          throw new Error('--agent opencode move requires --target-opencode-url and --target-opencode-password-file');
+        }
+        remoteAgentArgs.push(
+          '--opencode-url', values['target-opencode-url'],
+          '--opencode-password-file', values['target-opencode-password-file'],
+        );
+      }
+      const workspace = path.resolve(workspaceArg);
+      const wsKey = values['workspace-key'] ?? path.basename(workspace);
+      const journalFromWorkspace = path.relative(workspace, path.resolve(values['journal-dir']));
+      if (values['remove-source'] && !journalFromWorkspace.startsWith('..') && !path.isAbsolute(journalFromWorkspace)) {
+        throw new Error('move --remove-source requires --journal-dir outside the workspace, or the move record would be deleted with it');
+      }
+      const connection = {
+        target: hostArg,
+        ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),
+        ...(values['identity-file'] !== undefined ? { identityFile: path.resolve(values['identity-file']) } : {}),
+        ...(values['known-hosts-file'] !== undefined
+          ? { knownHostsFile: path.resolve(values['known-hosts-file']) }
+          : {}),
+      };
+      let remoteSpool = values['remote-spool'];
+      let remoteWorkspace = values['remote-workspace'];
+      if (!remoteSpool || !remoteWorkspace) {
+        // Defaults live under the remote login directory, which only the remote host knows.
+        const probe = new SshCliTransport({ ...connection, remoteSpoolDirectory: '/var/lib/agent-router/spool' });
+        const home = (await probe.runRemoteCommand(['pwd'])).stdout.trim();
+        remoteSpool ??= path.posix.join(home, '.agent-router', 'spool');
+        remoteWorkspace ??= path.posix.join(home, path.basename(workspace));
+      }
+      const result = await moveWorkspaceToHost({
+        workspaceKey: wsKey,
+        journal,
+        encryptionKey: key,
+        sourceWorkspace: workspace,
+        agent: captureAgent,
+        transport: new SshCliTransport({ ...connection, remoteSpoolDirectory: remoteSpool, timeoutMs: 10 * 60_000 }),
+        routerVersion: ROUTER_CLI_VERSION,
+        remoteRouter: values['remote-router'],
+        remoteWorkspace,
+        remoteSpool,
+        remoteAgentArgs,
+        removeSource: values['remove-source'] === true,
+      });
+      io.stdout(JSON.stringify(result, null, 2));
+      return 0;
     }
 
     if (subcommand === 'prune') {
