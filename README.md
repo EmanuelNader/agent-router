@@ -57,7 +57,7 @@ agent-router move ./project user@host --key-file ./move.key
 
 - Defaults: the workspace is restored to `<remote login directory>/<workspace name>` and the checkpoint is spooled under `<remote login directory>/.agent-router/spool`. Override with `--remote-workspace` and `--remote-spool`.
 - Agent history: `--agent claude-code --claude-config-dir <local> --target-claude-config-dir <remote>`, `--agent codex-cli --codex-home <local> --target-codex-home <remote>`, or `--agent opencode` with the local and `--target-opencode-*` options. Stop the agent first; `move` does not stop it for you.
-- The source is kept unless you pass `--remove-source`. It is then removed only after the remote reports the same manifest, and only if the source still matches the checkpoint. Excluded folders (`node_modules`, `.pnpm-store`, `.work`, `.cache`) are not moved, and `--remove-source` deletes them with the rest of the source.
+- The source is kept unless you pass `--remove-source`. It is then removed only after the remote reports the same manifest, and only if the source files and Git state still match the checkpoint. It requires `--journal-dir` outside the workspace. Excluded folders (`node_modules`, `.pnpm-store`, `.work`, `.cache`) are not moved, and `--remove-source` deletes them with the rest of the source.
 - A failure before the remote restore starts leaves the source untouched. A failure after it starts is recorded as `NEEDS_RECONCILE`: check the remote workspace, then run `agent-router reconcile`.
 
 See [move evidence](docs/evidence/13-move-command.md).

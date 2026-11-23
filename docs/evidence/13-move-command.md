@@ -13,7 +13,7 @@ Recorded 2026-11-22 on Ubuntu Linux `x86_64` (Node 24, `pnpm 12.21.0`). The remo
 | `--remove-source` removes the source after a verified remote restore | PASS | `packages/cli/test/move.test.ts` |
 | Remote arguments containing shell syntax refused | PASS | `packages/host-ssh/test/move.test.ts` |
 
-`pnpm check`: 831 passed, 2 skipped. The SSH tests skip when no local `sshd` binary exists.
+`pnpm check`: 832 passed, 2 skipped. The SSH tests skip when no local `sshd` binary exists.
 
 ## Not established
 

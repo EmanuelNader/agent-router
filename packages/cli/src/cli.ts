@@ -631,6 +631,10 @@ export async function runRouterCli(argv: string[], io: RouterCliIo = defaultIo):
       }
       const workspace = path.resolve(workspaceArg);
       const wsKey = values['workspace-key'] ?? path.basename(workspace);
+      const journalFromWorkspace = path.relative(workspace, path.resolve(values['journal-dir']));
+      if (values['remove-source'] && !journalFromWorkspace.startsWith('..') && !path.isAbsolute(journalFromWorkspace)) {
+        throw new Error('move --remove-source requires --journal-dir outside the workspace, or the move record would be deleted with it');
+      }
       const connection = {
         target: hostArg,
         ...(values['ssh-port'] !== undefined ? { port: Number(values['ssh-port']) } : {}),

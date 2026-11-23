@@ -88,6 +88,12 @@ test.skipIf(!isLocalSshdAvailable())('move refuses when the remote host has no A
   await access(join(f.workspace, 'src', 'app.ts'));
   await expect(access(join(f.root, 'remote', 'project'))).rejects.toThrow();
   expect(await f.journal.listBlocking()).toEqual([]);
+
+  f.err.length = 0;
+  expect(await f.move(['--remove-source', '--journal-dir', join(f.workspace, '.work', 'router-journal')])).toBe(1);
+  expect(f.err.join('')).toContain('--journal-dir outside the workspace');
+  await access(join(f.workspace, 'src', 'app.ts'));
+  await expect(access(join(f.root, 'remote', 'project'))).rejects.toThrow();
 }, 120_000);
 
 test.skipIf(!isLocalSshdAvailable())('move carries Claude Code history and rewrites it for the remote path', async () => {
