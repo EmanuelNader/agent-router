@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { readdir } from 'node:fs/promises';
 import { expect, test } from 'vitest';
 import { identifyStoppableProcess, stopProcess } from '../src/stop-process.js';
 
@@ -59,5 +60,17 @@ test('an exited process that its parent has not reaped counts as stopped', async
 test('identifyStoppableProcess refuses its own process, its parent and non-PIDs', async () => {
   for (const pid of [process.pid, process.ppid, 1, 0, -5, Number.NaN, 1.5]) {
     await expect(identifyStoppableProcess(pid)).rejects.toThrow('SOURCE_AGENT_PID_INVALID');
+  }
+});
+
+test.skipIf(process.platform !== 'linux')('identifyStoppableProcess refuses a thread ID', async () => {
+  const child = await started("console.log('ready'); setInterval(() => {}, 1000)");
+  try {
+    const thread = (await readdir(`/proc/${child.pid}/task`)).map(Number).find(id => id !== child.pid);
+    expect(thread).toBeDefined();
+    await expect(identifyStoppableProcess(thread!)).rejects.toThrow(`is a thread of process ${child.pid}`);
+  } finally {
+    child.kill('SIGKILL');
+    await once(child, 'exit');
   }
 });

@@ -47,6 +47,13 @@ export async function identifyStoppableProcess(pid: number): Promise<{ pid: numb
   }
   const startedAt = await liveProcessStart(pid);
   if (startedAt === undefined) throw new Error(`SOURCE_AGENT_NOT_RUNNING: no process ${pid}`);
+  if (process.platform === 'linux') {
+    // /proc also answers for thread IDs; a thread can exit while its process keeps running.
+    const tgid = /^Tgid:\s*(\d+)$/m.exec(await readFile(`/proc/${pid}/status`, 'utf8'))?.[1];
+    if (tgid !== String(pid)) {
+      throw new Error(`SOURCE_AGENT_PID_INVALID: ${pid} is a thread of process ${tgid ?? 'unknown'}, not a process`);
+    }
+  }
   return { pid, startedAt };
 }
 
