@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { OperationJournal, OperationRecord } from '../../cli/src/journal.js';
-import { captureAgentCheckpoint, type CaptureAgentSpec } from '../../snapshots/src/checkpoint.js';
+import { captureAgentCheckpoint, inspectGit, type CaptureAgentSpec } from '../../snapshots/src/checkpoint.js';
 import { checkpointManifestV3Schema, type CheckpointManifestV3 } from '../../snapshots/src/manifest.js';
 import { LocalEncryptedStore } from '../../snapshots/src/store.js';
 import { hashWorkspace } from '../../workspace/src/manifest.js';
@@ -125,7 +125,9 @@ export async function moveWorkspaceToHost(options: {
     let note = 'source kept';
     if (options.removeSource) {
       const current = await hashWorkspace(source, { symlinks: true, exclusions: manifest.exclusions });
-      if (isDeepStrictEqual(current, manifest.workspaceFiles)) {
+      // hashWorkspace skips .git, so commits and staging made after capture need their own check.
+      const currentGit = await inspectGit(source, manifest.exclusions);
+      if (isDeepStrictEqual(current, manifest.workspaceFiles) && isDeepStrictEqual(currentGit, manifest.git)) {
         await rm(source, { recursive: true, force: true });
         sourceRemoved = true;
         note = 'source removed';

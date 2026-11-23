@@ -1,9 +1,12 @@
+import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { OperationJournal } from '../../cli/src/journal.js';
+import { restoreAgentCheckpoint } from '../../snapshots/src/checkpoint.js';
+import { LocalEncryptedStore } from '../../snapshots/src/store.js';
 import { assertRemoteWords, moveWorkspaceToHost, type MoveTransport } from '../src/move.js';
 
 const tempDirs: string[] = [];
@@ -78,4 +81,46 @@ test('remote arguments with shell syntax are refused', async () => {
   const f = await fixture(() => '');
   await expect(f.run({ remoteRouter: 'agent-router;id' })).rejects.toThrow(/unsafe/);
   expect(await f.journal.listBlocking()).toEqual([]);
+});
+
+test('--remove-source keeps a source whose Git state changed after the checkpoint', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'router-move-git-'));
+  tempDirs.push(root);
+  const workspace = join(root, 'ws');
+  await mkdir(workspace);
+  await writeFile(join(workspace, 'a.txt'), 'a\n');
+  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], { cwd: workspace, stdio: 'pipe' });
+  git('init', '-q');
+  git('add', '.');
+  git('commit', '-q', '-m', 'one');
+  const key = randomBytes(32);
+  let checkpointId = '';
+  const transport: MoveTransport = {
+    async runRemoteCommand(command) {
+      if (command[1] === '--version') return { stdout: '9.9.9' };
+      if (command[1] !== 'restore') return { stdout: '' };
+      const manifest = await restoreAgentCheckpoint({
+        checkpointId, targetWorkspace: join(root, 'remote-ws'),
+        store: new LocalEncryptedStore(join(root, 'spool'), key), agent: { kind: 'none' },
+      });
+      // Work committed on the source while the remote restore ran: files are unchanged, HEAD is not.
+      git('commit', '-q', '--allow-empty', '-m', 'two');
+      return { stdout: JSON.stringify({ operationId: 'op_remote', ...manifest }) };
+    },
+    async transferEncryptedCheckpoint(id, bytes) {
+      checkpointId = id;
+      await mkdir(join(root, 'spool'), { recursive: true });
+      await writeFile(join(root, 'spool', `${id}.enc`), bytes);
+    },
+    async readTransferredCheckpoint() { throw new Error('unused'); },
+    async removeTransferredCheckpoint() {},
+  };
+  const result = await moveWorkspaceToHost({
+    workspaceKey: 'ws', journal: new OperationJournal(join(root, 'journal')), encryptionKey: key, sourceWorkspace: workspace,
+    agent: { kind: 'none' }, transport, routerVersion: '9.9.9', remoteRouter: 'agent-router',
+    remoteWorkspace: '/home/u/ws', remoteSpool: '/home/u/.agent-router/spool', removeSource: true,
+  });
+  expect(result.sourceRemoved).toBe(false);
+  expect(result.operation.status).toBe('COMPLETED');
+  await access(join(workspace, 'a.txt'));
 });
