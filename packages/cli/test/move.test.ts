@@ -4,10 +4,11 @@ import { once } from 'node:events';
 import { access, chmod, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { afterEach, expect, test } from 'vitest';
 import { runRouterCli } from '../src/cli.js';
 import { OperationJournal } from '../src/journal.js';
-import { encodeClaudeProjectSlug } from '../../agent-claude-code/src/adapter.js';
+import { encodeClaudeProjectSlug, findClaudeBinary, isClaudeCodeAvailable } from '../../agent-claude-code/src/adapter.js';
 import { isCodexCliAvailable, startIsolatedCodexAppServer } from '../../agent-codex/src/adapter.js';
 import { startIsolatedServer } from '../../agent-opencode/src/server.js';
 import { isLocalSshdAvailable, startEphemeralSshd, type EphemeralSshd } from '../../host-ssh/src/ephemeral-sshd.js';
@@ -216,3 +217,85 @@ test.skipIf(!isLocalSshdAvailable())('move --stop-source-pid leaves the source a
   expect(f.err.join('\n')).toContain('SOURCE_AGENT_NOT_RUNNING');
   await expect(access(join(f.root, 'remote', 'project'))).rejects.toThrow();
 }, 60_000);
+
+function isRunning(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+test.skipIf(!isLocalSshdAvailable() || !isCodexCliAvailable())(
+  'move --stop-source-pid stops a running Codex app-server before its history is read',
+  async () => {
+    const f = await setup();
+    const codexLocal = join(f.root, 'laptop', 'codex');
+    const codexRemote = join(f.root, 'remote', 'codex');
+    const source = await startIsolatedCodexAppServer({ isolatedHome: join(f.root, 'laptop', 'home'), codexHome: codexLocal });
+    let threadId: string;
+    try {
+      threadId = await source.startThread(f.workspace);
+      await source.runShellCommand(threadId, "printf 'codex-stop-turn\\n'");
+      expect(
+        await f.move([
+          '--agent', 'codex-cli', '--codex-home', codexLocal, '--target-codex-home', codexRemote,
+          '--stop-source-pid', String(source.pid),
+        ]),
+        f.err.join('\n'),
+      ).toBe(0);
+    } finally { await source.stop(); }
+    expect(JSON.parse(f.out.join('\n'))).toMatchObject({ sourceAgentStopped: true });
+    await expect.poll(() => isRunning(source.pid!)).toBe(false);
+    const remoteWorkspace = join(f.root, 'remote', 'project');
+    const target = await startIsolatedCodexAppServer({ isolatedHome: join(f.root, 'remote', 'home'), codexHome: codexRemote });
+    try {
+      expect((await target.resumeThread(threadId, remoteWorkspace)).cwd).toBe(remoteWorkspace);
+      expect(JSON.stringify((await target.readThread(threadId)).turns)).toContain('codex-stop-turn');
+    } finally { await target.stop(); }
+  },
+  180_000,
+);
+
+test.skipIf(!isLocalSshdAvailable() || !isClaudeCodeAvailable())(
+  'move --stop-source-pid stops a running Claude Code process before its history is read',
+  async () => {
+    const f = await setup();
+    const claudeLocal = join(f.root, 'laptop', 'claude');
+    const claudeRemote = join(f.root, 'remote', 'claude');
+    const home = join(f.root, 'laptop', 'home');
+    const uuid = '55555555-6666-4777-8888-999999999999';
+    const slugDir = join(claudeLocal, 'projects', encodeClaudeProjectSlug(f.workspace));
+    await mkdir(slugDir, { recursive: true, mode: 0o700 });
+    await mkdir(home, { recursive: true, mode: 0o700 });
+    await writeFile(
+      join(slugDir, `${uuid}.jsonl`),
+      `${JSON.stringify({ type: 'user', uuid: 'u1', sessionId: uuid, cwd: f.workspace, message: { role: 'user', content: 'stop' } })}\n`,
+      { mode: 0o600 },
+    );
+    // No credentials exist in this state, so no model session can run. `claude mcp serve` is the long-lived
+    // Claude Code process that starts without them.
+    const claude = spawn(findClaudeBinary()!, ['mcp', 'serve'], {
+      cwd: f.workspace,
+      env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: home, CLAUDE_CONFIG_DIR: claudeLocal },
+      stdio: ['pipe', 'ignore', 'ignore'],
+    });
+    const exited = once(claude, 'exit');
+    try {
+      await delay(1_500);
+      expect(claude.exitCode, 'claude mcp serve must still be running').toBeNull();
+      expect(
+        await f.move([
+          '--agent', 'claude-code', '--claude-config-dir', claudeLocal, '--target-claude-config-dir', claudeRemote,
+          '--stop-source-pid', String(claude.pid),
+        ]),
+        f.err.join('\n'),
+      ).toBe(0);
+      expect(JSON.parse(f.out.join('\n'))).toMatchObject({ sourceAgentStopped: true });
+      await exited;
+      expect(claude.signalCode ?? claude.exitCode).not.toBe('SIGKILL');
+    } finally {
+      if (claude.exitCode === null && claude.signalCode === null) { claude.kill('SIGKILL'); await exited; }
+    }
+    const remoteWorkspace = join(f.root, 'remote', 'project');
+    const moved = await readFile(join(claudeRemote, 'projects', encodeClaudeProjectSlug(remoteWorkspace), `${uuid}.jsonl`), 'utf8');
+    expect((JSON.parse(moved.trim()) as { cwd: string }).cwd).toBe(remoteWorkspace);
+  },
+  120_000,
+);

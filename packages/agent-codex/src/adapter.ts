@@ -185,6 +185,8 @@ export interface IsolatedCodexServer {
   runShellCommand(threadId: string, command: string): Promise<void>;
   resumeThread(threadId: string, cwd: string): Promise<{ cwd: string }>;
   readThread(threadId: string): Promise<{ id: string; cwd: string; turns: CodexTurn[] }>;
+  /** PID of the app-server process. */
+  pid: number | undefined;
   stop(): Promise<void>;
 }
 
@@ -282,6 +284,7 @@ export async function startIsolatedCodexAppServer(options: {
   proc.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'initialized', params: {} })}\n`);
 
   return {
+    pid: proc.pid,
     async startThread(cwd: string): Promise<string> {
       const res = await rpc<{ thread: { id: string } }>('thread/start', {
         cwd: path.resolve(cwd),
