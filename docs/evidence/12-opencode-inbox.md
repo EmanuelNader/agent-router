@@ -19,7 +19,7 @@ Checkpoints do **not** carry the inbox. Re-admission below is research only; the
 - Text-only `user` and `synthetic` items can be listed on the source and re-admitted on the destination without waking the agent loop.
 - `compaction` and `move` items have no admission endpoint in the 2.3.2 OpenAPI document, so they cannot be carried.
 - Not tested: prompts with file, agent, or skill attachments (the list and admission schemas use different attachment types); delivery after re-admission, which needs model inference; any release other than 2.3.2.
-- The inbox API is not marked stable upstream. Its lifecycle is still being designed ([opencode#35966](https://github.com/anomalyco/opencode/issues/35966)), and delivered items leaving stale entries is an open bug ([opencode#62618](https://github.com/anomalyco/opencode/issues/62618)).
+- The inbox API is not marked stable upstream. Its lifecycle is still being designed ([opencode#35966](https://github.com/anomalyco/opencode/issues/35966)). A report of delivered items leaving stale queued entries ([opencode#62618](https://github.com/anomalyco/opencode/issues/62618)) was closed as not planned on 2026-11-10: the maintainer could not reproduce it on 2.2.5, found the server inbox empty after delivery, and suspects a display problem in the terminal UI. That was not rerun here on 2.3.2.
 
 ## Capture guard
 
@@ -31,4 +31,4 @@ The `checkpoint`, `handoff`, `migrate` and `move` OpenCode capture paths export 
 | Export for a checkpoint is refused once a queued user prompt is admitted (`pnpm agent:inbox-probe`, OpenCode 2.3.2) | PASS |
 | `user`, non-shell `synthetic` and `compaction` items are each refused (`packages/agent-opencode/test/client.test.ts`, fixture server) | PASS |
 
-Limits: a prompt admitted after the second inbox read and before the server stops is not seen. If the upstream stale-entry bug ([opencode#62618](https://github.com/anomalyco/opencode/issues/62618)) leaves a delivered item listed, the guard refuses until that item is deleted. Pending items are still not carried in a checkpoint.
+Limits: a prompt admitted after the second inbox read and before the server stops is not seen. The guard trusts the server's inbox listing: any delivered item the server still listed would make it refuse until that item is deleted. No such case was observed. Pending items are still not carried in a checkpoint.
