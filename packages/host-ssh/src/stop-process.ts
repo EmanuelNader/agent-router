@@ -1,17 +1,38 @@
 import { execFile } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-/** Start time of a live process, or undefined when the PID is free or only a zombie awaiting its parent. */
+/**
+ * Start marker of a live process, or undefined when the PID is free or only a zombie awaiting its parent.
+ * Linux reads /proc: the start time there counts clock ticks since boot, so a wall-clock correction does not
+ * change it, and it needs no `ps` (BusyBox `ps` has no `-p`). Other platforms use `ps`.
+ */
 async function liveProcessStart(pid: number): Promise<string | undefined> {
+  if (process.platform === 'linux') {
+    let stat: string;
+    try {
+      stat = await readFile(`/proc/${pid}/stat`, 'utf8');
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT' || code === 'ESRCH') return undefined;
+      throw error;
+    }
+    // The command name is in parentheses and may itself contain spaces and parentheses.
+    const fields = stat.slice(stat.lastIndexOf(')') + 2).trim().split(' ');
+    const [state, startTicks] = [fields[0], fields[19]];
+    if (!state || !startTicks) throw new Error(`Unreadable /proc/${pid}/stat`);
+    return state === 'Z' || state === 'X' ? undefined : startTicks;
+  }
   let stdout: string;
   try {
     ({ stdout } = await execFileAsync('ps', ['-o', 'stat=', '-o', 'lstart=', '-p', String(pid)], { env: { ...process.env, LC_ALL: 'C' } }));
   } catch (error) {
     // ps exits 1 with no output when the PID does not exist.
-    if ((error as { code?: unknown }).code === 1) return undefined;
+    const failure = error as { code?: unknown; stderr?: unknown };
+    if (failure.code === 1 && failure.stderr === '') return undefined;
     throw error;
   }
   const [state, ...started] = stdout.trim().split(/\s+/);

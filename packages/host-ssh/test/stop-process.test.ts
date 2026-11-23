@@ -29,7 +29,7 @@ test('stopProcess fails without killing a process that ignores SIGTERM', async (
 test('stopProcess does not signal a PID whose start time differs from the identified process', async () => {
   const child = await started("console.log('ready'); setInterval(() => {}, 1000)");
   try {
-    await stopProcess({ pid: child.pid!, startedAt: 'Thu Jan 1 00:00:00 1970' }, 300);
+    await stopProcess({ pid: child.pid!, startedAt: 'another start' }, 300);
     expect(child.exitCode).toBe(null);
     expect(child.signalCode).toBe(null);
   } finally {
