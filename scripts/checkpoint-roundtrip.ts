@@ -53,7 +53,7 @@ try {
   const manifest = await captureCheckpoint({
     workspace: source,
     store,
-    exportSessions: async () => [await server!.client.exportSession(sessionId)],
+    exportSessions: async () => [await server!.client.exportSessionForCheckpoint(sessionId)],
     quiesceSource: async () => {
       await server!.stop();
       server = undefined;

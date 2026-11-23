@@ -232,7 +232,7 @@ try {
         source: {
           workspacePath: awsSourceWorkspace,
           stagingDir: join(run, 'stage-aws'),
-          exportSessions: async () => [await awsServer.client.exportSession(sessionId)],
+          exportSessions: async () => [await awsServer.client.exportSessionForCheckpoint(sessionId)],
           fenceAgent: fenceTrackedServer,
           teardownCompute: async () => {
             awsSourceCleanedUp = true;
@@ -319,7 +319,7 @@ try {
     const manifest = await captureCheckpoint({
       workspace: hetznerWorkspace,
       store: resticStore,
-      exportSessions: async () => [await hetznerServer!.client.exportSession(sessionId)],
+      exportSessions: async () => [await hetznerServer!.client.exportSessionForCheckpoint(sessionId)],
       quiesceSource: async () => {
         await fenceTrackedServer();
         await hetznerProvisioner.fence('ws-e2e');

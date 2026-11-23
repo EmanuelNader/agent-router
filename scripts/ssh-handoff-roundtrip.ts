@@ -73,7 +73,7 @@ try {
     sourceStagingDir: join(run, 'stage-laptop-a'),
     targetWorkspace: remoteVps,
     transport: new LoopbackHostTransport(join(run, 'spool-to-vps')),
-    exportSourceSessions: async () => [await laptopServerA.client.exportSession(sessionId)],
+    exportSourceSessions: async () => [await laptopServerA.client.exportSessionForCheckpoint(sessionId)],
     fenceSource: fenceTrackedServer,
     activateTargetAndImportSession: async (transfer, directory) => {
       assert.equal(activeCount, 0, 'Source must be fenced before target starts');
@@ -98,7 +98,7 @@ try {
     sourceStagingDir: join(run, 'stage-vps'),
     targetWorkspace: laptopB,
     transport: new LoopbackHostTransport(join(run, 'spool-to-laptop')),
-    exportSourceSessions: async () => [await vpsServer!.client.exportSession(sessionId)],
+    exportSourceSessions: async () => [await vpsServer!.client.exportSessionForCheckpoint(sessionId)],
     fenceSource: fenceTrackedServer,
     activateTargetAndImportSession: async (transfer, directory) => {
       assert.equal(activeCount, 0, 'Remote VPS must be fenced before Laptop B starts');

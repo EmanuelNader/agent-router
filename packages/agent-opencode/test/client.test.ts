@@ -56,3 +56,26 @@ test('lists the inbox and re-admits an item under its original ID without waking
   ]);
   await expect(client.admitInboxItem('ses_fixture', { ...move, delivery: 'queue' })).rejects.toThrow(/cannot be admitted/);
 });
+
+test('a checkpoint export refuses pending inbox work but allows the record of a finished shell turn', async () => {
+  const transcript = { info: { id: 'ses_fixture' }, messages: [] };
+  const shell = { id: 'msg_shell', type: 'synthetic', delivery: 'queue', payload: { text: 'ran', metadata: { source: 'shell' } } };
+  let inbox: unknown[] = [shell];
+  const server = createServer((req, res) => {
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify({ data: req.url?.endsWith('/inbox') ? inbox : transcript }));
+  });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  cleanup.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+  const address = server.address(); if (!address || typeof address === 'string') throw new Error('No address');
+  const client = new OpenCodeClient(`http://127.0.0.1:${address.port}`, 'temporary-test-password');
+  expect(await client.exportSessionForCheckpoint('ses_fixture')).toEqual(transcript);
+  for (const pending of [
+    { id: 'msg_user', type: 'user', delivery: 'queue', payload: { text: 'do this next' } },
+    { id: 'msg_other', type: 'synthetic', delivery: 'steer', payload: { text: 'not from a shell turn' } },
+    { id: 'msg_compact', type: 'compaction', delivery: 'queue', payload: {} },
+  ]) {
+    inbox = [shell, pending];
+    await expect(client.exportSessionForCheckpoint('ses_fixture')).rejects.toThrow(`OPENCODE_PENDING_INBOX: session has 1 pending inbox item(s) (${pending.type} ${pending.id})`);
+  }
+});
