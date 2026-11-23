@@ -22,6 +22,7 @@
     "readiness": "tsx scripts/readiness.ts",
     "agent:probe": "tsx scripts/probe-agent.ts",
     "agent:roundtrip": "tsx scripts/agent-roundtrip.ts",
+    "agent:inbox-probe": "tsx scripts/inbox-probe.ts",
     "agent:acp-roundtrip": "tsx scripts/acp-roundtrip.ts",
     "checkpoint:roundtrip": "tsx scripts/checkpoint-roundtrip.ts",
     "checkpoint:linux-roundtrip": "tsx scripts/linux-checkpoint-roundtrip.ts",

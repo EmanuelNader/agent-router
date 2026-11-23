@@ -6,6 +6,14 @@ const transferSchema = z.object({
 }).passthrough();
 export type SessionTransfer = z.infer<typeof transferSchema>;
 
+const inboxItemSchema = z.object({
+  id: z.string().min(1),
+  type: z.string().min(1),
+  delivery: z.enum(['steer', 'queue']),
+  payload: z.object({ text: z.string() }).passthrough(),
+}).passthrough();
+export type InboxItem = z.infer<typeof inboxItemSchema>;
+
 /** Pinned to OpenCode 2.3.2. Transfer data can contain private conversation text. */
 export class OpenCodeClient {
   private readonly url: URL;
@@ -72,5 +80,33 @@ export class OpenCodeClient {
     );
     if (!result.success) throw new Error('Invalid OpenCode import response');
     return result.data.data.id;
+  }
+
+  /** Admitted work not yet delivered to the agent loop. It is absent from exportSession. */
+  async listInbox(sessionId: string): Promise<InboxItem[]> {
+    const result = z.object({ data: z.array(inboxItemSchema) }).safeParse(
+      await this.request(`/api/session/${encodeURIComponent(sessionId)}/inbox`),
+    );
+    if (!result.success) throw new Error('Invalid OpenCode inbox response');
+    return result.data.data;
+  }
+
+  /**
+   * Admits an inbox item without waking the agent loop. Passing the original ID makes the call idempotent;
+   * without one OpenCode mints a new ID.
+   * Only user and synthetic items have an admission endpoint in OpenCode 2.3.2.
+   */
+  async admitInboxItem(
+    sessionId: string, item: Pick<InboxItem, 'type' | 'delivery' | 'payload'> & { id?: string },
+  ): Promise<InboxItem> {
+    if (item.type !== 'user' && item.type !== 'synthetic') throw new Error(`OpenCode inbox item type "${item.type}" cannot be admitted`);
+    const result = z.object({ data: inboxItemSchema }).safeParse(
+      await this.request(
+        `/api/session/${encodeURIComponent(sessionId)}/${item.type === 'user' ? 'prompt' : 'synthetic'}`,
+        { ...item.payload, ...(item.id ? { id: item.id } : {}), delivery: item.delivery, resume: false },
+      ),
+    );
+    if (!result.success) throw new Error('Invalid OpenCode admission response');
+    return result.data.data;
   }
 }
