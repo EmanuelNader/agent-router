@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { OpenCodeClient } from './client.js';
 
-export const OPENCODE_VERSION = '2.3.2';
+export const OPENCODE_VERSION = '2.4.1';
 /** Releases whose exported sessions were observed to import into OPENCODE_VERSION. */
 export const RESTORABLE_OPENCODE_VERSIONS = ['2.2.7', OPENCODE_VERSION] as const;
 
