@@ -7,7 +7,7 @@
   "bin": {
     "agent-router": "./bin/agent-router.mjs"
   },
-  "packageManager": "pnpm@12.21.0",
+  "packageManager": "pnpm@12.23.0",
   "engines": {
     "node": ">=24 <25"
   },
