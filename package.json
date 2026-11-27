@@ -43,8 +43,8 @@
     "vitest": "5.1.1"
   },
   "dependencies": {
-    "@aws-sdk/client-freetier": "3.1175.0",
-    "@aws-sdk/client-sts": "3.1175.0",
+    "@aws-sdk/client-freetier": "3.1177.0",
+    "@aws-sdk/client-sts": "3.1177.0",
     "jsonc-parser": "3.3.1",
     "oci-sdk": "2.147.0",
     "smol-toml": "1.9.1",
